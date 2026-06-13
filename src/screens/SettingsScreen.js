@@ -176,14 +176,18 @@ export default function SettingsScreen({ navigation }) {
       return;
     }
     try {
-      const data = JSON.parse(importJson.trim());
-      await importData(data);
+      const parsed = parseImportText(importJson);
+      const result = await importData(parsed.format === "json" ? parsed.fullData : parsed.transactions);
       await reload();
       setShowImportModal(false);
       setImportJson('');
-      Alert.alert('导入成功', `已恢复 ${data.transactions ? data.transactions.length : 0} 条交易记录`);
+      const added = (result && result.added) || 0;
+      const skipped = (result && result.skipped) || 0;
+      const fmt = (result && result.format) || parsed.format || "csv";
+      const skipHint = skipped > 0 ? `(跳过 ${skipped} 条重复)` : "";
+      Alert.alert('导入成功', `格式：${fmt.toUpperCase()}\n新增 ${added} 条交易记录${skipHint}`);
     } catch (e) {
-      Alert.alert('导入失败', '数据格式不正确,请确保粘贴的是完整的JSON备份');
+      Alert.alert('导入失败', e && e.message ? e.message : '数据格式不正确,请检查后重试');
     }
   };
 
@@ -422,6 +426,7 @@ export default function SettingsScreen({ navigation }) {
                 <Ionicons name="close" size={22} color={tc.textMuted} />
               </TouchableOpacity>
             </View>
+            <Text style={{ color: tc.textMuted, fontSize: fontSize.sm, marginBottom: spacing.sm, lineHeight: 20 }}>支持 JSON 完整备份 或 CSV 文本。自动识别格式，重复数据会被跳过。</Text>
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: tc.textMuted }]}>账本名称</Text>
@@ -530,9 +535,11 @@ export default function SettingsScreen({ navigation }) {
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: tc.textMuted }]}>粘贴 JSON 备份数据</Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, minHeight: 150, textAlignVertical: 'top' }]}
+                style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, minHeight: 180, textAlignVertical: 'top' }]}
                 value={importJson}
                 onChangeText={setImportJson}
+                placeholder='支持 JSON 完整备份 或 CSV 文本'
+                placeholderTextColor={tc.textSubtle}
                   autoCorrect={false}
                   autoCapitalize="none"
                   autoComplete="off"

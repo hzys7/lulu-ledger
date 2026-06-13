@@ -283,40 +283,86 @@ export async function exportAllData() {
   };
 }
 
-export async function importData(data) {
-  if (data.transactions) await setData(STORAGE_KEYS.TRANSACTIONS, data.transactions);
-  if (data.books) await setData(STORAGE_KEYS.BOOKS, data.books);
-  if (data.budgets) await setData(STORAGE_KEYS.BUDGETS, data.budgets);
-  if (data.settings) await setData(STORAGE_KEYS.SETTINGS, data.settings);
-  if (data.accounts) await setData(STORAGE_KEYS.ACCOUNTS, data.accounts);
-  return true;
+// 智能导入：支持 JSON 完整备份 / 纯 transactions 数组 / CSV 文本
+// mode: 'merge' (默认，追加并去重) | 'replace' (覆盖)
+// 返回 { format, added, skipped, total }
+export async function importData(data, mode = 'merge') {
+  if (!data || typeof data !== 'object') {
+    throw new Error('导入数据为空');
+  }
+
+  // 完整备份导入（来自 exportAllData）
+  const hasFullBackup = data.transactions || data.books || data.budgets || data.settings || data.accounts;
+
+  if (hasFullBackup) {
+    if (Array.isArray(data.transactions)) {
+      const stats = await mergeTransactions(data.transactions);
+      if (mode === 'replace') {
+        await setData(STORAGE_KEYS.TRANSACTIONS, data.transactions);
+      }
+    }
+    if (mode === 'replace') {
+      if (data.books) await setData(STORAGE_KEYS.BOOKS, data.books);
+      if (data.budgets) await setData(STORAGE_KEYS.BUDGETS, data.budgets);
+      if (data.settings) await setData(STORAGE_KEYS.SETTINGS, data.settings);
+      if (data.accounts) await setData(STORAGE_KEYS.ACCOUNTS, data.accounts);
+    }
+    return { format: 'json', ...(stats || { added: 0, skipped: 0, total: 0 }) };
+  }
+
+  // 纯 transactions 数组
+  if (Array.isArray(data)) {
+    const stats = await mergeTransactions(data);
+    if (mode === 'replace') {
+      await setData(STORAGE_KEYS.TRANSACTIONS, data);
+    }
+    return { format: 'json', ...stats };
+  }
+
+  throw new Error('无法识别的导入格式');
 }
 
-export async function importTransactionsFromCSV(csvText, bookId) {
-  const lines = csvText.trim().split('\n');
-  if (lines.length < 2) return [];
-  const all = (await getData(STORAGE_KEYS.TRANSACTIONS)) || [];
-  const newTransactions = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    if (values.length < 4) continue;
-    const tx = {
-      id: `tx_import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      bookId: bookId || 'default',
-      bookName: '',
-      type: values[0] || 'expense',
-      category: values[1] || '其他',
-      amount: parseFloat(values[2]) || 0,
-      date: values[3] || new Date().toISOString(),
-      note: values[4] || '',
-      currency: values[5] || 'CNY',
-      createdAt: new Date().toISOString(),
-    };
-    if (tx.amount > 0) newTransactions.push(tx);
+// 合并 transactions：去重（按 id 或 内容指纹），保留已有
+async function mergeTransactions(newOnes) {
+  const existing = (await getData(STORAGE_KEYS.TRANSACTIONS)) || [];
+  const seen = new Set();
+  for (const t of existing) {
+    seen.add(makeTxFingerprint(t));
   }
-  all.push(...newTransactions);
-  await setData(STORAGE_KEYS.TRANSACTIONS, all);
-  return newTransactions;
+  const toAdd = [];
+  let skipped = 0;
+  for (const t of newOnes) {
+    if (!t || typeof t !== 'object') { skipped++; continue; }
+    const fp = makeTxFingerprint(t);
+    if (seen.has(fp)) { skipped++; continue; }
+    seen.add(fp);
+    toAdd.push(t);
+  }
+  const merged = toAdd.concat(existing); // 新的在前面
+  await setData(STORAGE_KEYS.TRANSACTIONS, merged);
+  return { added: toAdd.length, skipped, total: merged.length };
+}
+
+// 交易指纹：用于去重（id 优先，否则 date+amount+category+note+type）
+function makeTxFingerprint(t) {
+  if (t && t.id) return 'id:' + t.id;
+  const d = (t && t.date) || '';
+  const a = (t && t.amount) || 0;
+  const c = (t && t.category) || '';
+  const n = (t && t.note) || '';
+  const ty = (t && t.type) || '';
+  return 'fp:' + ty + '|' + d + '|' + a + '|' + c + '|' + n;
+}
+
+// 从 CSV 文本导入 transactions（用通用解析器，支持本 APP 格式 + 其他 APP 的 CSV）
+// 返回 { added, skipped, total }
+export async function importTransactionsFromCSV(csvText, bookId) {
+  const { parseCSVToTransactions } = require('./export');
+  const txs = parseCSVToTransactions(csvText, 'auto').map((t) => ({
+    ...t,
+    bookId: bookId || t.bookId || 'default',
+  }));
+  return await mergeTransactions(txs);
 }
 
 export async function clearAllData() {
