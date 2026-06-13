@@ -35,11 +35,11 @@ jobs:
           set -e
           sudo apt-get update -qq
           sudo apt-get install -y -qq unzip >/dev/null
-          CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip"
-          ANDROID_HOME="$RUNNER_TEMP/android-sdk"
+          export ANDROID_HOME="$RUNNER_TEMP/android-sdk"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           mkdir -p "$ANDROID_HOME/cmdline-tools"
           cd /tmp
-          curl -sSL -o cmdline-tools.zip "$CMDLINE_TOOLS_URL"
+          curl -sSL -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip"
           unzip -q cmdline-tools.zip -d /tmp/cmdline-tools-extracted
           mv /tmp/cmdline-tools-extracted/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
