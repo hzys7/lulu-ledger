@@ -58,7 +58,7 @@ jobs:
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.1.12297006" "cmake;3.22.1"
           echo "Installed packages:"
           sdkmanager --list_installed
 
