@@ -31,11 +31,13 @@
 |   |-- components/         # 复用组件
 |   |-- utils/              # 工具：存储/格式化
 |   `-- theme.js            # 主题色/间距/字号
-|-- tools/                  # 工具脚本（图标生成）
+|-- tools/                  # 工具脚本（图标生成 + 签名 patch）
 |   |-- gen_icons.py        # 记字图标生成
-|   `-- gen_cat_icon.py     # 小猫头像图标生成（备选）
+|   |-- gen_cat_icon.py     # 小猫头像图标生成（备选）
+|   `-- patch-build-gradle.js  # 给 prebuild 后的 build.gradle 注入 release 签名
 |-- keys/                   # 签名 keystore（不提交，详见 KEYSTORE_INFO.md）
 |-- android/                # Prebuild 生成的原生工程（不提交，gitignore）
+|-- .github/workflows/      # GitHub Actions 配置
 |-- .gitignore
 `-- package.json
 ```
@@ -59,6 +61,19 @@ npx expo start --tunnel
 5. `npx expo prebuild --platform android --clean`
 6. `cd android && ./gradlew assembleRelease`
 7. APK 输出：`android/app/build/outputs/apk/release/app-release.apk`
+
+## 持续集成 (GitHub Actions)
+
+`.github/workflows/build-android.yml` 在每次 push 到 main 时自动构建签名后的 APK + AAB，并把产物上传为 Artifact（保留 90 天）。
+
+需要的 GitHub Secrets（[配置说明](./KEYS_SETUP.md)）：
+
+- `LULU_KEYSTORE_BASE64` - keystore 的 base64 编码
+- `LULU_KEYSTORE_PASS` - keystore 密码
+- `LULU_KEY_ALIAS` - 密钥别名
+- `LULU_KEY_PASS` - 密钥密码
+
+手动触发：https://github.com/hzys7/lulu-ledger/actions → 选 workflow → "Run workflow"。
 
 ## 版本号
 
