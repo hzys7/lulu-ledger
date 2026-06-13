@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { Button } from '../components/SharedComponents';
 import { formatMoney, getCurrencyList } from '../utils/currency';
-import { exportTransactionsToCSV, exportToJSON } from '../utils/export';
+import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile } from '../utils/export';
 import { exportAllData, importData } from '../utils/storage';
 import {
   spacing,
@@ -188,6 +188,17 @@ export default function SettingsScreen({ navigation }) {
       Alert.alert('导入成功', `格式：${fmt.toUpperCase()}\n新增 ${added} 条交易记录${skipHint}`);
     } catch (e) {
       Alert.alert('导入失败', e && e.message ? e.message : '数据格式不正确,请检查后重试');
+    }
+  };
+
+  const handlePickFile = async () => {
+    try {
+      const picked = await pickImportFile();
+      if (!picked) return;
+      setImportJson(picked.text);
+      Alert.alert('已选择文件', `文件：${picked.name}\n已自动填入下方文本框，点击"导入"完成导入`);
+    } catch (e) {
+      Alert.alert('选择文件失败', e && e.message ? e.message : '请重试');
     }
   };
 
@@ -533,12 +544,22 @@ export default function SettingsScreen({ navigation }) {
               </TouchableOpacity>
             </View>
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>粘贴 JSON 备份数据</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+                <Text style={[styles.inputLabel, { color: tc.textMuted, marginBottom: 0 }]}>粘贴或选择文件</Text>
+                <TouchableOpacity
+                  onPress={handlePickFile}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: tc.surfaceMuted, borderRadius: borderRadius.md }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="folder-open-outline" size={16} color={tc.primary} />
+                  <Text style={{ color: tc.primary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>选择文件</Text>
+                </TouchableOpacity>
+              </View>
               <TextInput
                 style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, minHeight: 180, textAlignVertical: 'top' }]}
                 value={importJson}
                 onChangeText={setImportJson}
-                placeholder='支持 JSON 完整备份 或 CSV 文本'
+                placeholder='支持 JSON 完整备份 或 CSV 文本（可点右上角选择文件）'
                 placeholderTextColor={tc.textSubtle}
                   autoCorrect={false}
                   autoCapitalize="none"

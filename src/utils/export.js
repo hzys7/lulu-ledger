@@ -1,5 +1,5 @@
 ﻿// 数据导出工具 - 支持CSV和JSON导出
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getCurrencySymbol } from './currency';
 
@@ -21,13 +21,11 @@ export async function exportTransactionsToCSV(transactions, currencyCode = 'CNY'
   const csvContent = '\uFEFF' + header + rows;
   
   const fileName = `记账记录_${formatDateForFile(new Date())}.csv`;
-  const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-  
-  await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
+  const file = new File(Paths.document, fileName);
 
-  return shareFile(fileUri);
+  await file.write(csvContent);
+
+  return shareFile(file);
 }
 
 // ============ JSON 导出（完整备份）============
@@ -35,13 +33,11 @@ export async function exportTransactionsToCSV(transactions, currencyCode = 'CNY'
 export async function exportToJSON(data) {
   const jsonContent = JSON.stringify(data, null, 2);
   const fileName = `记账备份_${formatDateForFile(new Date())}.json`;
-  const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-  
-  await FileSystem.writeAsStringAsync(fileUri, jsonContent, {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
+  const file = new File(Paths.document, fileName);
 
-  return shareFile(fileUri);
+  await file.write(jsonContent);
+
+  return shareFile(file);
 }
 
 // ============ 报表数据生成 ============
@@ -372,11 +368,30 @@ function formatDateForFile(date) {
   return `${y}${m}${d}`;
 }
 
-async function shareFile(uri) {
+async function shareFile(file) {
   const isAvailable = await Sharing.isAvailableAsync();
   if (isAvailable) {
-    await Sharing.shareAsync(uri);
+    await Sharing.shareAsync(file.uri, {
+      mimeType: file.name.endsWith('.json') ? 'application/json' : 'text/csv',
+    });
     return true;
   }
-  return uri; // 返回路径供后续处理
+  return file.uri; // 返回路径供后续处理
+}
+
+// 弹原生文件选择器，选择 CSV/JSON 文件，返回文本内容
+// 用户取消选择时返回 null
+export async function pickImportFile() {
+  try {
+    const result = await File.pickFileAsync({
+      mimeTypes: ['text/csv', 'text/comma-separated-values', 'application/json', 'application/octet-stream', '*/*'],
+    });
+    if (result.canceled || !result.result) return null;
+    const text = await result.result.text();
+    return { name: result.result.name, text };
+  } catch (e) {
+    // 取消选择不抛错
+    if (e && /cancel/i.test(String(e.message || e))) return null;
+    throw e;
+  }
 }
