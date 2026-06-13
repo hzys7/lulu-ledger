@@ -91,14 +91,19 @@ jobs:
         env:
           LULU_KEYSTORE_BASE64: ${{ secrets.LULU_KEYSTORE_BASE64 }}
         run: |
+          set -e
           mkdir -p android/app/keys
           echo "$LULU_KEYSTORE_BASE64" | base64 -d > android/app/keys/lululedger-release.keystore
+          echo "Keystore size: $(stat -c%s android/app/keys/lululedger-release.keystore) bytes"
+          echo "Keystore SHA-256: $(sha256sum android/app/keys/lululedger-release.keystore | awk "{print \$1}")"
+          echo "ANDROID_KEYSTORE_PATH=$(pwd)/android/app/keys/lululedger-release.keystore" >> $GITHUB_ENV
           ls -la android/app/keys/
+          test -f android/app/keys/lululedger-release.keystore || (echo "ERROR: keystore not found"; exit 1)
 
       - name: Build Release APK (arm64-v8a)
         working-directory: android
         env:
-          LULU_KEYSTORE_FILE: ${{ github.workspace }}/android/app/keys/lululedger-release.keystore
+          LULU_KEYSTORE_FILE: ${{ env.ANDROID_KEYSTORE_PATH }}
           LULU_KEYSTORE_PASS: ${{ secrets.LULU_KEYSTORE_PASS }}
           LULU_KEY_ALIAS: ${{ secrets.LULU_KEY_ALIAS }}
           LULU_KEY_PASS: ${{ secrets.LULU_KEY_PASS }}
@@ -123,7 +128,7 @@ jobs:
       - name: Build AAB for Play Store
         working-directory: android
         env:
-          LULU_KEYSTORE_FILE: ${{ github.workspace }}/android/app/keys/lululedger-release.keystore
+          LULU_KEYSTORE_FILE: ${{ env.ANDROID_KEYSTORE_PATH }}
           LULU_KEYSTORE_PASS: ${{ secrets.LULU_KEYSTORE_PASS }}
           LULU_KEY_ALIAS: ${{ secrets.LULU_KEY_ALIAS }}
           LULU_KEY_PASS: ${{ secrets.LULU_KEY_PASS }}
