@@ -30,14 +30,37 @@ jobs:
           node-version: "22"
           cache: npm
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 13114758
-          packages: |
-            platform-tools
-            platforms;android-35
-            build-tools;35.0.0
+      - name: Install Android cmdline-tools
+        run: |
+          set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq unzip >/dev/null
+          CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip"
+          ANDROID_HOME="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          cd /tmp
+          curl -sSL -o cmdline-tools.zip "$CMDLINE_TOOLS_URL"
+          unzip -q cmdline-tools.zip -d /tmp/cmdline-tools-extracted
+          mv /tmp/cmdline-tools-extracted/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+          sdkmanager --version
+
+      - name: Accept SDK licenses
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --licenses 2>&1 | tail -5
+
+      - name: Install Android SDK packages
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          echo "Installed packages:"
+          sdkmanager --list_installed
 
       - name: Install npm dependencies
         run: npm ci --no-audit --no-fund
