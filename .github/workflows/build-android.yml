@@ -33,9 +33,14 @@ jobs:
       - name: Install Android cmdline-tools
         run: |
           set -e
+          # GitHub-hosted ubuntu runners ship with ANDROID_SDK_ROOT pre-set to
+          # /usr/local/lib/android/sdk. That conflicts with our ANDROID_HOME later,
+          # so unset it up front to satisfy Gradle's "use only one SDK location" rule.
+          unset ANDROID_SDK_ROOT
           sudo apt-get update -qq
           sudo apt-get install -y -qq unzip >/dev/null
           export ANDROID_HOME="$RUNNER_TEMP/android-sdk"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           mkdir -p "$ANDROID_HOME/cmdline-tools"
           cd /tmp
@@ -43,6 +48,7 @@ jobs:
           unzip -q cmdline-tools.zip -d /tmp/cmdline-tools-extracted
           mv /tmp/cmdline-tools-extracted/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
           sdkmanager --version
@@ -50,14 +56,18 @@ jobs:
       - name: Accept SDK licenses
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: |
+          unset ANDROID_SDK_ROOT
           yes | sdkmanager --licenses >/dev/null
           sdkmanager --licenses 2>&1 | tail -5
 
       - name: Install Android SDK packages
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: |
+          unset ANDROID_SDK_ROOT
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.1.12297006" "cmake;3.22.1"
           echo "Installed packages:"
           sdkmanager --list_installed
@@ -66,16 +76,29 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Run Expo Prebuild
-        run: npx --no-install expo prebuild --platform android --clean --no-install
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+        run: |
+          unset ANDROID_SDK_ROOT
+          npx --no-install expo prebuild --platform android --clean --no-install
 
       - name: Patch build.gradle with release signing
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: |
           set -euo pipefail
+          unset ANDROID_SDK_ROOT
           node tools/patch-build-gradle.js
 
       - name: Verify signing config injected
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: |
           set -euo pipefail
+          unset ANDROID_SDK_ROOT
           if ! grep -q "lulu-ledger signing patch" android/app/build.gradle; then
             echo "::error::patch sentinel not found in android/app/build.gradle"
             exit 1
@@ -103,8 +126,11 @@ jobs:
       - name: Decode release keystore
         env:
           LULU_KEYSTORE_BASE64: ${{ secrets.LULU_KEYSTORE_BASE64 }}
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: |
           set -e
+          unset ANDROID_SDK_ROOT
           mkdir -p android/app/keys
           echo "$LULU_KEYSTORE_BASE64" | base64 -d > android/app/keys/lululedger-release.keystore
           echo "Keystore size: $(stat -c%s android/app/keys/lululedger-release.keystore) bytes"
@@ -129,11 +155,18 @@ jobs:
           LULU_KEYSTORE_PASS: ${{ secrets.LULU_KEYSTORE_PASS }}
           LULU_KEY_ALIAS: ${{ secrets.LULU_KEY_ALIAS }}
           LULU_KEY_PASS: ${{ secrets.LULU_KEY_PASS }}
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        run: |
+          set -euo pipefail
+          unset ANDROID_SDK_ROOT
+          ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename APK with version + date
         working-directory: android/app/build/outputs/apk/release
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
+          unset ANDROID_SDK_ROOT
           PKG_VERSION=$(node -p "require('./app.json').expo.version" ../../../../../)
           DATE=$(date +%Y%m%d)
           mv app-release.apk "lulu-ledger-${PKG_VERSION}-${DATE}-arm64.apk"
@@ -154,11 +187,18 @@ jobs:
           LULU_KEYSTORE_PASS: ${{ secrets.LULU_KEYSTORE_PASS }}
           LULU_KEY_ALIAS: ${{ secrets.LULU_KEY_ALIAS }}
           LULU_KEY_PASS: ${{ secrets.LULU_KEY_PASS }}
-        run: ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        run: |
+          set -euo pipefail
+          unset ANDROID_SDK_ROOT
+          ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename AAB with version + date
         working-directory: android/app/build/outputs/bundle/release
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
+          unset ANDROID_SDK_ROOT
           PKG_VERSION=$(node -p "require('./app.json').expo.version" ../../../../../)
           DATE=$(date +%Y%m%d)
           mv app-release.aab "lulu-ledger-${PKG_VERSION}-${DATE}-arm64.aab"
