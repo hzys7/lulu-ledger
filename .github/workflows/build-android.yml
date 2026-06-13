@@ -52,6 +52,19 @@ jobs:
       - name: Verify signing config injected
         run: grep -c "lulu-ledger signing patch" android/app/build.gradle
 
+      - name: Validate secrets configured
+        env:
+          LULU_KEYSTORE_BASE64: ${{ secrets.LULU_KEYSTORE_BASE64 }}
+          LULU_KEYSTORE_PASS: ${{ secrets.LULU_KEYSTORE_PASS }}
+          LULU_KEY_ALIAS: ${{ secrets.LULU_KEY_ALIAS }}
+          LULU_KEY_PASS: ${{ secrets.LULU_KEY_PASS }}
+        run: |
+          if [ -z "$LULU_KEYSTORE_BASE64" ] || [ -z "$LULU_KEYSTORE_PASS" ] || [ -z "$LULU_KEY_ALIAS" ] || [ -z "$LULU_KEY_PASS" ]; then
+            echo '::error::Missing required secrets. See KEYS_SETUP.md for setup instructions.'
+            echo 'Required: LULU_KEYSTORE_BASE64, LULU_KEYSTORE_PASS, LULU_KEY_ALIAS, LULU_KEY_PASS'
+            exit 1
+          fi
+
       - name: Decode release keystore
         env:
           LULU_KEYSTORE_BASE64: ${{ secrets.LULU_KEYSTORE_BASE64 }}

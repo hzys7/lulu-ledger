@@ -1,4 +1,4 @@
-# Dependencies
+﻿# Dependencies
 node_modules/
 
 # Expo / Metro
@@ -67,3 +67,5 @@ assets/icon-gen/cat-apk-*.png
 .vscode/
 *.swp
 *.swo
+keystore-base64.txt
+
