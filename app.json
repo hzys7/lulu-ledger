@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "璐璐记账",
+    "slug": "lulu-ledger",
+    "version": "1.0.3",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAFB"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lululedger.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1115",
+        "foregroundImage": "./assets/icon-foreground.png"
+      },
+      "package": "com.lululedger.app"
+    },
+    "web": {
+      "name": "璐璐记账",
+      "shortName": "璐璐记账",
+      "description": "璐璐记账",
+      "lang": "zh-CN",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "icon": "./assets/icon.png"
+  }
+}

@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+
+# Expo / Metro
+.expo/
+.expo-shared/
+web-build/
+dist/
+
+# Build artifacts
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.tsbuildinfo
+
+# Android (prebuild output, regenerated on each build)
+android/
+android-app/
+
+# iOS (regenerated on each build)
+ios/
+
+# Keystore and secrets (NEVER commit)
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.keystore
+keys/
+!keys/.gitkeep
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+*.dSYM.zip
+*.dSYM
+build/
+
+# Misc
+.DS_Store
+*.orig.*
+Thumbs.db
+
+# Local dev tools
+dist_check/
+tools/__pycache__/
+*.pyc
+
+# Icon generation scratch + verification extracts
+assets/icon-gen/apk-extract*/
+assets/icon-gen/apk-*.png
+assets/icon-gen/cat-apk-*.png
+
+# Backup files
+*.bak
+*.bak2
+*.bak3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
