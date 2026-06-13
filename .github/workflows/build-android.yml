@@ -162,13 +162,13 @@ jobs:
           ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename APK with version + date
-        working-directory: android/app/build/outputs/apk/release
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
           unset ANDROID_SDK_ROOT
-          PKG_VERSION=$(node -p "require('./app.json').expo.version" ../../../../../)
+          PKG_VERSION=$(node -p "require('${{ github.workspace }}/app.json').expo.version")
           DATE=$(date +%Y%m%d)
+          cd "${{ github.workspace }}/android/app/build/outputs/apk/release"
           mv app-release.apk "lulu-ledger-${PKG_VERSION}-${DATE}-arm64.apk"
           ls -la
 
@@ -194,13 +194,13 @@ jobs:
           ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename AAB with version + date
-        working-directory: android/app/build/outputs/bundle/release
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
           unset ANDROID_SDK_ROOT
-          PKG_VERSION=$(node -p "require('./app.json').expo.version" ../../../../../)
+          PKG_VERSION=$(node -p "require('${{ github.workspace }}/app.json').expo.version")
           DATE=$(date +%Y%m%d)
+          cd "${{ github.workspace }}/android/app/build/outputs/bundle/release"
           mv app-release.aab "lulu-ledger-${PKG_VERSION}-${DATE}-arm64.aab"
           ls -la
 
