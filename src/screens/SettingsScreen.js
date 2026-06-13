@@ -535,7 +535,7 @@ export default function SettingsScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowImportModal(false)} />
-          <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg, maxHeight: '85%' }]}>
+          <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg, maxHeight: '75%' }]}>
             <View style={styles.handle} />
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: tc.text }]}>导入备份</Text>
@@ -543,7 +543,7 @@ export default function SettingsScreen({ navigation }) {
                 <Ionicons name="close" size={22} color={tc.textMuted} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 220 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.inputGroup}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
                 <Text style={[styles.inputLabel, { color: tc.textMuted, marginBottom: 0 }]}>粘贴或选择文件</Text>
@@ -557,7 +557,7 @@ export default function SettingsScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
               <TextInput
-                style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, minHeight: 180, textAlignVertical: 'top' }]}
+                style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, minHeight: 120, textAlignVertical: 'top' }]}
                 value={importJson}
                 onChangeText={setImportJson}
                 placeholder='支持 JSON 完整备份 或 CSV 文本（可点右上角选择文件）'
