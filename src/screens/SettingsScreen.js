@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useFinance } from '../context/FinanceContext';
+import { triggerUpdateCheck } from '../components/UpdatePrompt';
 import { Button } from '../components/SharedComponents';
 import AiSettingsScreen from './AiSettingsScreen';
 import { formatMoney, getCurrencyList } from '../utils/currency';
@@ -155,6 +156,18 @@ export default function SettingsScreen({ navigation }) {
 
   const handleToggleAutoCheck = async () => {
     await updateAppSettings({ autoCheckUpdate: !settings.autoCheckUpdate });
+  };
+
+  const [isChecking, setIsChecking] = React.useState(false);
+  const handleCheckNow = async () => {
+    if (isChecking) return;
+    setIsChecking(true);
+    try {
+      triggerUpdateCheck(true);
+    } finally {
+      // 1.5s 后复位，给个「已在检查」的反馈
+      setTimeout(() => setIsChecking(false), 1500);
+    }
   };
 
   const handleAddRecurring = async () => {
@@ -391,6 +404,26 @@ export default function SettingsScreen({ navigation }) {
               >
                 <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
               </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+            onPress={handleCheckNow}
+            activeOpacity={0.7}
+            disabled={isChecking}
+          >
+            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
+              <Ionicons name={isChecking ? 'sync' : 'cloud-download-outline'} size={18} color={tc.text} />
+            </View>
+            <View style={styles.listContent}>
+              <Text style={[styles.listTitle, { color: tc.text }]}>立即检查更新</Text>
+              <Text style={[styles.listSub, { color: tc.textMuted }]}>
+                {isChecking ? '正在检查…' : '手动触发一次更新检测'}
+              </Text>
+            </View>
+            <View style={styles.rightMeta}>
+              <Ionicons name="chevron-forward" size={16} color={tc.textMuted} />
             </View>
           </TouchableOpacity>
         </Section>

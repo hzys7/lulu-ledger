@@ -31,6 +31,12 @@ const DISMISSED_KEY = 'lulu_update_dismissed';
 // 距离上次检查 < 30 分钟就不再查，避免切 tab 时反复请求
 const CHECK_THROTTLE_MS = 30 * 60 * 1000;
 
+// 模块级 ref singleton — 任何组件（包括设置页）都能触发立即检查
+let _ref = null;
+export function triggerUpdateCheck(force = true) {
+  try { _ref?.checkNow(force); } catch (e) { console.warn('[UpdatePrompt] trigger failed:', e?.message || e); }
+}
+
 const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
@@ -53,9 +59,18 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   const lastProgressAtRef = useRef(0);
   const currentSourceRef = useRef("");
 
-  useImperativeHandle(ref, () => ({
-    checkNow: () => runCheck({ force: true }),
-  }), [settings?.autoCheckUpdate]);
+  useImperativeHandle(ref, () => {
+    const api = {
+      checkNow: (force = true) => runCheck({ force }),
+    };
+    _ref = api;
+    return api;
+  }, [settings?.autoCheckUpdate]);
+
+  // Unregister on unmount
+  useEffect(() => {
+    return () => { if (_ref) _ref = null; };
+  }, []);
 
   async function runCheck({ force } = {}) {
     // 设置里关了就不查
