@@ -29,8 +29,6 @@ function formatBytes(n) {
 
 const DISMISSED_KEY = 'lulu_update_dismissed';
 // 距离上次检查 < 30 分钟就不再查，避免切 tab 时反复请求
-const CHECK_THROTTLE_MS = 30 * 60 * 1000;
-
 // 模块级 ref singleton — 任何组件（包括设置页）都能触发立即检查
 let _ref = null;
 export function triggerUpdateCheck(force = true) {
@@ -73,17 +71,10 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }, []);
 
   async function runCheck({ force } = {}) {
-    // 设置里关了就不查
+    // 设置里关了就不查（force=true 时也尊重显式触发）
     if (!force && settings?.autoCheckUpdate === false) return;
-    // 节流：30 分钟内不重复查
-    if (!force) {
-      const now = Date.now();
-      if (lastCheckAtRef.current && now - lastCheckAtRef.current < CHECK_THROTTLE_MS) return;
-      lastCheckAtRef.current = now;
-    }
     try {
       const result = await checkForUpdate();
-      lastCheckAtRef.current = Date.now();
       if (!result.hasUpdate) return;
       const dismissed = await getDismissedInfo();
       if (dismissed && dismissed.version === result.remote.version) {
@@ -98,11 +89,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }
 
   useEffect(() => {
-    // 启动时查一次
-    runCheck();
-    // App 回到前台再查（避免启动时网络失败被错过）
+    // 启动时查一次（force 绕过任何缓存）
+    runCheck({ force: true });
+    // App 回到前台再查（用户离开期间可能有新版本发布）
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') runCheck();
+      if (state === 'active') runCheck({ force: true });
     });
     return () => sub.remove();
   }, []);
