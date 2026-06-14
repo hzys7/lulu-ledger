@@ -23,6 +23,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+        # 不要单独 cache gradle - 用 setup-java 自带的
 
       - name: Set up Node 22
         uses: actions/setup-node@v5
@@ -30,16 +31,25 @@ jobs:
           node-version: "22"
           cache: npm
 
+      - name: Cache Android SDK
+        id: cache-android
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/android-sdk
+            /tmp/android-sdk
+          key: android-sdk-v3-platforms-35-buildtools-35-ndk-27-cmake-3.22
+          restore-keys: |
+            android-sdk-v3-
+
       - name: Install Android cmdline-tools
+        if: steps.cache-android.outputs.cache-hit != 'true'
         run: |
           set -e
-          # GitHub-hosted ubuntu runners ship with ANDROID_SDK_ROOT pre-set to
-          # /usr/local/lib/android/sdk. That conflicts with our ANDROID_HOME later,
-          # so unset it up front to satisfy Gradle's "use only one SDK location" rule.
           unset ANDROID_SDK_ROOT
           sudo apt-get update -qq
           sudo apt-get install -y -qq unzip >/dev/null
-          export ANDROID_HOME="$RUNNER_TEMP/android-sdk"
+          export ANDROID_HOME="$HOME/android-sdk"
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           mkdir -p "$ANDROID_HOME/cmdline-tools"
@@ -52,6 +62,14 @@ jobs:
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
           sdkmanager --version
+
+      - name: Set up Android SDK env (cache hit path)
+        if: steps.cache-android.outputs.cache-hit == 'true'
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
 
       - name: Accept SDK licenses
         env:
@@ -69,8 +87,6 @@ jobs:
         run: |
           unset ANDROID_SDK_ROOT
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.1.12297006" "cmake;3.22.1"
-          echo "Installed packages:"
-          sdkmanager --list_installed
 
       - name: Install npm dependencies
         run: npm ci --no-audit --no-fund
@@ -162,6 +178,7 @@ jobs:
           ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename APK with version + date
+        working-directory: android/app/build/outputs/apk/release
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
@@ -194,6 +211,7 @@ jobs:
           ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename AAB with version + date
+        working-directory: android/app/build/outputs/bundle/release
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
