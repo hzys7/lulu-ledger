@@ -1,4 +1,4 @@
-﻿// 璐璐记账 · AI 配置弹窗
+// 璐璐记账 · AI 配置弹窗
 // 风格：仿截图样式（机器人图标 + 表单 + 底部三按钮）
 import React, { useState, useEffect } from 'react';
 import {
@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   Modal,
+  Pressable,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -109,14 +110,13 @@ export default function AiSettingsScreen({ visible, onClose }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={onClose} />
+      <Pressable style={styles.overlay} onPress={onClose}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.kbWrap}
-          pointerEvents="box-none"
         >
-          <View
+          <Pressable
+            onPress={() => {}}
             style={[
               styles.sheet,
               {
@@ -289,9 +289,9 @@ export default function AiSettingsScreen({ visible, onClose }) {
                 )}
               </TouchableOpacity>
             </View>
-          </View>
+          </Pressable>
         </KeyboardAvoidingView>
-      </View>
+      </Pressable>
 
       {/* 服务商选择弹窗 */}
       <Modal visible={showProviderPicker} transparent animationType="fade" onRequestClose={() => setShowProviderPicker(false)}>
