@@ -1,5 +1,5 @@
 // 璐璐记账 · 入口
-import React from 'react';
+import React, { useRef } from 'react';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import UpdatePrompt from './src/components/UpdatePrompt';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -78,7 +78,17 @@ function MainTabs() {
         tabBarItemStyle: { paddingTop: 2 },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: '首页' }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: '首页' }}
+        listeners={() => ({
+          tabPress: () => {
+            // 切到首页时检查更新（throttled 30 分钟）
+            try { updatePromptRef.current?.checkNow(); } catch {}
+          },
+        })}
+      />
       <Tab.Screen name="Statistics" component={StatisticsScreen} options={{ tabBarLabel: '统计' }} />
       <Tab.Screen
         name="AddTab"
@@ -164,6 +174,7 @@ function RootNavigator() {
 function ThemedApp() {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const updatePromptRef = useRef(null);
   const navTheme = settings.theme === 'dark'
     ? {
         ...DarkTheme,
@@ -191,7 +202,7 @@ function ThemedApp() {
     <NavigationContainer theme={navTheme}>
       <StatusBar style={settings.theme === 'dark' ? 'light' : 'dark'} backgroundColor={tc.background} />
       <RootNavigator />
-      <UpdatePrompt />
+      <UpdatePrompt ref={updatePromptRef} />
     </NavigationContainer>
   );
 }

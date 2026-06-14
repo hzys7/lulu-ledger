@@ -153,6 +153,10 @@ export default function SettingsScreen({ navigation }) {
     await updateAppSettings({ useProxy: !settings.useProxy });
   };
 
+  const handleToggleAutoCheck = async () => {
+    await updateAppSettings({ autoCheckUpdate: !settings.autoCheckUpdate });
+  };
+
   const handleAddRecurring = async () => {
     if (!recurringForm.category || !recurringForm.amount) {
       Alert.alert('提示', '请填写分类和金额');
@@ -357,6 +361,32 @@ export default function SettingsScreen({ navigation }) {
                 style={[
                   styles.toggleTrack,
                   { backgroundColor: settings.useProxy ? tc.primary : tc.surfaceMuted, justifyContent: settings.useProxy ? 'flex-end' : 'flex-start' },
+                ]}
+              >
+                <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+            onPress={handleToggleAutoCheck}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
+              <Ionicons name="sync" size={18} color={tc.text} />
+            </View>
+            <View style={styles.listContent}>
+              <Text style={[styles.listTitle, { color: tc.text }]}>自动检查更新</Text>
+              <Text style={[styles.listSub, { color: tc.textMuted }]}>
+                {settings.autoCheckUpdate ? '开启：进入首页时自动检查' : '关闭：需要手动检查'}
+              </Text>
+            </View>
+            <View style={styles.rightMeta}>
+              <View
+                style={[
+                  styles.toggleTrack,
+                  { backgroundColor: settings.autoCheckUpdate ? tc.primary : tc.surfaceMuted, justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start' },
                 ]}
               >
                 <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />

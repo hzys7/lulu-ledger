@@ -1,6 +1,6 @@
 // 璐璐记账 · 自动更新提示
 // App 启动时检查 GitHub Releases，发现新版本弹窗让用户点下载
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { AppState } from 'react-native';
 import {
   View,
@@ -28,8 +28,10 @@ function formatBytes(n) {
 }
 
 const DISMISSED_KEY = 'lulu_update_dismissed';
+// 距离上次检查 < 30 分钟就不再查，避免切 tab 时反复请求
+const CHECK_THROTTLE_MS = 30 * 60 * 1000;
 
-export default function UpdatePrompt() {
+const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
@@ -51,9 +53,22 @@ export default function UpdatePrompt() {
   const lastProgressAtRef = useRef(0);
   const currentSourceRef = useRef("");
 
-  async function runCheck() {
+  useImperativeHandle(ref, () => ({
+    checkNow: () => runCheck({ force: true }),
+  }), [settings?.autoCheckUpdate]);
+
+  async function runCheck({ force } = {}) {
+    // 设置里关了就不查
+    if (!force && settings?.autoCheckUpdate === false) return;
+    // 节流：30 分钟内不重复查
+    if (!force) {
+      const now = Date.now();
+      if (lastCheckAtRef.current && now - lastCheckAtRef.current < CHECK_THROTTLE_MS) return;
+      lastCheckAtRef.current = now;
+    }
     try {
       const result = await checkForUpdate();
+      lastCheckAtRef.current = Date.now();
       if (!result.hasUpdate) return;
       const dismissed = await getDismissedInfo();
       if (dismissed && dismissed.version === result.remote.version) {
@@ -446,7 +461,7 @@ export default function UpdatePrompt() {
       </View>
     </Modal>
   );
-}
+});
 
 const styles = StyleSheet.create({
   overlay: {
