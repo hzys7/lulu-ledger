@@ -1,6 +1,7 @@
 // 璐璐记账 · 自动更新提示
 // App 启动时检查 GitHub Releases，发现新版本弹窗让用户点下载
 import React, { useEffect, useState, useRef } from 'react';
+import { AppState } from 'react-native';
 import {
   View,
   Text,
@@ -34,26 +35,30 @@ export default function UpdatePrompt() {
   const [localFile, setLocalFile] = useState(null);
   const downloadTaskRef = useRef(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const result = await checkForUpdate();
-        if (cancelled || !result.hasUpdate) return;
-        // 检查是否被这个版本忽略过（7 天内不再弹）
-        const dismissed = await getDismissedInfo();
-        if (cancelled || (dismissed && dismissed.version === result.remote.version)) {
-          const ageMs = Date.now() - dismissed.at;
-          if (ageMs < 7 * 24 * 3600 * 1000) return;
-        }
-        setUpdateInfo(result);
-        setVisible(true);
-      } catch (e) {
-        // 静默失败，不打扰用户
-        console.warn('[UpdatePrompt] check failed:', e?.message || e);
+  async function runCheck() {
+    try {
+      const result = await checkForUpdate();
+      if (!result.hasUpdate) return;
+      const dismissed = await getDismissedInfo();
+      if (dismissed && dismissed.version === result.remote.version) {
+        const ageMs = Date.now() - dismissed.at;
+        if (ageMs < 7 * 24 * 3600 * 1000) return;
       }
-    })();
-    return () => { cancelled = true; };
+      setUpdateInfo(result);
+      setVisible(true);
+    } catch (e) {
+      console.warn('[UpdatePrompt] check failed:', e?.message || e);
+    }
+  }
+
+  useEffect(() => {
+    // 启动时查一次
+    runCheck();
+    // App 回到前台再查（避免启动时网络失败被错过）
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') runCheck();
+    });
+    return () => sub.remove();
   }, []);
 
   async function getDismissedInfo() {
