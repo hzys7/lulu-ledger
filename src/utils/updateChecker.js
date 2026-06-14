@@ -65,6 +65,7 @@ export async function fetchLatestRelease() {
       name: data.name || data.tag_name,
       body: data.body || '',         // release notes
       publishedAt: data.published_at,
+      html_url: data.html_url,
       assets: (data.assets || []).map(a => ({
         name: a.name,
         url: a.browser_download_url,

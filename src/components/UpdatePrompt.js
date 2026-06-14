@@ -20,6 +20,13 @@ import { useFinance } from '../context/FinanceContext';
 import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../theme';
 import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
 
+function formatBytes(n) {
+  if (!n || n <= 0) return '0 B';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(2) + ' MB';
+}
+
 const DISMISSED_KEY = 'lulu_update_dismissed';
 
 export default function UpdatePrompt() {
@@ -31,6 +38,10 @@ export default function UpdatePrompt() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | downloading | done | error
   const [progress, setProgress] = useState(0);
+  const [speed, setSpeed] = useState(0);
+  const [received, setReceived] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [startTime, setStartTime] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [localFile, setLocalFile] = useState(null);
   const downloadTaskRef = useRef(null);
@@ -98,12 +109,23 @@ export default function UpdatePrompt() {
       idempotent: true,
       signal,
       onProgress: ({ bytesWritten, totalBytes }) => {
+        setReceived(bytesWritten);
         if (totalBytes > 0) {
+          setTotal(totalBytes);
           setProgress(Math.round((bytesWritten / totalBytes) * 100));
         } else {
-          // 服务器没给 Content-Length，用 receivedBytes 推算（不显示百分比）
           setProgress(-1);
         }
+        const now = Date.now();
+        setStartTime((prev) => {
+          if (prev === 0) return now;
+          const elapsed = (now - prev) / 1000;
+          if (elapsed >= 0.5) {
+            setSpeed(Math.round(bytesWritten / 1024 / elapsed));
+            return now;
+          }
+          return prev;
+        });
       },
     });
     downloadTaskRef.current = task;
@@ -123,6 +145,10 @@ export default function UpdatePrompt() {
     }
     setStatus("downloading");
     setProgress(0);
+    setSpeed(0);
+    setReceived(0);
+    setTotal(0);
+    setStartTime(0);
     setErrorMsg("");
     const ac = new AbortController();
     abortRef.current = ac;
@@ -238,26 +264,58 @@ export default function UpdatePrompt() {
           <Text style={[styles.meta, { color: tc.textMuted }]}>约 {fileSizeMB} MB</Text>
 
           {updateInfo.remote?.body ? (
+            <>
             <View style={[styles.notesBox, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
               <Text style={[styles.notesTitle, { color: tc.text }]}>更新内容</Text>
               <Text style={[styles.notesBody, { color: tc.textSecondary }]} numberOfLines={6}>
                 {updateInfo.remote.body}
               </Text>
             </View>
-          ) : null}
+            <TouchableOpacity
+              style={styles.githubLink}
+              onPress={() => Linking.openURL(updateInfo?.remote?.html_url || "https://github.com/hzys7/lulu-ledger/releases")}
+              activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name="open-outline" size={13} color={tc.primary} />
+              <Text style={[styles.githubLinkText, { color: tc.primary }]}>
+                打不开？去 GitHub 手动下载
+              </Text>
+            </TouchableOpacity>
+
+            </>          ) : null}
 
           {status === 'downloading' ? (
             <View style={styles.progressBlock}>
               <View style={[styles.progressBg, { backgroundColor: tc.surfaceMuted }]}>
-                <View style={[styles.progressFill, { backgroundColor: tc.primary, width: `${progress}%` }]} />
+                <View style={[styles.progressFill, { backgroundColor: tc.primary, width: progress >= 0 ? `${progress}%` : '30%' }]} />
               </View>
-              <Text style={[styles.progressText, { color: tc.textMuted }]}>{progress}%</Text>
+              <View style={styles.progressInfoRow}>
+                <Text style={[styles.progressText, { color: tc.textMuted }]}>
+                  {progress >= 0 ? `${progress}%` : '下载中…'}
+                </Text>
+                <Text style={[styles.progressMeta, { color: tc.textMuted }]}>
+                  {formatBytes(received)}{total > 0 ? ` / ${formatBytes(total)}` : ''}{speed > 0 ? ` · ${speed} KB/s` : ''}
+                </Text>
+              </View>
             </View>
           ) : null}
 
           {status === 'error' ? (
+            <>
             <Text style={[styles.errorText, { color: tc.danger }]}>{errorMsg}</Text>
-          ) : null}
+            <TouchableOpacity
+              style={[styles.githubLink, styles.githubLinkProminent]}
+              onPress={() => Linking.openURL(updateInfo?.remote?.html_url || "https://github.com/hzys7/lulu-ledger/releases")}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="open-outline" size={14} color={tc.primary} />
+              <Text style={[styles.githubLinkText, { color: tc.primary, fontWeight: fontWeight.semibold }]}>
+                打开 GitHub 页面手动下载
+              </Text>
+            </TouchableOpacity>
+
+            </>          ) : null}
 
           {status === 'done' ? (
             <Text style={[styles.doneText, { color: tc.success }]}>下载完成，正在唤起安装...</Text>
@@ -411,6 +469,26 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.xs,
   },
+  progressInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  progressMeta: { fontSize: fontSize.xs, fontVariant: ["tabular-nums"] },
+  githubLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    marginTop: spacing.xs,
+  },
+  githubLinkProminent: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignSelf: "center",
+  },
+  githubLinkText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: 0.1 },
   btn: {
     flex: 1,
     height: 44,
