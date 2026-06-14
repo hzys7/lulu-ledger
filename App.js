@@ -1,6 +1,7 @@
 // 璐璐记账 · 入口
 import React from 'react';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import UpdatePrompt from './src/components/UpdatePrompt';
 import { Platform, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
@@ -175,6 +176,7 @@ function ThemedApp() {
     <NavigationContainer theme={navTheme}>
       <StatusBar style={settings.theme === 'dark' ? 'light' : 'dark'} backgroundColor={tc.background} />
       <RootNavigator />
+      <UpdatePrompt />
     </NavigationContainer>
   );
 }

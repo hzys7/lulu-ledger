@@ -187,6 +187,7 @@ jobs:
           DATE=$(date +%Y%m%d)
           cd "${{ github.workspace }}/android/app/build/outputs/apk/release"
           mv app-release.apk "lulu-ledger-${PKG_VERSION}-${DATE}-arm64.apk"
+          echo "PKG_VERSION=${PKG_VERSION}" >> $GITHUB_ENV
           ls -la
 
       - name: Upload APK artifact
@@ -196,3 +197,21 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 90
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.PKG_VERSION }}
+          name: 璐璐记账 v${{ env.PKG_VERSION }}
+          body: |
+            最新 APK 自动构建。
+
+            **版本**: v${{ env.PKG_VERSION }}
+            **Commit**: ${{ github.sha }}
+          files: android/app/build/outputs/apk/release/*.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
