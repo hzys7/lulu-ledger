@@ -34,6 +34,7 @@ export default function UpdatePrompt() {
   const [errorMsg, setErrorMsg] = useState('');
   const [localFile, setLocalFile] = useState(null);
   const downloadTaskRef = useRef(null);
+  const abortRef = useRef(null);
 
   async function runCheck() {
     try {
@@ -77,53 +78,92 @@ export default function UpdatePrompt() {
     } catch {}
   }
 
+  // 依次尝试镜像、GitHub 源。任意一个成功即停止。
+  function pickDownloadUrl() {
+    const mirrors = updateInfo?.apk?.mirrors || [];
+    if (mirrors.length > 0) return mirrors[0];
+    return updateInfo.apk.url;
+  }
+
+  function buildCandidateUrls() {
+    const list = [];
+    const mirrors = updateInfo?.apk?.mirrors || [];
+    for (const m of mirrors) list.push(m);
+    if (updateInfo?.apk?.url) list.push(updateInfo.apk.url);
+    return list;
+  }
+
+  async function tryDownloadOne(url, dest, signal) {
+    const task = File.createDownloadTask(url, dest, {
+      idempotent: true,
+      signal,
+      onProgress: ({ bytesWritten, totalBytes }) => {
+        if (totalBytes > 0) {
+          setProgress(Math.round((bytesWritten / totalBytes) * 100));
+        } else {
+          // 服务器没给 Content-Length，用 receivedBytes 推算（不显示百分比）
+          setProgress(-1);
+        }
+      },
+    });
+    downloadTaskRef.current = task;
+    const file = await task.downloadAsync();
+    downloadTaskRef.current = null;
+    if (!file) throw new Error("下载被取消");
+    return file;
+  }
+
   async function handleDownload() {
     if (!updateInfo?.apk) {
-      Alert.alert('下载链接缺失', '请前往 GitHub 仓库手动下载。', [
-        { text: '取消', style: 'cancel' },
-        { text: '打开', onPress: () => Linking.openURL('https://github.com/hzys7/lulu-ledger/releases') },
+      Alert.alert("下载链接缺失", "请前往 GitHub 仓库手动下载。", [
+        { text: "取消", style: "cancel" },
+        { text: "打开", onPress: () => Linking.openURL("https://github.com/hzys7/lulu-ledger/releases") },
       ]);
       return;
     }
-    setStatus('downloading');
+    setStatus("downloading");
     setProgress(0);
-    setErrorMsg('');
+    setErrorMsg("");
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const apkName = `update-${updateInfo.apk.name}`;
+    const dest = new File(Paths.cache, apkName);
+    const candidates = buildCandidateUrls();
+    let lastErr = null;
     try {
-      const apkName = `update-${updateInfo.apk.name}`;
-      const dest = new File(Paths.cache, apkName);
-      // 用 fetch 下载 + 跟踪进度（不依赖 expo-file-system 不稳定的新 API）
-      const res = await fetch(updateInfo.apk.url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const total = parseInt(res.headers.get('content-length') || '0', 10);
-      // 读取 Response body 流，跟踪进度
-      const reader = res.body?.getReader();
-      const chunks = [];
-      let received = 0;
-      if (reader && total) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          received += value.length || 0;
-          setProgress(Math.round((received / total) * 100));
+      for (let i = 0; i < candidates.length; i++) {
+        const url = candidates[i];
+        if (candidates.length > 1) {
+          setErrorMsg(`正在尝试第 ${i + 1} / ${candidates.length} 个下载源…`);
         }
-      } else {
-        // 降级：直接拿 blob
-        const blob = await res.blob();
-        chunks.push(blob);
-        setProgress(50);
+        try {
+          const file = await tryDownloadOne(url, dest, ac.signal);
+          setLocalFile(file);
+          setStatus("done");
+          setErrorMsg("");
+          setTimeout(() => handleInstall(file.uri || file.path), 300);
+          abortRef.current = null;
+          return;
+        } catch (e) {
+          if (e?.name === "AbortError") {
+            setStatus("idle");
+            setErrorMsg("");
+            setProgress(0);
+            abortRef.current = null;
+            return;
+          }
+          lastErr = e;
+          console.warn(`[UpdatePrompt] source ${i + 1} failed:`, e?.message || e);
+          // 清理可能写了一半的半成品文件
+          try { await dest.delete(); } catch {}
+        }
       }
-      // 写文件
-      const combined = new Blob(chunks);
-      await dest.write(combined);
-      setLocalFile(dest);
-      setStatus('done');
-      // 自动唤起安装
-      setTimeout(() => handleInstall(dest.uri || dest.path), 300);
+      throw lastErr || new Error("所有下载源均失败");
     } catch (e) {
-      console.warn('[UpdatePrompt] download failed:', e?.message || e);
-      setErrorMsg(e?.message || '下载失败');
-      setStatus('error');
+      console.warn("[UpdatePrompt] download failed:", e?.message || e);
+      setErrorMsg((candidates.length > 1 ? "所有下载源均失败：" : "") + (e?.message || "下载失败"));
+      setStatus("error");
+      abortRef.current = null;
     }
   }
 
@@ -253,6 +293,7 @@ export default function UpdatePrompt() {
               <TouchableOpacity
                 style={[styles.btn, styles.btnSecondary, { borderColor: tc.border, flex: 1 }]}
                 onPress={() => {
+                  try { abortRef.current?.abort?.(); } catch {}
                   try { downloadTaskRef.current?.cancel?.(); } catch {}
                   setStatus('idle');
                 }}

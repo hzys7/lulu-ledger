@@ -6,6 +6,18 @@ const GITHUB_REPO = 'hzys7/lulu-ledger';
 // 走 https://api.github.com 不需要 token，限流 60 次/小时（你的 app 一小时不会启动 60 次）
 const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
+// 国内下载镜像：按顺序尝试，任意一个成功就停
+// 国内下载镜像（已实测可达的只有 gh-proxy.com）
+// 顺序很重要：先试速度更快的镜像，失败再回退 GitHub 原地址
+const MIRRORS = [
+  'https://gh-proxy.com/',
+];
+
+function withMirror(githubUrl) {
+  if (!githubUrl) return [];
+  return MIRRORS.map((m) => m + githubUrl.replace(/^https?\:/, 'https:'));
+}
+
 // 把 "1.0.5" 转成 [1, 0, 5]，方便对比
 function parseVersion(v) {
   if (!v) return [0];
@@ -72,7 +84,10 @@ export async function checkForUpdate() {
   const remote = await fetchLatestRelease();
   if (!remote) return { hasUpdate: false, local, remote: null, apk: null };
   const cmp = compareVersion(remote.version, local);
-  const apk = remote.assets.find(a => a.name.endsWith('.apk')) || null;
+  const rawApk = remote.assets.find(a => a.name.endsWith('.apk')) || null;
+  const apk = rawApk
+    ? { ...rawApk, mirrors: withMirror(rawApk.url) }
+    : null;
   return {
     hasUpdate: cmp > 0,
     isUpToDate: cmp === 0,
