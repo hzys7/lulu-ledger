@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useFinance } from '../context/FinanceContext';
 import { Button } from '../components/SharedComponents';
+import AiSettingsScreen from './AiSettingsScreen';
 import { formatMoney, getCurrencyList } from '../utils/currency';
 import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile } from '../utils/export';
 import { exportAllData, importData } from '../utils/storage';
@@ -60,6 +61,7 @@ export default function SettingsScreen({ navigation }) {
   const [newBookIcon, setNewBookIcon] = useState('wallet');
   const [newBookColor, setNewBookColor] = useState('#7C5CFF');
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [recurringForm, setRecurringForm] = useState({
@@ -392,6 +394,17 @@ export default function SettingsScreen({ navigation }) {
           />
         </Section>
 
+        <Section title="AI 智能">
+          <ActionRow
+            icon="sparkles"
+            iconColor={tc.accent}
+            iconBg={hexAlpha(tc.accent, 0.12)}
+            label="AI 配置"
+            onPress={() => setShowAiModal(true)}
+            rightIcon="chevron-forward"
+          />
+        </Section>
+
         <Section title="数据统计">
           <View style={styles.statRow}>
             <View style={[styles.statCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
@@ -575,6 +588,8 @@ export default function SettingsScreen({ navigation }) {
                 />
               </View>
             </ScrollView>
+
+      <AiSettingsScreen visible={showAiModal} onClose={() => setShowAiModal(false)} />
             <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
               onPress={handleImport}
