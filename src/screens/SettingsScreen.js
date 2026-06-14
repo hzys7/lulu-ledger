@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useFinance } from '../context/FinanceContext';
-import { triggerUpdateCheck } from '../components/UpdatePrompt';
+import { triggerUpdateCheck, getLastUpdateCheck } from '../components/UpdatePrompt';
 import { Button } from '../components/SharedComponents';
 import AiSettingsScreen from './AiSettingsScreen';
 import { formatMoney, getCurrencyList } from '../utils/currency';
