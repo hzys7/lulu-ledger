@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -88,7 +89,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
       return;
     }
     setSaving(true);
-    const finalConfig = { ...config, enabled: true };
+    const finalConfig = { ...config };
     await saveAiConfig(finalConfig);
     setSaving(false);
     onClose?.(finalConfig);
@@ -142,6 +143,20 @@ export default function AiSettingsScreen({ visible, onClose }) {
               <Text style={[styles.intro, { color: tc.textMuted }]}>
                 配置完成后，可以在记账时用自然语言输入（如「昨天打车 35」），AI 会自动解析成账目。API Key 仅保存在你的设备本地。
               </Text>
+
+              {/* 启用开关 */}
+              <View style={[styles.toggleRow, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.toggleTitle, { color: tc.text }]}>启用 AI 功能</Text>
+                  <Text style={[styles.toggleHint, { color: tc.textMuted }]}>关闭后首页不会显示 AI 入口</Text>
+                </View>
+                <Switch
+                  value={!!config.enabled}
+                  onValueChange={(v) => updateField('enabled', v)}
+                  trackColor={{ false: tc.border, true: tc.primary }}
+                  thumbColor={'#FFFFFF'}
+                />
+              </View>
 
               {/* 服务商 */}
               <Text style={[styles.label, { color: tc.textMuted }]}>服务商</Text>
@@ -421,6 +436,19 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   testResultText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, flex: 1 },
+
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: spacing.base,
+    gap: spacing.sm,
+  },
+  toggleTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: 2 },
+  toggleHint: { fontSize: fontSize.xs, lineHeight: 16 },
 
   // 底部
   footer: {

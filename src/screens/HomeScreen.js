@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { TransactionItem, EmptyState } from '../components/SharedComponents';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
+import { loadAiConfig } from '../utils/aiConfig';
+import AiChatScreen from './AiChatScreen';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 
 function hexAlpha(hex, a) {
@@ -75,6 +77,21 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
   }, []);
+
+  // AI 配置状态：仅在 enabled 时显示卡片
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [showAiChat, setShowAiChat] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const refresh = async () => {
+      const cfg = await loadAiConfig();
+      if (alive) setAiEnabled(!!(cfg.enabled && cfg.apiKey));
+    };
+    refresh();
+    // 监听设置页保存后回来刷新
+    const unsub = navigation.addListener('focus', refresh);
+    return () => { alive = false; unsub(); };
+  }, [navigation]);
 
   const onChangeSearch = useCallback((text) => {
     setInputValue(text);
@@ -224,6 +241,34 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       </View>
+
+      {/* AI 智能记账卡片（仅启用时显示） */}
+      {aiEnabled ? (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowAiChat(true)}
+          style={styles.aiCardWrap}
+        >
+          <View
+            style={[
+              styles.aiCard,
+              { backgroundColor: tc.surface, borderColor: tc.border },
+            ]}
+          >
+            <View style={styles.aiCardLeft}>
+              <Text style={styles.aiCardEmoji}>✨</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.aiCardTitle, { color: tc.text }]}>试试一句话记账</Text>
+                <Text style={[styles.aiCardHint, { color: tc.textMuted }]}>昨天打车 35 · 今天吃火锅 120</Text>
+              </View>
+            </View>
+            <View style={[styles.aiCardBtn, { backgroundColor: tc.primary }]}>
+              <Ionicons name="sparkles" size={18} color={tc.primaryOn} />
+              <Text style={[styles.aiCardBtnText, { color: tc.primaryOn }]}>智能记账</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      ) : null}
 
 <SectionHeader title={searchQuery ? '搜索结果' : '全部记录'} subtitle={searchQuery ? `匹配到 ${displayTransactions.length} 笔` : `共 ${displayTransactions.length} 笔`} />
     </View>
@@ -379,6 +424,12 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
       />
 
+      <AiChatScreen
+        visible={showAiChat}
+        onClose={() => setShowAiChat(false)}
+        onSaved={() => { setShowAiChat(false); reload(); }}
+      />
+
     </View>
   );
 }
@@ -406,6 +457,30 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
 
   headerSection: { paddingHorizontal: spacing.base, paddingTop: spacing.md },
+
+  // AI 卡片
+  aiCardWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.xs, paddingBottom: spacing.sm },
+  aiCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.md,
+  },
+  aiCardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  aiCardEmoji: { fontSize: 32 },
+  aiCardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: 2, letterSpacing: -0.2 },
+  aiCardHint: { fontSize: fontSize.xs, lineHeight: 16 },
+  aiCardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: borderRadius.full,
+    gap: 4,
+  },
+  aiCardBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   balanceCard: {
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.lg,
