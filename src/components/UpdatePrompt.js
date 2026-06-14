@@ -44,6 +44,8 @@ export default function UpdatePrompt() {
   const [startTime, setStartTime] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [localFile, setLocalFile] = useState(null);
+  const [installError, setInstallError] = useState('');
+  const [showInstallError, setShowInstallError] = useState(false);
   const downloadTaskRef = useRef(null);
   const abortRef = useRef(null);
   const lastProgressAtRef = useRef(0);
@@ -101,8 +103,14 @@ export default function UpdatePrompt() {
   function buildCandidateUrls() {
     const list = [];
     const mirrors = updateInfo?.apk?.mirrors || [];
-    for (const m of mirrors) list.push(m);
-    if (updateInfo?.apk?.url) list.push(updateInfo.apk.url);
+    const direct = updateInfo?.apk?.url;
+    if (settings?.useProxy) {
+      if (direct) list.push(direct);
+      for (const m of mirrors) list.push(m);
+    } else {
+      for (const m of mirrors) list.push(m);
+      if (direct) list.push(direct);
+    }
     return list;
   }
 
@@ -160,6 +168,8 @@ export default function UpdatePrompt() {
     }
     setStatus("downloading");
     setProgress(0);
+    setInstallError("");
+    setShowInstallError(false);
     setSpeed(0);
     setReceived(0);
     setTotal(0);
@@ -219,36 +229,36 @@ export default function UpdatePrompt() {
     }
   }
 
-  async function handleInstall(uri) {
+    async function handleInstall(uri) {
     if (!uri) return;
-    // Android 上用 Intent 唤起安装器
-    // file:// 在 Android 10+ 会被 FileProvider 拦截，这里走 content://
-    // expo-intent-launcher 是最稳的；用 Linking 兜底
     try {
-      // 优先尝试用 expo-intent-launcher（如果装了）
+      let IntentLauncher;
       try {
-        // 动态模块名绕开 Metro 静态分析（包可能没装）
-        const modName = 'expo' + '-intent-launcher';
-        const IntentLauncher = require(modName);
-        // 获取应用包名和 authority
-        const cnf = IntentLauncher;
-        if (cnf?.startActivityAsync) {
-          await cnf.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
-            data: uri,
-            flags: 1, // grant read URI permission
-            type: 'application/vnd.android.package-archive',
-          });
-          return;
-        }
-      } catch {}
-      // 兜底：用 Linking
+        IntentLauncher = require('expo-intent-launcher');
+      } catch (e) {
+        IntentLauncher = null;
+      }
+      if (IntentLauncher?.startActivityAsync) {
+        await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
+          data: uri,
+          type: 'application/vnd.android.package-archive',
+          flags: 1,
+        });
+        return;
+      }
       await Linking.openURL(uri);
     } catch (e) {
-      Alert.alert(
-        '无法自动安装',
-        '请到文件管理找到下载的 APK 文件手动安装。\n\n' + (e?.message || ''),
-      );
+      setInstallError(e?.message || String(e));
+      setShowInstallError(true);
     }
+  }
+
+  function openFileManager() {
+    if (!localFile) return;
+    const path = localFile.uri || localFile.path;
+    Linking.openURL('file://' + path).catch(() => {
+      Alert.alert('提示', '请用文件管理器打开：' + path);
+    });
   }
 
   function handleLater() {
@@ -344,7 +354,43 @@ export default function UpdatePrompt() {
             </>          ) : null}
 
           {status === 'done' ? (
-            <Text style={[styles.doneText, { color: tc.success }]}>下载完成，正在唤起安装...</Text>
+            <View style={styles.doneBlock}>
+              <Text style={[styles.doneText, { color: tc.success }]}>下载完成，正在唤起安装...</Text>
+              {(installError || showInstallError) ? (
+                <View style={[styles.installErrorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
+                  <Ionicons name="alert-circle" size={14} color={tc.danger} />
+                  <Text style={[styles.installErrorText, { color: tc.danger }]}>
+                    未能自动安装：{installError || '未知错误'}
+                  </Text>
+                </View>
+              ) : null}
+              {localFile ? (
+                <View style={styles.pathBlock}>
+                  <Text style={[styles.pathLabel, { color: tc.textMuted }]}>APK 已下载到：</Text>
+                  <Text style={[styles.pathValue, { color: tc.text }]} selectable numberOfLines={2}>
+                    {localFile.uri || localFile.path}
+                  </Text>
+                  <View style={styles.pathActions}>
+                    <TouchableOpacity
+                      style={[styles.pathBtn, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+                      onPress={openFileManager}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="folder-open-outline" size={14} color={tc.text} />
+                      <Text style={[styles.pathBtnText, { color: tc.text }]}>打开文件位置</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.pathBtn, { backgroundColor: tc.primary }]}
+                      onPress={() => handleInstall(localFile.uri || localFile.path)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="download" size={14} color={tc.primaryOn} />
+                      <Text style={[styles.pathBtnText, { color: tc.primaryOn }]}>再次安装</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+            </View>
           ) : null}
 
           <View style={styles.btnRow}>
@@ -484,6 +530,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.base,
   },
+  doneBlock: { marginBottom: spacing.base },
+  installErrorBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: spacing.sm,
+    gap: 4,
+  },
+  installErrorText: { fontSize: fontSize.xs, flex: 1, lineHeight: 17 },
+  pathBlock: {
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
+  pathLabel: { fontSize: fontSize.xs, marginBottom: 2 },
+  pathValue: {
+    fontSize: fontSize.xs,
+    fontFamily: Platform.OS === "android" ? "monospace" : "Menlo",
+    backgroundColor: "rgba(0,0,0,0.04)",
+    padding: 6,
+    borderRadius: 4,
+    marginBottom: spacing.sm,
+  },
+  pathActions: { flexDirection: "row", gap: 6 },
+  pathBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: borderRadius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 4,
+  },
+  pathBtnText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
   doneText: {
     fontSize: fontSize.sm,
     textAlign: 'center',

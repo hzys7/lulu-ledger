@@ -149,6 +149,9 @@ export default function SettingsScreen({ navigation }) {
   const handleToggleTheme = async () => {
     await updateAppSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' });
   };
+  const handleToggleProxy = async () => {
+    await updateAppSettings({ useProxy: !settings.useProxy });
+  };
 
   const handleAddRecurring = async () => {
     if (!recurringForm.category || !recurringForm.amount) {
@@ -334,6 +337,33 @@ export default function SettingsScreen({ navigation }) {
           </TouchableOpacity>
         </Section>
 
+        <Section title="网络与更新">
+          <TouchableOpacity
+            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+            onPress={handleToggleProxy}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
+              <Ionicons name="globe" size={18} color={tc.text} />
+            </View>
+            <View style={styles.listContent}>
+              <Text style={[styles.listTitle, { color: tc.text }]}>使用代理下载更新</Text>
+              <Text style={[styles.listSub, { color: tc.textMuted }]}>
+                {settings.useProxy ? '开启：直连 GitHub（需翻墙）' : '关闭：用国内镜像（更稳）'}
+              </Text>
+            </View>
+            <View style={styles.rightMeta}>
+              <View
+                style={[
+                  styles.toggleTrack,
+                  { backgroundColor: settings.useProxy ? tc.primary : tc.surfaceMuted, justifyContent: settings.useProxy ? 'flex-end' : 'flex-start' },
+                ]}
+              >
+                <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Section>
         <Section title="周期性交易" rightAction={
           <TouchableOpacity onPress={() => setShowRecurringModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="add" size={22} color={tc.text} />

@@ -87,6 +87,8 @@ const DEFAULT_SETTINGS = {
   firstDayOfWeek: 1,
   theme: 'light',
   notifications: true,
+  // 用户开了代理时直连 GitHub 更快；关闭时优先用国内镜像
+  useProxy: false,
 };
 const FinanceContext = createContext();
 
