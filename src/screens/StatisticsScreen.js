@@ -26,7 +26,7 @@ import PieRing from '../components/PieRing';
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function StatisticsScreen() {
+export default function StatisticsScreen({ navigation }) {
   const { transactions, settings, getMonthSummary } = useFinance();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
@@ -202,20 +202,25 @@ export default function StatisticsScreen() {
 
         {hasData ? (
           <>
-            {/* AI 月度小结占位卡 */}
-            <View style={[styles.aiCard, { backgroundColor: tc.accentSubtle, borderColor: tc.accent }]}>
+            {/* AI 月度复盘入口 */}
+            <TouchableOpacity
+              style={[styles.aiCard, { backgroundColor: tc.accentSubtle, borderColor: tc.accent }]}
+              onPress={() => navigation?.navigate('AiMonthlyReport', { year: selectedYear, month: selectedMonth })}
+              activeOpacity={0.7}
+            >
               <View style={styles.aiIconWrap}>
                 <Ionicons name="sparkles" size={18} color={tc.accent} />
               </View>
               <View style={styles.aiTextWrap}>
                 <Text style={[styles.aiTitle, { color: tc.text }]}>
-                  {selectedMonth + 1}月度小结
+                  ✨ {selectedMonth + 1}月 AI 月度复盘
                 </Text>
                 <Text style={[styles.aiSubtitle, { color: tc.textMuted }]}>
-                  {'该月以实际记录为准，设计清爱不走进贪吃'}
+                  {"AI 读取本月账目，生成中文复盘报告"}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={18} color={tc.accent} />
+            </TouchableOpacity>
 
             {/* 4 格汇总数字 */}
             <View style={styles.summaryGrid}>

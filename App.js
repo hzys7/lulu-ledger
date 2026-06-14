@@ -16,6 +16,7 @@ import AddTransactionScreen from './src/screens/AddTransactionScreen';
 import StatisticsScreen from './src/screens/StatisticsScreen';
 import NetWorthScreen from './src/screens/NetWorthScreen';
 import BudgetScreen from './src/screens/BudgetScreen';
+import AiMonthlyReportScreen from './src/screens/AiMonthlyReportScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { getThemeColors, fontSize, fontWeight, spacing } from './src/theme';
 
@@ -134,6 +135,20 @@ function RootNavigator() {
         options={{
           headerShown: true,
           headerTitle: '记一笔',
+          headerTitleStyle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: tc.text, letterSpacing: -0.3 },
+          headerStyle: { backgroundColor: tc.background, elevation: 0, shadowOpacity: 0 },
+          headerTintColor: tc.text,
+          headerShadowVisible: false,
+          headerBackTitle: '',
+          headerBackTitleVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="AiMonthlyReport"
+        component={AiMonthlyReportScreen}
+        options={{
+          headerShown: true,
+          headerTitle: 'AI 月度复盘',
           headerTitleStyle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: tc.text, letterSpacing: -0.3 },
           headerStyle: { backgroundColor: tc.background, elevation: 0, shadowOpacity: 0 },
           headerTintColor: tc.text,
