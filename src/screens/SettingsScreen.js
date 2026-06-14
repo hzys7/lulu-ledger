@@ -576,7 +576,7 @@ export default function SettingsScreen({ navigation }) {
               </View>
             </ScrollView>
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm }]}
+              style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
               onPress={handleImport}
               activeOpacity={0.85}
             >
@@ -698,7 +698,7 @@ export default function SettingsScreen({ navigation }) {
             </View>
 
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm }]}
+              style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
               onPress={handleAddRecurring}
               activeOpacity={0.85}
             >
