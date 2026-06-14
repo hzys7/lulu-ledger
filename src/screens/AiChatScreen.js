@@ -13,6 +13,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
   Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,6 +44,17 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [aiEnabled, setAiEnabled] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [keyboardH, setKeyboardH] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
+      setKeyboardH(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
+      setKeyboardH(0);
+    });
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -106,7 +118,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
       <View style={[styles.container, { backgroundColor: tc.background }]}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           {/* 顶栏 */}
           <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm, borderBottomColor: tc.divider, backgroundColor: tc.background }]}>
@@ -226,7 +238,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
           )}
 
           {/* 底部按钮 */}
-          <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.sm), backgroundColor: tc.surface, borderTopColor: tc.divider }]}>
+          <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.sm), backgroundColor: tc.surface, borderTopColor: tc.divider, bottom: keyboardH }]}>
             {aiEnabled && hasApiKey && !parsed ? (
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: text.trim() ? tc.primary : tc.surfaceMuted, opacity: text.trim() ? 1 : 0.5 }]}
@@ -309,7 +321,7 @@ const styles = StyleSheet.create({
   emptyBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold },
 
   // 输入
-  inputContent: { padding: spacing.lg, paddingTop: spacing.xl },
+  inputContent: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: 96 },
   heroTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, lineHeight: 36, marginBottom: spacing.sm },
   heroHint: { fontSize: fontSize.md, lineHeight: 22, marginBottom: spacing.xl },
   inputBox: {
@@ -347,7 +359,7 @@ const styles = StyleSheet.create({
   errorText: { fontSize: fontSize.sm, flex: 1, lineHeight: 19 },
 
   // 预览
-  previewContent: { padding: spacing.lg, paddingTop: spacing.xl },
+  previewContent: { padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: 96 },
   previewCard: {
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
@@ -379,6 +391,10 @@ const styles = StyleSheet.create({
 
   // 底部
   bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: spacing.base,
     paddingTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,

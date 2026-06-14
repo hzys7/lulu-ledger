@@ -19,7 +19,7 @@ import { useFinance } from '../context/FinanceContext';
 import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../theme';
 import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
 
-const DISMISSED_KEY = 'lulu_update_dismissed_version';
+const DISMISSED_KEY = 'lulu_update_dismissed';
 
 export default function UpdatePrompt() {
   const { settings } = useFinance();
@@ -40,9 +40,12 @@ export default function UpdatePrompt() {
       try {
         const result = await checkForUpdate();
         if (cancelled || !result.hasUpdate) return;
-        // 检查是否被这个版本忽略过
-        const dismissed = await getDismissedVersion();
-        if (cancelled || dismissed === result.remote.version) return;
+        // 检查是否被这个版本忽略过（7 天内不再弹）
+        const dismissed = await getDismissedInfo();
+        if (cancelled || (dismissed && dismissed.version === result.remote.version)) {
+          const ageMs = Date.now() - dismissed.at;
+          if (ageMs < 7 * 24 * 3600 * 1000) return;
+        }
         setUpdateInfo(result);
         setVisible(true);
       } catch (e) {
@@ -53,17 +56,19 @@ export default function UpdatePrompt() {
     return () => { cancelled = true; };
   }, []);
 
-  async function getDismissedVersion() {
+  async function getDismissedInfo() {
     try {
       const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
-      return await AsyncStorage.getItem(DISMISSED_KEY);
+      const raw = await AsyncStorage.getItem(DISMISSED_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
     } catch { return null; }
   }
 
-  async function setDismissedVersion(v) {
+  async function setDismissedInfo(v) {
     try {
       const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
-      await AsyncStorage.setItem(DISMISSED_KEY, v);
+      await AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify({ version: v, at: Date.now() }));
     } catch {}
   }
 
@@ -140,7 +145,7 @@ export default function UpdatePrompt() {
 
   async function handleSkip() {
     if (updateInfo?.remote?.version) {
-      await setDismissedVersion(updateInfo.remote.version);
+      await setDismissedInfo(updateInfo.remote.version);
     }
     setVisible(false);
   }
