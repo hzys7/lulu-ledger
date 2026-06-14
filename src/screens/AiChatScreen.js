@@ -40,7 +40,8 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
 
   const [text, setText] = useState('');
   const [parsing, setParsing] = useState(false);
-  const [parsed, setParsed] = useState(null); // { amount, type, category, date, note }
+  const [parsed, setParsed] = useState(null); // 单笔：{ amount, type, category, date, note }
+  const [parsedList, setParsedList] = useState(null); // 多笔：[{ ... }, { ... }]
   const [error, setError] = useState('');
   const [aiEnabled, setAiEnabled] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -60,6 +61,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
     if (visible) {
       setText('');
       setParsed(null);
+      setParsedList(null);
       setError('');
       setParsing(false);
       // 检查 AI 是否启用
@@ -79,16 +81,37 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
     setParsing(true);
     setError('');
     setParsed(null);
+    setParsedList(null);
     const res = await parseTransactionFromText(trimmed);
     setParsing(false);
     if (!res.ok) {
       setError(res.error);
       return;
     }
-    setParsed(res.data);
+    if (res.multiple && Array.isArray(res.data)) {
+      setParsedList(res.data);
+    } else {
+      setParsed(res.data);
+    }
   }
 
   async function handleSave() {
+    if (parsedList && parsedList.length > 0) {
+      const defaultAccId = (accounts.find((a) => a.isDefault) || accounts[0])?.id;
+      for (const item of parsedList) {
+        await addTx({
+          type: item.type,
+          amount: item.amount,
+          category: item.category,
+          note: item.note || '',
+          date: item.date,
+          currency: settings.currency,
+          accountId: defaultAccId,
+        });
+      }
+      onSaved?.(parsedList);
+      return;
+    }
     if (!parsed) return;
     const defaultAccId = (accounts.find((a) => a.isDefault) || accounts[0])?.id;
     await addTx({
@@ -105,6 +128,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
 
   function handleReParse() {
     setParsed(null);
+    setParsedList(null);
     setError('');
     setTimeout(() => inputRef.current?.focus(), 100);
   }
@@ -196,8 +220,48 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                 </View>
               ) : null}
             </ScrollView>
+          ) : parsedList ? (
+            // 多笔预览
+            <ScrollView
+              style={{ flex: 1 }}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.previewContent}
+            >
+              <Text style={[styles.previewHint, { color: tc.textMuted, textAlign: 'center', marginBottom: spacing.md, fontSize: fontSize.md, fontWeight: fontWeight.semibold }]}>
+                共识别到 {parsedList.length} 笔账目
+              </Text>
+              {parsedList.map((item, idx) => {
+                const info = categoryConfig[item.type].find((c) => c.name === item.category);
+                const color = tc.categories[item.category] || tc.textMuted;
+                return (
+                  <View key={idx} style={[styles.previewCard, { backgroundColor: tc.surface, borderColor: tc.border, marginBottom: spacing.md, padding: spacing.lg, alignItems: 'flex-start' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: spacing.sm }}>
+                      <View style={[styles.previewCat, { backgroundColor: color + '22', width: 40, height: 40, borderRadius: 12, marginRight: spacing.md, marginBottom: 0 }]}>
+                        <Ionicons name={info?.icon || 'help'} size={20} color={color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.previewType, { color: tc.textMuted, fontSize: fontSize.xs, marginBottom: 2 }]}>{item.type === 'expense' ? '支出' : '收入'}</Text>
+                        <Text style={[styles.previewCategory, { color: tc.text, fontSize: fontSize.md, marginTop: 0 }]}>{item.category}</Text>
+                      </View>
+                      <Text style={[styles.previewAmount, { color: item.type === 'expense' ? tc.text : tc.success, fontSize: fontSize.xl, letterSpacing: -0.5, lineHeight: 28 }]}>
+                        {item.type === 'expense' ? '-' : '+'}{currencySymbol}{item.amount.toFixed(2)}
+                      </Text>
+                    </View>
+                    {(item.note || item.date) ? (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, width: '100%' }}>
+                        {item.note ? <Text style={[styles.previewRowLabel, { color: tc.textMuted, fontSize: fontSize.xs }]}>备注：{item.note}</Text> : null}
+                        {item.date ? <Text style={[styles.previewRowLabel, { color: tc.textMuted, fontSize: fontSize.xs }]}>日期：{new Date(item.date).toLocaleDateString('zh-CN')}</Text> : null}
+                      </View>
+                    ) : null}
+                  </View>
+                );
+              })}
+              <Text style={[styles.previewHint, { color: tc.textMuted }]}>
+                点击「全部保存」将这 {parsedList.length} 笔账目一起保存
+              </Text>
+            </ScrollView>
           ) : (
-            // 预览界面
+            // 单笔预览界面
             <ScrollView
               style={{ flex: 1 }}
               keyboardShouldPersistTaps="handled"
@@ -239,7 +303,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
 
           {/* 底部按钮 */}
           <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.sm), backgroundColor: tc.surface, borderTopColor: tc.divider, bottom: keyboardH }]}>
-            {aiEnabled && hasApiKey && !parsed ? (
+            {aiEnabled && hasApiKey && !parsed && !parsedList ? (
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: text.trim() ? tc.primary : tc.surfaceMuted, opacity: text.trim() ? 1 : 0.5 }]}
                 onPress={handleParse}
@@ -259,7 +323,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                 )}
               </TouchableOpacity>
             ) : null}
-            {aiEnabled && hasApiKey && parsed ? (
+            {aiEnabled && hasApiKey && (parsed || parsedList) ? (
               <View style={styles.previewActions}>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.reParseBtn, { backgroundColor: tc.surfaceMuted, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth }]}
@@ -275,7 +339,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                   activeOpacity={0.85}
                 >
                   <Ionicons name="checkmark" size={18} color={tc.primaryOn} />
-                  <Text style={[styles.actionBtnText, { color: tc.primaryOn, fontWeight: fontWeight.semibold }]}>保存账目</Text>
+                  <Text style={[styles.actionBtnText, { color: tc.primaryOn, fontWeight: fontWeight.semibold }]}>{parsedList ? '全部保存' : '保存账目'}</Text>
                 </TouchableOpacity>
               </View>
             ) : null}

@@ -38,6 +38,49 @@ function buildSystemPrompt() {
     .replace('{CURRENCY}', 'CNY');
 }
 
+// 从 AI 原始输出中提取所有顶层 JSON 对象。
+// 1) 如果包了 ```json ... ``` 代码块，只取代码块内容；
+// 2) 否则按大括号配对从左到右扫描；
+// 3) 只取「对象」类型 [{...}]，跳过裸数组；
+// 4) 字符串内的大括号不会破坏配对。
+function extractAllJsonObjects(content) {
+  let text = String(content || '').trim();
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) text = fence[1].trim();
+  const results = [];
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const ch = text[i];
+    if (ch !== '{') { i++; continue; }
+    let depth = 0;
+    let inStr = false;
+    let escape = false;
+    let start = -1;
+    for (let j = i; j < n; j++) {
+      const c = text[j];
+      if (inStr) {
+        if (escape) { escape = false; continue; }
+        if (c === '\\') { escape = true; continue; }
+        if (c === '"') { inStr = false; }
+        continue;
+      }
+      if (c === '"') { inStr = true; continue; }
+      if (c === '{') { if (depth === 0) start = j; depth++; continue; }
+      if (c === '}') {
+        depth--;
+        if (depth === 0 && start !== -1) {
+          results.push(text.substring(start, j + 1));
+          i = j + 1;
+          start = -1;
+          break;
+        }
+      }
+    }
+    if (start === -1) { i++; }
+  }
+  return results;
+}
 // 调 AI 解析文本，返回 { ok, data?, error? }
 // data = { amount, type, category, date, note }
 export async function parseTransactionFromText(userText) {
@@ -86,21 +129,37 @@ export async function parseTransactionFromText(userText) {
     if (!content) {
       return { ok: false, error: 'AI 返回内容为空' };
     }
-    // 提取 JSON：有时 AI 会包 ```json ``` 标记
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
+    // 1) 优先匹配 ```json ... ``` 代码块
+    // 2) 否则用括号配对，从左到右提取第一段合法 JSON
+    // 3) 支持多笔账目：AI 可能返回 {...} {...}（中间有逗号/换行）
+    const objs = extractAllJsonObjects(content);
+    if (objs.length === 0) {
       return { ok: false, error: 'AI 返回的不是 JSON：' + content.substring(0, 100) };
     }
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonMatch[0]);
-    } catch (e) {
-      return { ok: false, error: 'JSON 解析失败：' + e.message };
+    const items = [];
+    let lastErr = '';
+    for (const raw of objs) {
+      // 去掉尾随逗号（容错）
+      const cleaned = raw.replace(/,(\s*[\}\]])/g, '$1');
+      try {
+        const obj = JSON.parse(cleaned);
+        const valid = validateParsed(obj);
+        if (valid.ok) {
+          items.push(obj);
+        } else {
+          lastErr = valid.error;
+        }
+      } catch (e) {
+        lastErr = e.message;
+      }
     }
-    // 校验字段
-    const valid = validateParsed(parsed);
-    if (!valid.ok) return valid;
-    return { ok: true, data: parsed };
+    if (items.length === 0) {
+      return { ok: false, error: 'JSON 解析失败：' + (lastErr || '内容不合法') };
+    }
+    if (items.length === 1) {
+      return { ok: true, data: items[0] };
+    }
+    return { ok: true, data: items, multiple: true };
   } catch (e) {
     return { ok: false, error: '网络错误：' + (e?.message || String(e)).substring(0, 100) };
   }
