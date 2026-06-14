@@ -435,6 +435,8 @@ export default function SettingsScreen({ navigation }) {
         </Section>
       </ScrollView>
 
+      <AiSettingsScreen visible={showAiModal} onClose={() => setShowAiModal(false)} />
+
       <Modal visible={showBookModal} transparent animationType="slide" onRequestClose={() => setShowBookModal(false)}>
         <KeyboardAvoidingView
           style={styles.modalOverlay}
@@ -588,8 +590,6 @@ export default function SettingsScreen({ navigation }) {
                 />
               </View>
             </ScrollView>
-
-      <AiSettingsScreen visible={showAiModal} onClose={() => setShowAiModal(false)} />
             <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
               onPress={handleImport}
