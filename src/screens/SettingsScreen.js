@@ -441,13 +441,19 @@ export default function SettingsScreen({ navigation }) {
             <View style={styles.listContent}>
               <Text style={[styles.listTitle, { color: tc.text }]}>立即检查更新</Text>
               <Text style={[styles.listSub, { color: tc.textMuted }]}>
-                {isChecking ? '正在检查…' : '手动触发一次更新检测'}
+                {isChecking ? '正在检查…' : (checkResult ? checkResultText(checkResult) : '手动触发一次更新检测')}
               </Text>
             </View>
             <View style={styles.rightMeta}>
               <Ionicons name="chevron-forward" size={16} color={tc.textMuted} />
             </View>
           </TouchableOpacity>
+          <View style={[styles.listItem, { backgroundColor: tc.surfaceMuted, borderColor: tc.border, flexDirection: 'column', alignItems: 'flex-start', paddingVertical: 10 }]}>
+            <Text style={[styles.listSub, { color: tc.textMuted, marginTop: 0 }]}>诊断信息</Text>
+            <Text style={[styles.listSub, { color: tc.textSecondary, marginTop: 4, fontFamily: Platform.OS === 'android' ? 'monospace' : 'Menlo', fontSize: 11 }]}>
+              {(() => { const lc = getLastUpdateCheck(); return ['当前: v' + (lc.current || '?'), '最新: v' + (lc.latest || '?'), '上次检查: ' + formatTimeAgo(lc.at), '状态: ' + (lc.status || 'never')].join(String.fromCharCode(10)); })()}
+            </Text>
+          </View>
         </Section>
         <Section title="周期性交易" rightAction={
           <TouchableOpacity onPress={() => setShowRecurringModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

@@ -32,6 +32,9 @@ const DISMISSED_KEY = 'lulu_update_dismissed';
 // 距离上次检查 < 30 分钟就不再查，避免切 tab 时反复请求
 // 模块级 ref singleton — 任何组件（包括设置页）都能触发立即检查
 let _ref = null;
+// 模块级状态 — 设置页能读到
+let _lastCheck = { at: 0, status: 'never', current: '', latest: '', error: '' };
+export function getLastUpdateCheck() { return { ..._lastCheck }; }
 export function triggerUpdateCheck(force = true) {
   try { _ref?.checkNow(force); } catch (e) { console.warn('[UpdatePrompt] trigger failed:', e?.message || e); }
 }
@@ -74,9 +77,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   async function runCheck({ force } = {}) {
     // 设置里关了就不查（force=true 时也尊重显式触发）
     if (!force && settings?.autoCheckUpdate === false) {
+      _lastCheck = { at: Date.now(), status: 'disabled', current: getLocalVersion(), latest: '', error: '自动检查已关闭' };
       DeviceEventEmitter.emit('lulu:update-check-result', { status: 'disabled' });
       return;
     }
+    _lastCheck = { ..._lastCheck, at: Date.now(), status: 'checking', current: getLocalVersion(), error: '' };
     DeviceEventEmitter.emit('lulu:update-check-result', { status: 'checking' });
     try {
       const result = await checkForUpdate();
@@ -85,6 +90,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         return;
       }
       if (!result.hasUpdate) {
+        _lastCheck = { at: Date.now(), status: 'up-to-date', current: getLocalVersion(), latest: result.remote.version, error: '' };
         DeviceEventEmitter.emit('lulu:update-check-result', {
           status: 'up-to-date',
           current: getLocalVersion(),
@@ -106,6 +112,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       }
       setUpdateInfo(result);
       setVisible(true);
+      _lastCheck = { at: Date.now(), status: 'update-available', current: getLocalVersion(), latest: result.remote.version, error: '' };
       DeviceEventEmitter.emit('lulu:update-check-result', {
         status: 'update-available',
         current: getLocalVersion(),
@@ -113,6 +120,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       });
     } catch (e) {
       console.warn('[UpdatePrompt] check failed:', e?.message || e);
+      _lastCheck = { at: Date.now(), status: 'error', current: getLocalVersion(), latest: '', error: e?.message || String(e) };
       DeviceEventEmitter.emit('lulu:update-check-result', { status: 'error', error: e?.message || String(e) });
     }
   }
