@@ -86,19 +86,35 @@ export default function UpdatePrompt() {
     try {
       const apkName = `update-${updateInfo.apk.name}`;
       const dest = new File(Paths.cache, apkName);
-      // 用 File.createDownloadDelegate 跟踪进度（SDK 56 新 API）
-      const task = File.download(updateInfo.apk.url, dest, {
-        onProgress: (p) => {
-          // p 是 0-1 的小数
-          setProgress(Math.round((p || 0) * 100));
-        },
-      });
-      downloadTaskRef.current = task;
-      const result = await task;
-      setLocalFile(result);
+      // 用 fetch 下载 + 跟踪进度（不依赖 expo-file-system 不稳定的新 API）
+      const res = await fetch(updateInfo.apk.url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const total = parseInt(res.headers.get('content-length') || '0', 10);
+      // 读取 Response body 流，跟踪进度
+      const reader = res.body?.getReader();
+      const chunks = [];
+      let received = 0;
+      if (reader && total) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length || 0;
+          setProgress(Math.round((received / total) * 100));
+        }
+      } else {
+        // 降级：直接拿 blob
+        const blob = await res.blob();
+        chunks.push(blob);
+        setProgress(50);
+      }
+      // 写文件
+      const combined = new Blob(chunks);
+      await dest.write(combined);
+      setLocalFile(dest);
       setStatus('done');
-      // 自动尝试唤起安装
-      setTimeout(() => handleInstall(result.uri || result.path), 300);
+      // 自动唤起安装
+      setTimeout(() => handleInstall(dest.uri || dest.path), 300);
     } catch (e) {
       console.warn('[UpdatePrompt] download failed:', e?.message || e);
       setErrorMsg(e?.message || '下载失败');
