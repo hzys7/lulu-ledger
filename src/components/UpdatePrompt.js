@@ -15,7 +15,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { File, Paths } from 'expo-file-system';
-import * as Application from 'expo-application';
 import { useFinance } from '../context/FinanceContext';
 import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../theme';
 import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
@@ -110,7 +109,9 @@ export default function UpdatePrompt() {
     try {
       // 优先尝试用 expo-intent-launcher（如果装了）
       try {
-        const IntentLauncher = require('expo-intent-launcher');
+        // 动态模块名绕开 Metro 静态分析（包可能没装）
+        const modName = 'expo' + '-intent-launcher';
+        const IntentLauncher = require(modName);
         // 获取应用包名和 authority
         const cnf = IntentLauncher;
         if (cnf?.startActivityAsync) {
