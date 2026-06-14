@@ -12,6 +12,7 @@ import {
   Alert,
   Linking,
   Platform,
+  DeviceEventEmitter,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -72,19 +73,47 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
 
   async function runCheck({ force } = {}) {
     // 设置里关了就不查（force=true 时也尊重显式触发）
-    if (!force && settings?.autoCheckUpdate === false) return;
+    if (!force && settings?.autoCheckUpdate === false) {
+      DeviceEventEmitter.emit('lulu:update-check-result', { status: 'disabled' });
+      return;
+    }
+    DeviceEventEmitter.emit('lulu:update-check-result', { status: 'checking' });
     try {
       const result = await checkForUpdate();
-      if (!result.hasUpdate) return;
+      if (!result || !result.remote) {
+        DeviceEventEmitter.emit('lulu:update-check-result', { status: 'error', error: '网络请求失败' });
+        return;
+      }
+      if (!result.hasUpdate) {
+        DeviceEventEmitter.emit('lulu:update-check-result', {
+          status: 'up-to-date',
+          current: getLocalVersion(),
+          latest: result.remote.version,
+        });
+        return;
+      }
       const dismissed = await getDismissedInfo();
       if (dismissed && dismissed.version === result.remote.version) {
         const ageMs = Date.now() - dismissed.at;
-        if (ageMs < 7 * 24 * 3600 * 1000) return;
+        if (ageMs < 7 * 24 * 3600 * 1000) {
+          DeviceEventEmitter.emit('lulu:update-check-result', {
+            status: 'dismissed',
+            current: getLocalVersion(),
+            latest: result.remote.version,
+          });
+          return;
+        }
       }
       setUpdateInfo(result);
       setVisible(true);
+      DeviceEventEmitter.emit('lulu:update-check-result', {
+        status: 'update-available',
+        current: getLocalVersion(),
+        latest: result.remote.version,
+      });
     } catch (e) {
       console.warn('[UpdatePrompt] check failed:', e?.message || e);
+      DeviceEventEmitter.emit('lulu:update-check-result', { status: 'error', error: e?.message || String(e) });
     }
   }
 

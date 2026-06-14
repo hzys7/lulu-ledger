@@ -36,6 +36,19 @@ function hexAlpha(hex, a) {
   return hex + Math.round(a * 255).toString(16).padStart(2, '0');
 }
 
+function checkResultText(r) {
+  if (!r) return '';
+  switch (r.status) {
+    case 'checking': return '正在检查…';
+    case 'disabled': return '自动检查已关闭，但仍会查一次';
+    case 'up-to-date': return '已是最新版本 (v' + r.latest + ')';
+    case 'update-available': return '有新版 v' + r.latest + ' 可用';
+    case 'dismissed': return '已忽略 v' + r.latest + '，7 天内不再提示';
+    case 'error': return '检查失败：' + (r.error || '未知错误');
+    default: return '';
+  }
+}
+
 export default function SettingsScreen({ navigation }) {
   const {
     books,
@@ -159,15 +172,24 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const [isChecking, setIsChecking] = React.useState(false);
-  const handleCheckNow = async () => {
+  const [checkResult, setCheckResult] = React.useState(null);
+  const handleCheckNow = () => {
     if (isChecking) return;
     setIsChecking(true);
-    try {
-      triggerUpdateCheck(true);
-    } finally {
-      // 1.5s 后复位，给个「已在检查」的反馈
-      setTimeout(() => setIsChecking(false), 1500);
-    }
+    setCheckResult(null);
+    const sub = DeviceEventEmitter.addListener('lulu:update-check-result', (payload) => {
+      setCheckResult(payload);
+      setIsChecking(false);
+      sub.remove();
+    });
+    setTimeout(() => {
+      setIsChecking((cur) => {
+        if (cur) setCheckResult({ status: 'error', error: '检查超时' });
+        return false;
+      });
+      try { sub.remove(); } catch {}
+    }, 8000);
+    triggerUpdateCheck(true);
   };
 
   const handleAddRecurring = async () => {
