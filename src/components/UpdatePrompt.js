@@ -463,6 +463,8 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   );
 });
 
+export default UpdatePrompt;
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
