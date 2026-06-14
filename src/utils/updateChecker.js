@@ -10,7 +10,9 @@ const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 // 国内下载镜像（已实测可达的只有 gh-proxy.com）
 // 顺序很重要：先试速度更快的镜像，失败再回退 GitHub 原地址
 const MIRRORS = [
+  'https://ghproxy.net/',
   'https://gh-proxy.com/',
+  'https://cors.isteed.cc/',
 ];
 
 function withMirror(githubUrl) {

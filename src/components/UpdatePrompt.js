@@ -46,6 +46,8 @@ export default function UpdatePrompt() {
   const [localFile, setLocalFile] = useState(null);
   const downloadTaskRef = useRef(null);
   const abortRef = useRef(null);
+  const lastProgressAtRef = useRef(0);
+  const currentSourceRef = useRef("");
 
   async function runCheck() {
     try {
@@ -105,6 +107,7 @@ export default function UpdatePrompt() {
   }
 
   async function tryDownloadOne(url, dest, signal) {
+    lastProgressAtRef.current = Date.now();
     const task = File.createDownloadTask(url, dest, {
       idempotent: true,
       signal,
@@ -126,9 +129,21 @@ export default function UpdatePrompt() {
           }
           return prev;
         });
+        // 喂狗
+        lastProgressAtRef.current = Date.now();
       },
     });
     downloadTaskRef.current = task;
+
+    // 看门狗：45 秒没收到任何进度就放弃这个源
+    const watchdog = setInterval(() => {
+      const sinceMs = Date.now() - (lastProgressAtRef.current || 0);
+      if (sinceMs >= 45000) {
+        clearInterval(watchdog);
+        try { task.cancel(); } catch {}
+      }
+    }, 5000);
+    clearInterval(watchdog);
     const file = await task.downloadAsync();
     downloadTaskRef.current = null;
     if (!file) throw new Error("下载被取消");
@@ -160,7 +175,10 @@ export default function UpdatePrompt() {
       for (let i = 0; i < candidates.length; i++) {
         const url = candidates[i];
         if (candidates.length > 1) {
-          setErrorMsg(`正在尝试第 ${i + 1} / ${candidates.length} 个下载源…`);
+          let host = "源";
+          try { host = new URL(url).hostname; } catch {}
+          currentSourceRef.current = host;
+          setErrorMsg(`正在尝试第 ${i + 1} / ${candidates.length} 个下载源（${host}）…`);
         }
         try {
           const file = await tryDownloadOne(url, dest, ac.signal);
@@ -179,7 +197,15 @@ export default function UpdatePrompt() {
             return;
           }
           lastErr = e;
-          console.warn(`[UpdatePrompt] source ${i + 1} failed:`, e?.message || e);
+          let host = "未知";
+          try { host = new URL(url).hostname; } catch {}
+          console.warn(`[UpdatePrompt] source ${host} failed:`, e?.message || e);
+          const elapsed = lastProgressAtRef.current ? Date.now() - lastProgressAtRef.current : 0;
+          if (elapsed >= 30000) {
+            setErrorMsg(`${host} 太慢（${Math.round(elapsed / 1000)}s 无响应），跳过…`);
+          } else {
+            setErrorMsg(`${host} 失败：${e?.message || "未知错误"}`);
+          }
           // 清理可能写了一半的半成品文件
           try { await dest.delete(); } catch {}
         }
