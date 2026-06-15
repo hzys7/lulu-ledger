@@ -181,31 +181,46 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  const checkSubRef = useRef(null);
+  const checkTimerRef = useRef(null);
+  useEffect(() => () => {
+    mountedRef.current = false;
+    try { checkSubRef.current && checkSubRef.current.remove(); } catch {}
+    try { checkTimerRef.current && clearTimeout(checkTimerRef.current); } catch {}
+  }, []);
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = React.useState(null);
   const handleCheckNow = () => {
     if (isChecking) return;
     setIsChecking(true);
     setCheckResult(null);
-    // Track the timer + subscription so we can clean them up on
-    // unmount and avoid setState-on-unmounted-component crashes.
-    let timeoutId = null;
+    // Cancel any previous check listener and timer (defensive).
+    try { checkSubRef.current && checkSubRef.current.remove(); } catch {}
+    try { checkTimerRef.current && clearTimeout(checkTimerRef.current); } catch {}
     let fired = false;
+    const safeSet = (fn) => {
+      if (!mountedRef.current) return;
+      try { fn(); } catch (e) { console.warn('[Settings] setState failed:', e?.message || e); }
+    };
     const finish = (payload, error) => {
       if (fired) return;
       fired = true;
-      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
-      try { sub.remove(); } catch {}
-      // Skip setState on unmounted component to avoid crash.
-      if (!mountedRef.current) return;
-      setCheckResult(error ? { status: 'error', error } : payload);
-      setIsChecking(false);
+      try { checkTimerRef.current && clearTimeout(checkTimerRef.current); } catch {}
+      checkTimerRef.current = null;
+      try { checkSubRef.current && checkSubRef.current.remove(); } catch {}
+      checkSubRef.current = null;
+      if (error) {
+        safeSet(() => setCheckResult({ status: 'error', error }));
+      } else {
+        safeSet(() => setCheckResult(payload));
+      }
+      safeSet(() => setIsChecking(false));
     };
     const sub = DeviceEventEmitter.addListener('lulu:update-check-result', (payload) => {
       finish(payload);
     });
-    timeoutId = setTimeout(() => {
+    checkSubRef.current = sub;
+    checkTimerRef.current = setTimeout(() => {
       finish(null, '检查超时');
     }, 8000);
     triggerUpdateCheck(true);
