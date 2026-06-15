@@ -118,7 +118,19 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     // If a download/install flow is in flight, do not start another
     // check. This guards against both the AppState 'active' listener
     // and the Settings 'check now' button from interrupting a flow.
-    if (flowActiveRef.current) return;
+    //
+    // EXCEPTION: when the user explicitly taps 'Check now' (force=true),
+    // a stuck flowActiveRef from a prior failed download/install must
+    // not silently block the new check. Recover by clearing the ref and
+    // continuing. Without this, the Settings page would poll
+    // getLastUpdateCheck(), see the stale 'up-to-date' / 'error' status
+    // left over from the last run, and report the wrong verdict to the
+    // user -- which is the bug fixed in 1.2.42.
+    if (flowActiveRef.current) {
+      if (!force) return;
+      console.warn('[UpdatePrompt] force-checking while a previous flow is in flight; clearing flowActiveRef');
+      flowActiveRef.current = false;
+    }
     // 设置里关了就不查（force=true 时也尊重显式触发）
     if (!force && settings?.autoCheckUpdate === false) {
       _lastCheck = { at: Date.now(), status: 'disabled', current: getLocalVersion(), latest: '', error: '自动检查已关闭' };
@@ -414,6 +426,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       setErrorMsg((candidates.length > 1 ? "所有下载源均失败：" : "") + (e?.message || "下载失败"));
       setStatus("error");
       abortRef.current = null;
+      // Clear the flow guard so the next check (auto or manual) is not
+      // silently blocked. Without this, a download failure leaves
+      // flowActiveRef=true and Settings 'Check now' will return the
+      // stale status from the previous check.
+      flowActiveRef.current = false;
     }
   }
 
@@ -471,6 +488,8 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         return;
       }
       installingRef.current = false;
+      // Clear the flow guard so the next check is not silently blocked.
+      flowActiveRef.current = false;
       setStatus('done');
       setInstallError(msg);
       setShowInstallError(true);
