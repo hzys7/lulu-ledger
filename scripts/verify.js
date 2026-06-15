@@ -1,5 +1,26 @@
 #!/usr/bin/env node
-// verify.js — Static check for lulu-ledger: import/export consistency +
+// ---- Operational notes (read before patching) ----
+// This codebase lives under a Chinese path. Two failure modes have
+// caused silent file corruption in the past:
+//
+//   1. PowerShell 5.1 + here-strings containing CJK characters get
+//      re-encoded through the host default code page (often GBK) before
+//      reaching disk. The on-disk file then has bytes that decode to
+//      mojibake on subsequent reads.
+//   2. [System.IO.File]::WriteAllText with [System.Text.UTF8Encoding]
+//      in PowerShell 5.1 honours the host code page when the input
+//      string contains characters outside the current locale.
+//
+// Rule of thumb for any agent-driven patch script:
+//   - The patch script itself must be pure ASCII (no CJK literals).
+//   - Any CJK content for the target file must be written by node,
+//     never by PowerShell here-strings or WriteAllText.
+//   - After every patch, run `node scripts/verify.js`. A bundle failure
+//     with CJK mojibake is the signature of the corruption above.
+//   - If a target file is suspected of corruption, restore it with
+//     `git checkout HEAD -- <file>` and re-apply the patch via node.
+// ---- End notes ----
+// verify.js - Static check for lulu-ledger: import/export consistency +
 //             undefined-identifier check (catches 1.2.15-style bugs) +
 //             bundle smoke test
 // Run: node scripts/verify.js
