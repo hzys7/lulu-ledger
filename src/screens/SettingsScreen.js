@@ -19,10 +19,14 @@ import { useFinance } from '../context/FinanceContext';
 import { triggerUpdateCheck, getLastUpdateCheck } from '../components/UpdatePrompt';
 import { Button } from '../components/SharedComponents';
 import AiSettingsScreen from './AiSettingsScreen';
-import { formatMoney, getCurrencyList } from '../utils/currency';
+import { formatMoney } from '../utils/currency';
 import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile } from '../utils/export';
 import { exportAllData, importData } from '../utils/storage';
 import { Section, ActionRow } from "./settings/Section";
+import BookModal from "./settings/BookModal";
+import CurrencyModal from "./settings/CurrencyModal";
+import ImportModal from "./settings/ImportModal";
+import RecurringModal from "./settings/RecurringModal";
 import { styles } from "./settings/styles";
 import BookManagerSection from "./settings/BookManagerSection";
 import BudgetSection from "./settings/BudgetSection";
@@ -106,12 +110,6 @@ export default function SettingsScreen({ navigation }) {
     note: '',
     type: 'expense',
   });
-
-  const bookIcons = ['wallet', 'cash', 'card', 'business', 'school', 'heart', 'airplane', 'restaurant'];
-  const bookColors = [
-    '#111827', '#7C5CFF', '#0EA5E9', '#10B981', '#F59E0B',
-    '#EF4444', '#EC4899', '#64748B',
-  ];
 
   const openAddBook = () => {
     setEditingBook(null);
@@ -341,291 +339,41 @@ export default function SettingsScreen({ navigation }) {
 
       <AiSettingsScreen visible={showAiModal} onClose={() => setShowAiModal(false)} />
 
-      <Modal visible={showBookModal} transparent animationType="slide" onRequestClose={() => setShowBookModal(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowBookModal(false)} />
-          <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
-            <View style={styles.handle} />
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: tc.text }]}>
-                {editingBook ? '编辑账本' : '新建账本'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowBookModal(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={22} color={tc.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <Text style={{ color: tc.textMuted, fontSize: fontSize.sm, marginBottom: spacing.sm, lineHeight: 20 }}>支持 JSON 完整备份 或 CSV 文本。自动识别格式，重复数据会被跳过。</Text>
+      <BookModal
+        visible={showBookModal}
+        onClose={() => setShowBookModal(false)}
+        editingBook={editingBook}
+        newBookName={newBookName}
+        setNewBookName={setNewBookName}
+        newBookIcon={newBookIcon}
+        setNewBookIcon={setNewBookIcon}
+        newBookColor={newBookColor}
+        setNewBookColor={setNewBookColor}
+        onSave={handleSaveBook}
+        onDelete={() => { setShowBookModal(false); handleDeleteBook(editingBook); }}
+      />
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>账本名称</Text>
-              <TextInput
-                style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text }]}
-                value={newBookName}
-                onChangeText={setNewBookName}
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  autoComplete="off"
-                placeholder="输入账本名称"
-                placeholderTextColor={tc.textSubtle}
-                maxLength={20}
-              />
-            </View>
+      <CurrencyModal
+        visible={showCurrencyModal}
+        onClose={() => setShowCurrencyModal(false)}
+        onSelect={handleCurrencyChange}
+      />
+      <ImportModal
+        visible={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        importJson={importJson}
+        setImportJson={setImportJson}
+        onPickFile={handlePickFile}
+        onImport={handleImport}
+      />
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>选择图标</Text>
-              <View style={styles.iconGrid}>
-                {bookIcons.map((icon) => (
-                  <TouchableOpacity
-                    key={icon}
-                    style={[
-                      styles.iconOption,
-                      { backgroundColor: tc.surfaceMuted, borderColor: 'transparent' },
-                      newBookIcon === icon && { borderColor: newBookColor, backgroundColor: hexAlpha(newBookColor, 0.08) },
-                    ]}
-                    onPress={() => setNewBookIcon(icon)}
-                  >
-                    <Ionicons name={icon} size={20} color={newBookIcon === icon ? newBookColor : tc.textMuted} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>选择颜色</Text>
-              <View style={styles.colorGrid}>
-                {bookColors.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    style={[
-                      styles.colorOption,
-                      { backgroundColor: color },
-                      newBookColor === color && { borderColor: tc.text, borderWidth: 3 },
-                    ]}
-                    onPress={() => setNewBookColor(color)}
-                  >
-                    {newBookColor === color ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.modalActions}>
-              {editingBook ? (
-                <TouchableOpacity
-                  style={[styles.deleteBtn, { backgroundColor: tc.dangerSubtle }]}
-                  onPress={() => { setShowBookModal(false); handleDeleteBook(editingBook); }}
-                >
-                  <Ionicons name="trash-outline" size={18} color={tc.danger} />
-                </TouchableOpacity>
-              ) : null}
-              <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: tc.primary }]}
-                onPress={handleSaveBook}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.saveBtnText, { color: tc.primaryOn }]}>保存</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal visible={showCurrencyModal} transparent animationType="fade" onRequestClose={() => setShowCurrencyModal(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowCurrencyModal(false)}>
-          <View style={[styles.currencyList, { backgroundColor: tc.surface, marginBottom: insets.bottom + spacing.lg }]}>
-            {getCurrencyList().map((c) => (
-              <TouchableOpacity
-                key={c.code}
-                style={[styles.currencyItem, { borderBottomColor: tc.divider }]}
-                onPress={() => handleCurrencyChange(c.code)}
-              >
-                <Text style={[styles.currencyLabel, { color: tc.text }]}>{c.label}</Text>
-                {settings.currency === c.code ? <Ionicons name="checkmark" size={18} color={tc.primary} /> : null}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-      <Modal visible={showImportModal} transparent animationType="slide" onRequestClose={() => setShowImportModal(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowImportModal(false)} />
-          <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg, maxHeight: '90%' }]}>
-            <View style={styles.handle} />
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: tc.text }]}>导入备份</Text>
-              <TouchableOpacity onPress={() => { setShowImportModal(false); setImportJson(''); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={22} color={tc.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              style={{ flexGrow: 0, flexShrink: 1 }}
-              contentContainerStyle={{ paddingBottom: spacing.sm }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.inputGroup}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-                  <Text style={[styles.inputLabel, { color: tc.textMuted, marginBottom: 0 }]}>粘贴或选择文件</Text>
-                  <TouchableOpacity
-                    onPress={handlePickFile}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: tc.surfaceMuted, borderRadius: borderRadius.md }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="folder-open-outline" size={16} color={tc.primary} />
-                    <Text style={{ color: tc.primary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>选择文件</Text>
-                  </TouchableOpacity>
-                </View>
-                <TextInput
-                  style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, minHeight: 100, maxHeight: 180, textAlignVertical: 'top' }]}
-                  value={importJson}
-                  onChangeText={setImportJson}
-                  placeholder='支持 JSON 完整备份 或 CSV 文本（可点右上角选择文件）'
-                  placeholderTextColor={tc.textSubtle}
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  autoComplete="off"
-                  multiline
-                />
-              </View>
-            </ScrollView>
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
-              onPress={handleImport}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.saveBtnText, { color: tc.primaryOn }]}>导入</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal visible={showRecurringModal} transparent animationType="slide" onRequestClose={() => setShowRecurringModal(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowRecurringModal(false)} />
-          <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
-            <View style={styles.handle} />
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: tc.text }]}>添加周期性交易</Text>
-              <TouchableOpacity onPress={() => setShowRecurringModal(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={22} color={tc.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>类型</Text>
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                {[{ key: 'expense', label: '支出' }, { key: 'income', label: '收入' }].map((t) => {
-                  const active = recurringForm.type === t.key;
-                  return (
-                    <TouchableOpacity
-                      key={t.key}
-                      style={[
-                        styles.typePill,
-                        { backgroundColor: tc.surfaceMuted, borderColor: 'transparent' },
-                        active && { backgroundColor: tc.primary, borderColor: tc.primary },
-                      ]}
-                      onPress={() => setRecurringForm({ ...recurringForm, type: t.key })}
-                    >
-                      <Text style={[styles.typePillText, { color: tc.textSecondary }, active && { color: tc.primaryOn }]}>
-                        {t.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>分类</Text>
-              <TextInput
-                style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text }]}
-                value={recurringForm.category}
-                onChangeText={(v) => setRecurringForm({ ...recurringForm, category: v })}
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    autoComplete="off"
-                placeholder="如：工资 / 房租"
-                placeholderTextColor={tc.textSubtle}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>金额</Text>
-              <View style={[styles.amountRow, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
-                <Text style={[styles.currency, { color: tc.textMuted }]}>
-                  {settings.currency === 'CNY' ? '¥' : '$'}
-                </Text>
-                <TextInput
-                  style={[styles.amountInput, { color: tc.text }]}
-                  value={recurringForm.amount}
-                  onChangeText={(v) => setRecurringForm({ ...recurringForm, amount: v })}
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    autoComplete="off"
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor={tc.textSubtle}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>频率</Text>
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                {[{ key: 'daily', label: '每天' }, { key: 'weekly', label: '每周' }, { key: 'monthly', label: '每月' }, { key: 'yearly', label: '每年' }].map((f) => {
-                  const active = recurringForm.frequency === f.key;
-                  return (
-                    <TouchableOpacity
-                      key={f.key}
-                      style={[
-                        styles.typePill,
-                        { backgroundColor: tc.surfaceMuted, borderColor: 'transparent' },
-                        active && { backgroundColor: tc.primary, borderColor: tc.primary },
-                      ]}
-                      onPress={() => setRecurringForm({ ...recurringForm, frequency: f.key })}
-                    >
-                      <Text style={[styles.typePillText, { color: tc.textSecondary }, active && { color: tc.primaryOn }]}>
-                        {f.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: tc.textMuted }]}>备注 (选填)</Text>
-              <TextInput
-                style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text }]}
-                value={recurringForm.note}
-                onChangeText={(v) => setRecurringForm({ ...recurringForm, note: v })}
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    autoComplete="off"
-                placeholder="如：每月15号发工资"
-                placeholderTextColor={tc.textSubtle}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
-              onPress={handleAddRecurring}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.saveBtnText, { color: tc.primaryOn }]}>保存</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <RecurringModal
+        visible={showRecurringModal}
+        onClose={() => setShowRecurringModal(false)}
+        recurringForm={recurringForm}
+        setRecurringForm={setRecurringForm}
+        onSave={handleAddRecurring}
+      />
     </View>
   );
 }

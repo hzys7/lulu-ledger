@@ -9,4 +9,13 @@ function hexAlpha(hex, a) {
   return hex + Math.round(a * 255).toString(16).padStart(2, '0');
 }
 
-export { hexAlpha };
+// Book icon names (Ionicons) shown in the book picker.
+const bookIcons = ['wallet', 'cash', 'card', 'business', 'school', 'heart', 'airplane', 'restaurant'];
+
+// Book color palette shown in the book picker.
+const bookColors = [
+  '#111827', '#7C5CFF', '#0EA5E9', '#10B981', '#F59E0B',
+  '#EF4444', '#EC4899', '#64748B',
+];
+
+export { hexAlpha, bookIcons, bookColors };
