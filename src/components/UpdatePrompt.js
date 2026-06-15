@@ -142,7 +142,12 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     try {
       const result = await checkForUpdate();
       if (!result || !result.remote) {
-        DeviceEventEmitter.emit('lulu:update-check-result', { status: 'error', error: '网络请求失败' });
+        // 1.2.43 fix: also write _lastCheck here, not just emit. Without
+        // this, the Settings 'Check now' polling useEffect reads a
+        // stale status from the previous run and shows 'up-to-date'
+        // even though the current run failed to reach the network.
+        _lastCheck = { at: Date.now(), status: 'error', current: getLocalVersion(), latest: '', error: '网络请求失败' };
+        DeviceEventEmitter.emit('lulu:update-check-result', { status: 'error', error: '网络请求失败', current: getLocalVersion() });
         return;
       }
       if (!result.hasUpdate) {
@@ -188,8 +193,29 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     // 强制 runCheck。但 Android 在系统安装 dialog 弹起/收回时 AppState
     // 会自动 inactive->active 一次，触发重检 -> 拿回同一个新版 ->
     // 立即重弹'发现新版本'，覆盖掉系统安装框，导致无法安装。
-    // 直接删掉这个监听器：用户需要查更新时去设置页点'立即检查更新'。
+    //
+    // 1.2.43 re-introduces a throttled re-check on 'active', because
+    // without it, a user who installed v1.2.40 days ago and has had
+    // the app backgrounded ever since would never see a "v1.2.42
+    // available" prompt the next time they open the app. The startup
+    // useEffect below only runs once (componentDidMount-equivalent);
+    // for the user, the moment they "open the app" is when AppState
+    // transitions to 'active', which now re-runs the check.
+    //
+    // We throttle to once per 10 minutes so the system install dialog
+    // bouncing focus inactive->active does not loop.
     runCheck({ force: true });
+
+    let lastActiveAt = 0;
+    const ACTIVE_THROTTLE_MS = 10 * 60 * 1000;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      const now = Date.now();
+      if (now - lastActiveAt < ACTIVE_THROTTLE_MS) return;
+      lastActiveAt = now;
+      runCheck({ force: true });
+    });
+    return () => sub.remove();
   }, []);
 
   async function getDismissedInfo() {
