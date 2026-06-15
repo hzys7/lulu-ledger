@@ -76,6 +76,18 @@ export default function StatisticsScreen({ navigation }) {
   const dailyAvg = elapsedDays > 0 ? totalAmount / elapsedDays : 0;
   const diffVsLast = totalAmount - lastTotal;
 
+  // 共享过滤：按年月 + 类型筛选当月交易，消除 dailyTrend 和 topTransactions 中的重复 O(n) 过滤
+  const filteredMonthTx = useMemo(() => {
+    return transactions.filter((t) => {
+      const d = new Date(t.date);
+      return (
+        d.getFullYear() === selectedYear &&
+        d.getMonth() === selectedMonth &&
+        t.type === dataType
+      );
+    });
+  }, [transactions, selectedYear, selectedMonth, dataType]);
+
   // 分类占比
   const categoryItems = useMemo(() => {
     const categoryData = dataType === 'expense' ? monthSummary.byCategory : monthSummary.incomeByCategory || {};
@@ -91,20 +103,12 @@ export default function StatisticsScreen({ navigation }) {
 
   // 每日趋势数据（折线图用）
   const dailyTrend = useMemo(() => {
-    const monthTx = transactions.filter((t) => {
-      const d = new Date(t.date);
-      return (
-        d.getFullYear() === selectedYear &&
-        d.getMonth() === selectedMonth &&
-        t.type === dataType
-      );
-    });
     const arr = new Array(daysInMonth).fill(0);
-    monthTx.forEach((t) => {
+    filteredMonthTx.forEach((t) => {
       arr[new Date(t.date).getDate() - 1] += t.amount;
     });
     return arr.map((v, i) => ({ day: i + 1, value: v }));
-  }, [transactions, selectedYear, selectedMonth, dataType, daysInMonth]);
+  }, [filteredMonthTx, daysInMonth]);
 
   // 月支出对比（最近 5 个月 + 本月，共 6 根）
   const monthlyItems = useMemo(() => {
@@ -125,18 +129,11 @@ export default function StatisticsScreen({ navigation }) {
 
   // 本月支出排行（按金额倒序）
   const topTransactions = useMemo(() => {
-    const monthTx = transactions.filter((t) => {
-      const d = new Date(t.date);
-      return (
-        d.getFullYear() === selectedYear &&
-        d.getMonth() === selectedMonth &&
-        t.type === dataType
-      );
-    });
-    return monthTx
+    // 拷贝后再排序，不修改共享的 filteredMonthTx 引用
+    return [...filteredMonthTx]
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 10);
-  }, [transactions, selectedYear, selectedMonth, dataType]);
+  }, [filteredMonthTx]);
 
   const totalLabel = dataType === 'expense' ? '本月支出' : '本月收入';
   const hasData = totalAmount > 0;
