@@ -226,29 +226,38 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     let received = 0;
     let host = 'unknown';
     try { host = new URL(url).hostname; } catch {}
+    // Do NOT pass an AbortSignal to fetch here. Some RN fetch polyfills
+    // behave badly when an already-aborted signal is used, and we want
+    // the outer 6s setTimeout to be the only timer that gates us.
+    let res;
     try {
-      const res = await fetch(url, {
+      res = await fetch(url, {
         method: 'GET',
         headers: { Range: 'bytes=0-65535' },
-        signal: signal || null,
       });
-      if (!res.ok && res.status !== 206) return 0;
-      const reader = res.body && res.body.getReader();
-      if (!reader) return 0;
-      // Read at most 64KB then cancel.
-      while (received < 65536) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        received += value.byteLength;
-      }
-      try { await reader.cancel(); } catch {}
-      const elapsed = (Date.now() - startedAt) / 1000;
-      if (elapsed <= 0) return 0;
-      return received / 1024 / elapsed;
     } catch (e) {
       console.warn('[UpdatePrompt] probe failed for', host, e?.message || e);
       return 0;
     }
+    if (!res || (!res.ok && res.status !== 206)) return 0;
+    let reader;
+    try { reader = res.body && res.body.getReader(); } catch {}
+    if (!reader) return 0;
+    try {
+      while (received < 65536) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (value) received += value.byteLength;
+      }
+    } catch (e) {
+      console.warn('[UpdatePrompt] probe read failed for', host, e?.message || e);
+    }
+    // Cancel the reader (best-effort). If the response already closed
+    // or the reader is gone, swallow that error.
+    try { const p = reader.cancel(); if (p && typeof p.then === 'function') await p; } catch {}
+    const elapsed = (Date.now() - startedAt) / 1000;
+    if (elapsed <= 0) return 0;
+    return received / 1024 / elapsed;
   }
 
   // Probe all candidate URLs in parallel and return them sorted by

@@ -181,50 +181,41 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const mountedRef = useRef(true);
-  const checkSubRef = useRef(null);
-  const checkTimerRef = useRef(null);
-  useEffect(() => () => {
-    mountedRef.current = false;
-    try { checkSubRef.current && checkSubRef.current.remove(); } catch {}
-    try { checkTimerRef.current && clearTimeout(checkTimerRef.current); } catch {}
-  }, []);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = React.useState(null);
+  // handleCheckNow: trigger UpdatePrompt to run a check, then poll
+  // getLastUpdateCheck every 250ms until the status moves out of
+  // \'checking\'. This is much simpler than wiring up a manual
+  // DeviceEventEmitter subscription, and the polling cleanup is
+  // automatic via the isChecking useEffect.
   const handleCheckNow = () => {
     if (isChecking) return;
     setIsChecking(true);
     setCheckResult(null);
-    // Cancel any previous check listener and timer (defensive).
-    try { checkSubRef.current && checkSubRef.current.remove(); } catch {}
-    try { checkTimerRef.current && clearTimeout(checkTimerRef.current); } catch {}
-    let fired = false;
-    const safeSet = (fn) => {
-      if (!mountedRef.current) return;
-      try { fn(); } catch (e) { console.warn('[Settings] setState failed:', e?.message || e); }
-    };
-    const finish = (payload, error) => {
-      if (fired) return;
-      fired = true;
-      try { checkTimerRef.current && clearTimeout(checkTimerRef.current); } catch {}
-      checkTimerRef.current = null;
-      try { checkSubRef.current && checkSubRef.current.remove(); } catch {}
-      checkSubRef.current = null;
-      if (error) {
-        safeSet(() => setCheckResult({ status: 'error', error }));
-      } else {
-        safeSet(() => setCheckResult(payload));
-      }
-      safeSet(() => setIsChecking(false));
-    };
-    const sub = DeviceEventEmitter.addListener('lulu:update-check-result', (payload) => {
-      finish(payload);
-    });
-    checkSubRef.current = sub;
-    checkTimerRef.current = setTimeout(() => {
-      finish(null, '检查超时');
-    }, 8000);
-    triggerUpdateCheck(true);
+    try { triggerUpdateCheck(true); } catch (e) { console.warn('[Settings] trigger failed:', e?.message || e); }
   };
+  // Poll the module-level _lastCheck while isChecking is true.
+  useEffect(() => {
+    if (!isChecking) return;
+    let cancelled = false;
+    const start = Date.now();
+    const id = setInterval(() => {
+      if (cancelled) return;
+      const lc = getLastUpdateCheck();
+      const elapsed = Date.now() - start;
+      if (lc && lc.status && lc.status !== 'checking' && lc.status !== 'never') {
+        if (mountedRef.current) setCheckResult(lc);
+        if (mountedRef.current) setIsChecking(false);
+        return;
+      }
+      if (elapsed > 15000) {
+        if (mountedRef.current) setCheckResult({ status: 'error', error: '检查超时' });
+        if (mountedRef.current) setIsChecking(false);
+      }
+    }, 250);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [isChecking]);
 
   const handleAddRecurring = async () => {
     if (!recurringForm.category || !recurringForm.amount) {
