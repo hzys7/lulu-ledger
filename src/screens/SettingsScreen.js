@@ -22,6 +22,17 @@ import AiSettingsScreen from './AiSettingsScreen';
 import { formatMoney, getCurrencyList } from '../utils/currency';
 import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile } from '../utils/export';
 import { exportAllData, importData } from '../utils/storage';
+import { Section, ActionRow } from "./settings/Section";
+import BookManagerSection from "./settings/BookManagerSection";
+import BudgetSection from "./settings/BudgetSection";
+import CurrencySection from "./settings/CurrencySection";
+import AppearanceSection from "./settings/AppearanceSection";
+import UpdateSection from "./settings/UpdateSection";
+import RecurringSection from "./settings/RecurringSection";
+import DataSection from "./settings/DataSection";
+import AiSection from "./settings/AiSection";
+import StatsSection from "./settings/StatsSection";
+import AboutSection from "./settings/AboutSection";
 import {
   spacing,
   borderRadius,
@@ -289,296 +300,42 @@ export default function SettingsScreen({ navigation }) {
           <Text style={[styles.title, { color: tc.text }]}>设置</Text>
         </View>
 
-        <Section title="账本管理" rightAction={
-          <TouchableOpacity onPress={openAddBook} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="add" size={22} color={tc.text} />
-          </TouchableOpacity>
-        }>
-          {books.map((book) => {
-            const active = book.id === currentBookId;
-            return (
-              <TouchableOpacity
-                key={book.id}
-                style={[
-                  styles.listItem,
-                  {
-                    backgroundColor: tc.surface,
-                    borderColor: active ? tc.primary : tc.border,
-                    borderWidth: active ? 1 : StyleSheet.hairlineWidth,
-                  },
-                ]}
-                onPress={() => handleSwitchBook(book.id)}
-                onLongPress={() => openEditBook(book)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.listIcon, { backgroundColor: hexAlpha(book.color, 0.12) }]}>
-                  <Ionicons name={book.icon} size={18} color={book.color} />
-                </View>
-                <View style={styles.listContent}>
-                  <Text style={[styles.listTitle, { color: tc.text }]}>
-                    {book.name}
-                  </Text>
-                  <Text style={[styles.listSub, { color: tc.textMuted }]}>
-                    {active ? '当前使用' : '点击切换'}
-                  </Text>
-                </View>
-                {active ? <View style={[styles.activeDot, { backgroundColor: tc.primary }]} /> : null}
-              </TouchableOpacity>
-            );
-          })}
-        </Section>
-
-        <Section title="预算管理">
-          <TouchableOpacity
-            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-            onPress={() => navigation.navigate('Budget')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.listIcon, { backgroundColor: hexAlpha('#F59E0B', 0.12) }]}>
-              <Ionicons name="pie-chart" size={18} color="#F59E0B" />
-            </View>
-            <View style={styles.listContent}>
-              <Text style={[styles.listTitle, { color: tc.text }]}>月度预算</Text>
-              <Text style={[styles.listSub, { color: tc.textMuted }]}>
-                设置各分类的月度预算上限
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={tc.textSubtle} />
-          </TouchableOpacity>
-        </Section>
-
-        <Section title="货币设置">
-          <TouchableOpacity
-            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-            onPress={() => setShowCurrencyModal(true)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
-              <Ionicons name="globe-outline" size={18} color={tc.text} />
-            </View>
-            <View style={styles.listContent}>
-              <Text style={[styles.listTitle, { color: tc.text }]}>默认货币</Text>
-            </View>
-            <View style={styles.rightMeta}>
-              <Text style={[styles.rightText, { color: tc.textMuted }]}>{settings.currency}</Text>
-              <Ionicons name="chevron-forward" size={16} color={tc.textSubtle} />
-            </View>
-          </TouchableOpacity>
-        </Section>
-
-        <Section title="外观设置">
-          <TouchableOpacity
-            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-            onPress={handleToggleTheme}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
-              <Ionicons
-                name={settings.theme === 'dark' ? 'moon' : 'sunny-outline'}
-                size={18}
-                color={tc.text}
-              />
-            </View>
-            <View style={styles.listContent}>
-              <Text style={[styles.listTitle, { color: tc.text }]}>深色模式</Text>
-            </View>
-            <View
-              style={[
-                styles.toggleTrack,
-                { backgroundColor: settings.theme === 'dark' ? tc.primary : tc.surfaceMuted },
-              ]}
-            >
-              <View
-                style={[
-                  styles.toggleThumb,
-                  {
-                    transform: [{ translateX: settings.theme === 'dark' ? 20 : 0 }],
-                    backgroundColor: settings.theme === 'dark' ? tc.primaryOn : tc.white,
-                  },
-                ]}
-              />
-            </View>
-          </TouchableOpacity>
-        </Section>
-
-        <Section title="网络与更新">
-          <TouchableOpacity
-            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-            onPress={handleToggleProxy}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
-              <Ionicons name="globe" size={18} color={tc.text} />
-            </View>
-            <View style={styles.listContent}>
-              <Text style={[styles.listTitle, { color: tc.text }]}>使用代理下载更新</Text>
-              <Text style={[styles.listSub, { color: tc.textMuted }]}>
-                {settings.useProxy ? '开启：直连 GitHub（需翻墙）' : '关闭：用国内镜像（更稳）'}
-              </Text>
-            </View>
-            <View style={styles.rightMeta}>
-              <View
-                style={[
-                  styles.toggleTrack,
-                  { backgroundColor: settings.useProxy ? tc.primary : tc.surfaceMuted, justifyContent: settings.useProxy ? 'flex-end' : 'flex-start' },
-                ]}
-              >
-                <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-            onPress={handleToggleAutoCheck}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
-              <Ionicons name="sync" size={18} color={tc.text} />
-            </View>
-            <View style={styles.listContent}>
-              <Text style={[styles.listTitle, { color: tc.text }]}>自动检查更新</Text>
-              <Text style={[styles.listSub, { color: tc.textMuted }]}>
-                {settings.autoCheckUpdate ? '开启：进入首页时自动检查' : '关闭：需要手动检查'}
-              </Text>
-            </View>
-            <View style={styles.rightMeta}>
-              <View
-                style={[
-                  styles.toggleTrack,
-                  { backgroundColor: settings.autoCheckUpdate ? tc.primary : tc.surfaceMuted, justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start' },
-                ]}
-              >
-                <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-            onPress={handleCheckNow}
-            activeOpacity={0.7}
-            disabled={isChecking}
-          >
-            <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
-              <Ionicons name={isChecking ? 'sync' : 'cloud-download-outline'} size={18} color={tc.text} />
-            </View>
-            <View style={styles.listContent}>
-              <Text style={[styles.listTitle, { color: tc.text }]}>立即检查更新</Text>
-              <Text style={[styles.listSub, { color: tc.textMuted }]}>
-                {isChecking ? '正在检查…' : (checkResult ? checkResultText(checkResult) : '手动触发一次更新检测')}
-              </Text>
-            </View>
-            <View style={styles.rightMeta}>
-              <Ionicons name="chevron-forward" size={16} color={tc.textMuted} />
-            </View>
-          </TouchableOpacity>
-          <View style={[styles.listItem, { backgroundColor: tc.surfaceMuted, borderColor: tc.border, flexDirection: 'column', alignItems: 'flex-start', paddingVertical: 10 }]}>
-            <Text style={[styles.listSub, { color: tc.textMuted, marginTop: 0 }]}>诊断信息</Text>
-            <Text style={[styles.listSub, { color: tc.textSecondary, marginTop: 4, fontFamily: Platform.OS === 'android' ? 'monospace' : 'Menlo', fontSize: 11 }]}>
-              {(() => { const lc = getLastUpdateCheck(); return ['当前: v' + (lc.current || '?'), '最新: v' + (lc.latest || '?'), '上次检查: ' + formatTimeAgo(lc.at), '状态: ' + (lc.status || 'never')].join(String.fromCharCode(10)); })()}
-            </Text>
-          </View>
-        </Section>
-        <Section title="周期性交易" rightAction={
-          <TouchableOpacity onPress={() => setShowRecurringModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="add" size={22} color={tc.text} />
-          </TouchableOpacity>
-        }>
-          {recurring.length > 0 ? (
-            recurring.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-                onLongPress={() => handleDeleteRecurring(item.id)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
-                  <Ionicons name="repeat" size={18} color={tc.text} />
-                </View>
-                <View style={styles.listContent}>
-                  <Text style={[styles.listTitle, { color: tc.text }]}>{item.category}</Text>
-                  <Text style={[styles.listSub, { color: tc.textMuted }]}>
-                    {item.frequency === 'daily' ? '每天' : item.frequency === 'weekly' ? '每周' : item.frequency === 'monthly' ? '每月' : '每年'}
-                    {item.note ? ' · ' + item.note : ''}
-                  </Text>
-                </View>
-                <Text style={[styles.rightText, { color: tc.text, fontWeight: fontWeight.semibold }]}>
-                  {formatMoney(item.amount, item.currency)}
-                </Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border, justifyContent: 'center' }]}>
-              <Text style={[styles.listSub, { color: tc.textMuted }]}>暂无周期性交易</Text>
-            </View>
-          )}
-        </Section>
-        <Section title="数据管理">
-          <ActionRow
-            icon="document-text-outline"
-            iconColor={tc.text}
-            iconBg={tc.surfaceMuted}
-            label="导出为 CSV"
-            onPress={handleExportCSV}
-            rightIcon="download-outline"
-          />
-          <ActionRow
-            icon="cloud-upload-outline"
-            iconColor={tc.text}
-            iconBg={tc.surfaceMuted}
-            label="完整备份导出"
-            onPress={handleExportJSON}
-            rightIcon="download-outline"
-          />
-          <ActionRow
-            icon="download-outline"
-            iconColor={tc.text}
-            iconBg={tc.surfaceMuted}
-            label="导入备份"
-            onPress={() => setShowImportModal(true)}
-          />
-        </Section>
-
-        <Section title="AI 智能">
-          <ActionRow
-            icon="sparkles"
-            iconColor={tc.accent}
-            iconBg={hexAlpha(tc.accent, 0.12)}
-            label="AI 配置"
-            onPress={() => setShowAiModal(true)}
-            rightIcon="chevron-forward"
-          />
-        </Section>
-
-        <Section title="数据统计">
-          <View style={styles.statRow}>
-            <View style={[styles.statCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-              <Text style={[styles.statLabel, { color: tc.textMuted }]}>总交易</Text>
-              <Text style={[styles.statValue, { color: tc.text }]}>{totalTxCount}</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-              <Text style={[styles.statLabel, { color: tc.textMuted }]}>总收入</Text>
-              <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(totalIncome, settings.currency)}</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-              <Text style={[styles.statLabel, { color: tc.textMuted }]}>总支出</Text>
-              <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(totalExpense, settings.currency)}</Text>
-            </View>
-          </View>
-        </Section>
-
-        <Section title="关于">
-          <View style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-            <View style={[styles.listIcon, { backgroundColor: hexAlpha(tc.accent, 0.12) }]}>
-              <Ionicons name="sparkles" size={18} color={tc.accent} />
-            </View>
-            <View style={styles.listContent}>
-              <Text style={[styles.listTitle, { color: tc.text }]}>璐璐记账</Text>
-            </View>
-            <Text style={[styles.rightText, { color: tc.textMuted }]}>{`v${Constants.expoConfig?.version || Constants.manifest?.version || "1.0.0"}`}</Text>
-          </View>
-        </Section>
+        <BookManagerSection
+          books={books}
+          currentBookId={currentBookId}
+          onSwitch={handleSwitchBook}
+          onEdit={openEditBook}
+          onAdd={openAddBook}
+        />
+        <BudgetSection onNavigate={() => navigation.navigate("Budget")} />
+        <CurrencySection onOpenModal={() => setShowCurrencyModal(true)} />
+        <AppearanceSection onToggleTheme={handleToggleTheme} />
+        <UpdateSection
+          isChecking={isChecking}
+          checkResult={checkResult}
+          checkResultText={checkResultText}
+          formatTimeAgo={formatTimeAgo}
+          onToggleProxy={handleToggleProxy}
+          onToggleAutoCheck={handleToggleAutoCheck}
+          onCheckNow={handleCheckNow}
+        />
+        <RecurringSection
+          recurring={recurring}
+          onAdd={() => setShowRecurringModal(true)}
+          onDelete={handleDeleteRecurring}
+        />
+        <DataSection
+          onExportCSV={handleExportCSV}
+          onExportJSON={handleExportJSON}
+          onOpenImportModal={() => setShowImportModal(true)}
+        />
+        <AiSection onOpenModal={() => setShowAiModal(true)} />
+        <StatsSection
+          totalTxCount={totalTxCount}
+          totalIncome={totalIncome}
+          totalExpense={totalExpense}
+        />
+        <AboutSection />
       </ScrollView>
 
       <AiSettingsScreen visible={showAiModal} onClose={() => setShowAiModal(false)} />
@@ -871,211 +628,3 @@ export default function SettingsScreen({ navigation }) {
     </View>
   );
 }
-function Section({ title, rightAction, children }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: tc.textMuted }]}>{title}</Text>
-        {rightAction}
-      </View>
-      <View style={{ gap: spacing.sm }}>{children}</View>
-    </View>
-  );
-}
-
-function ActionRow({ icon, iconColor, iconBg, label, onPress, rightIcon }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
-  return (
-    <TouchableOpacity
-      style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.listIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={18} color={iconColor} />
-      </View>
-      <View style={styles.listContent}>
-        <Text style={[styles.listTitle, { color: tc.text }]}>{label}</Text>
-      </View>
-      {rightIcon ? <Ionicons name={rightIcon} size={16} color={tc.textMuted} /> : null}
-    </TouchableOpacity>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: spacing.base, paddingBottom: spacing.xxxl },
-
-  headerRow: { paddingBottom: spacing.lg },
-  brand: { fontSize: fontSize.xs, letterSpacing: -0.1 },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
-
-  section: { marginBottom: spacing.lg },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    minHeight: 56,
-  },
-  listIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listContent: { flex: 1, marginLeft: spacing.md },
-  listTitle: { fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.2 },
-  listSub: { fontSize: fontSize.sm, marginTop: 2, letterSpacing: -0.1 },
-  rightMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  rightText: { fontSize: fontSize.md, letterSpacing: -0.2 },
-  activeDot: { width: 8, height: 8, borderRadius: 4 },
-
-  toggleTrack: {
-    width: 44,
-    height: 26,
-    borderRadius: 13,
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  toggleThumb: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-  },
-
-  statRow: { flexDirection: 'row', gap: spacing.sm },
-  statCard: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  statLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
-  statValue: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    marginTop: spacing.xs,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.2,
-  },
-
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' },
-  modalBackdrop: { ...StyleSheet.absoluteFillObject },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#D4D4D8',
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  modalContent: {
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
-    padding: spacing.lg,
-  },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
-
-  inputGroup: { marginBottom: spacing.base },
-  inputLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, marginBottom: spacing.sm, letterSpacing: -0.1 },
-  textInput: {
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: fontSize.md,
-    letterSpacing: -0.2,
-  },
-
-  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  iconOption: {
-    width: 48, height: 48, borderRadius: borderRadius.md,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
-  },
-
-  colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  colorOption: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-
-  typePill: {
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-  },
-  typePillText: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    letterSpacing: -0.1,
-  },
-
-  modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  deleteBtn: {
-    width: 52, height: 52, borderRadius: borderRadius.md,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  saveBtn: {
-    flex: 1,
-    height: 52,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-    letterSpacing: -0.3,
-  },
-
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: spacing.md,
-  },
-  currency: { fontSize: fontSize.xl, fontWeight: fontWeight.semibold, marginRight: spacing.sm, letterSpacing: -0.3 },
-  amountInput: {
-    flex: 1,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.semibold,
-    paddingVertical: spacing.md,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
-  },
-
-  currencyList: {
-    margin: spacing.base,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.sm,
-  },
-  currencyItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  currencyLabel: { fontSize: fontSize.md, letterSpacing: -0.2 },
-});
