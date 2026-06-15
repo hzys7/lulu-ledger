@@ -111,6 +111,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     setInstallError('');
     setShowInstallError(false);
     setLocalFile(null);
+    // Clear update info and visibility so subsequent checks start fresh.
+    // Without this, after a failed install attempt the modal stays hidden
+    // even when runCheck() calls setVisible(true) again.
+    setUpdateInfo(null);
+    setVisible(false);
   }
 
   async function runCheck({ force } = {}) {
@@ -406,11 +411,6 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           setLocalFile(file);
           setStatus("done");
           setErrorMsg("");
-          if (autoInstallTimerRef.current) clearTimeout(autoInstallTimerRef.current);
-          autoInstallTimerRef.current = setTimeout(() => {
-            autoInstallTimerRef.current = null;
-            handleInstall(file.uri || file.path);
-          }, 300);
           abortRef.current = null;
           return;
         } catch (e) {
@@ -498,20 +498,21 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           type: 'application/vnd.android.package-archive',
           flags: FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK,
         });
-        // 1.2.46: the system install dialog has been handed off. Close
-        // our own modal so it does not re-appear when the user comes
-        // back to the app (which is the bug we are fixing). Also clear
-        // installingRef so a future re-tap of 'click to install' is
-        // not silently blocked by the reentrancy guard.
-        setVisible(false);
+        // v1.2.49: the system install dialog has been handed off. Keep the
+        // modal open showing '安装已启动…' so the user has visible feedback.
+        // Previously we closed the modal here (1.2.46), but that caused Bug 1
+        // where the user saw the modal vanish and didn't know if the install
+        // actually started. The user can dismiss it manually via '完成'.
+        flowActiveRef.current = false;
         installingRef.current = false;
+        setStatus('installing');
         return;
       }
       await Linking.openURL(uri);
-      // 1.2.46: same as the IntentLauncher path -- hand off the
-      // install to the OS, close our modal, clear installingRef.
-      setVisible(false);
+      // v1.2.49: same as the IntentLauncher path -- keep modal open.
+      flowActiveRef.current = false;
       installingRef.current = false;
+      setStatus('installing');
     } catch (e) {
       const msg = e?.message || String(e);
       // If the intent is already started (e.g. we re-entered from a
@@ -642,16 +643,15 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
               </Text>
             </TouchableOpacity>
 
-            </>          ) : null}
-
-          {status === 'done' ? (
+            </>          ) : null}            {status === 'done' ? (
             <View style={styles.doneBlock}>
-              <Text style={[styles.doneText, { color: tc.success }]}>下载完成，正在唤起安装...</Text>
+              <Text style={[styles.doneText, { color: tc.success }]}>✅ 下载完成</Text>
+              <Text style={[styles.doneSubText, { color: tc.textMuted }]}>点击下方按钮开始安装</Text>
               {(installError || showInstallError) ? (
                 <View style={[styles.installErrorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
                   <Ionicons name="alert-circle" size={14} color={tc.danger} />
                   <Text style={[styles.installErrorText, { color: tc.danger }]}>
-                    未能自动安装：{installError || '未知错误'}
+                    安装失败：{installError || '未知错误'}
                   </Text>
                 </View>
               ) : null}
@@ -663,20 +663,20 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
                   </Text>
                   <View style={styles.pathActions}>
                     <TouchableOpacity
+                      style={[styles.pathBtn, { backgroundColor: tc.primary, flex: 2 }]}
+                      onPress={() => handleInstall(localFile.uri || localFile.path)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="download" size={16} color={tc.primaryOn} />
+                      <Text style={[styles.pathBtnText, { color: tc.primaryOn, fontWeight: fontWeight.semibold }]}>点击安装</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       style={[styles.pathBtn, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
                       onPress={openFileManager}
                       activeOpacity={0.7}
                     >
                       <Ionicons name="folder-open-outline" size={14} color={tc.text} />
-                      <Text style={[styles.pathBtnText, { color: tc.text }]}>打开文件位置</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.pathBtn, { backgroundColor: tc.primary }]}
-                      onPress={() => handleInstall(localFile.uri || localFile.path)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="download" size={14} color={tc.primaryOn} />
-                      <Text style={[styles.pathBtnText, { color: tc.primaryOn }]}>再次安装</Text>
+                      <Text style={[styles.pathBtnText, { color: tc.text }]}>打开位置</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -733,9 +733,13 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
               </TouchableOpacity>
             ) : null}
             {status === 'installing' ? (
-              <View style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1, opacity: 0.6 }]}>
-                <ActivityIndicator size="small" color={tc.primaryOn} />
-              </View>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1 }]}
+                onPress={handleLater}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>完成</Text>
+              </TouchableOpacity>
             ) : null}
           </View>
         </View>
@@ -869,9 +873,15 @@ const styles = StyleSheet.create({
   },
   pathBtnText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
   doneText: {
+    fontSize: fontSize.md,
+    textAlign: 'center',
+    fontWeight: fontWeight.semibold,
+  },
+  doneSubText: {
     fontSize: fontSize.sm,
     textAlign: 'center',
     marginBottom: spacing.base,
+    marginTop: spacing.xs,
     fontWeight: fontWeight.medium,
   },
   btnRow: {
