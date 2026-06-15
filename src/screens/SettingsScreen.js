@@ -23,6 +23,7 @@ import { formatMoney, getCurrencyList } from '../utils/currency';
 import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile } from '../utils/export';
 import { exportAllData, importData } from '../utils/storage';
 import { Section, ActionRow } from "./settings/Section";
+import { styles } from "./settings/styles";
 import BookManagerSection from "./settings/BookManagerSection";
 import BudgetSection from "./settings/BudgetSection";
 import CurrencySection from "./settings/CurrencySection";
