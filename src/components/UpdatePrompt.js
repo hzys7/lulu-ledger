@@ -3,7 +3,6 @@
 import { useSettings } from '../context/SettingsContext';
 import { useThemeColors } from '../hooks/useThemeColors';
 import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react';
-import { AppState } from 'react-native';
 import {
   View,
   Text,
@@ -188,34 +187,13 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }
 
   useEffect(() => {
-    // 启动时查一次。
-    // 1.2.33 之前还有一段 AppState 'change' 监听，会在 app 回前台时
-    // 强制 runCheck。但 Android 在系统安装 dialog 弹起/收回时 AppState
-    // 会自动 inactive->active 一次，触发重检 -> 拿回同一个新版 ->
-    // 立即重弹'发现新版本'，覆盖掉系统安装框，导致无法安装。
-    //
-    // 1.2.43 re-introduces a throttled re-check on 'active', because
-    // without it, a user who installed v1.2.40 days ago and has had
-    // the app backgrounded ever since would never see a "v1.2.42
-    // available" prompt the next time they open the app. The startup
-    // useEffect below only runs once (componentDidMount-equivalent);
-    // for the user, the moment they "open the app" is when AppState
-    // transitions to 'active', which now re-runs the check.
-    //
-    // We throttle to once per 10 minutes so the system install dialog
-    // bouncing focus inactive->active does not loop.
+    // 启动时查一次。这是 1.2.44 唯一保留的自动检查路径：
+    //   1) APP 启动时（这里）
+    //   2) 用户在 Settings 里点"立即检查更新"（triggerUpdateCheck）
+    // 1.2.43 加的 AppState 'active' 监听被删掉，理由：
+    //   - 用户明确说"其他时候不需要自动检测"
+    //   - 1.2.33 之前因为它导致系统安装 dialog 弹起时循环 re-check
     runCheck({ force: true });
-
-    let lastActiveAt = 0;
-    const ACTIVE_THROTTLE_MS = 10 * 60 * 1000;
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') return;
-      const now = Date.now();
-      if (now - lastActiveAt < ACTIVE_THROTTLE_MS) return;
-      lastActiveAt = now;
-      runCheck({ force: true });
-    });
-    return () => sub.remove();
   }, []);
 
   async function getDismissedInfo() {
