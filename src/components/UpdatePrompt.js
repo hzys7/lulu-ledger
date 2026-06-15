@@ -292,14 +292,15 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     let received = 0;
     let host = 'unknown';
     try { host = new URL(url).hostname; } catch {}
-    // Do NOT pass an AbortSignal to fetch here. Some RN fetch polyfills
-    // behave badly when an already-aborted signal is used, and we want
-    // the outer 6s setTimeout to be the only timer that gates us.
+    // Pass the AbortSignal so the fetch can be cancelled if the parent
+    // download is aborted. Each probe also has its own 6s timeout from
+    // the rankBySpeed caller.
     let res;
     try {
       res = await fetch(url, {
         method: 'GET',
         headers: { Range: 'bytes=0-65535' },
+        signal,
       });
     } catch (e) {
       console.warn('[UpdatePrompt] probe failed for', host, e?.message || e);

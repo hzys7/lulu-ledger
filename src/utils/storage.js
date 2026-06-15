@@ -202,11 +202,17 @@ export function _resetStorageCache() {
   cache = null;
 }
 
-// Read a single field out of the envelope. Returned by value; callers cannot
-// mutate the envelope by editing the returned object.
+// Read a single field out of the envelope. Returns a deep copy so callers
+// cannot accidentally mutate the in-memory cache.
 async function readField(field) {
   const env = await ensureLoaded();
-  return env.data[field];
+  const val = env.data[field];
+  // JSON round-trip for a safe deep copy (fast enough for our data sizes).
+  try {
+    return JSON.parse(JSON.stringify(val));
+  } catch {
+    return val;
+  }
 }
 
 // Replace a single field in the envelope and persist.

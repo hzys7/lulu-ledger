@@ -2,7 +2,6 @@
 import { useThemeColors } from '../hooks/useThemeColors';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {  } from '../theme';
 
 const ICONS = {
   '餐饮': 'restaurant',

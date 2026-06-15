@@ -24,7 +24,7 @@ function AboutSection() {
         <View style={styles.listContent}>
           <Text style={[styles.listTitle, { color: tc.text }]}>璐璐记账</Text>
         </View>
-        <Text style={[styles.rightText, { color: tc.textMuted }]}>{}</Text>
+        <Text style={[styles.rightText, { color: tc.textMuted }]}>{version}</Text>
       </View>
     </Section>
   );
