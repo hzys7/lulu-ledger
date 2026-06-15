@@ -1,7 +1,7 @@
 // 璐璐记账 · 入口
-import React, { useRef } from 'react';
+import React from 'react';
 import ErrorBoundary from './src/components/ErrorBoundary';
-import UpdatePrompt from './src/components/UpdatePrompt';
+import UpdatePrompt, { triggerUpdateCheck } from './src/components/UpdatePrompt';
 import { Platform, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
@@ -85,7 +85,7 @@ function MainTabs() {
         listeners={() => ({
           tabPress: () => {
             // 切到首页时检查更新（throttled 30 分钟）
-            try { updatePromptRef.current?.checkNow(); } catch {}
+            try { triggerUpdateCheck(true); } catch (e) { /* swallow: never block tab press */ }
           },
         })}
       />
@@ -174,7 +174,6 @@ function RootNavigator() {
 function ThemedApp() {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
-  const updatePromptRef = useRef(null);
   const navTheme = settings.theme === 'dark'
     ? {
         ...DarkTheme,
@@ -202,7 +201,7 @@ function ThemedApp() {
     <NavigationContainer theme={navTheme}>
       <StatusBar style={settings.theme === 'dark' ? 'light' : 'dark'} backgroundColor={tc.background} />
       <RootNavigator />
-      <UpdatePrompt ref={updatePromptRef} />
+      <UpdatePrompt />
     </NavigationContainer>
   );
 }
