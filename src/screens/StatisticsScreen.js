@@ -23,6 +23,7 @@ import {
   getThemeColors,
 } from '../theme';
 import PieRing from '../components/PieRing';
+import { shareMonthlyReport, shareYearlyReport } from '../utils/shareReport';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -360,6 +361,33 @@ export default function StatisticsScreen({ navigation }) {
             <Text style={[styles.brand, { color: tc.textMuted }]}>收支报表</Text>
             <Text style={[styles.title, { color: tc.text }]}>统计</Text>
           </View>
+          {/* 分享按钮 */}
+          {period !== 'week' ? (
+            <TouchableOpacity
+              style={[styles.shareBtn, { backgroundColor: tc.primary }]}
+              onPress={async () => {
+                try {
+                  if (period === 'month') {
+                    await shareMonthlyReport(
+                      transactions, selectedYear, selectedMonth,
+                      settings, tc.categories,
+                    );
+                  } else {
+                    await shareYearlyReport(
+                      transactions, reportYear,
+                      settings, tc.categories,
+                    );
+                  }
+                } catch (e) {
+                  Alert.alert('分享失败', e?.message || '请稍后重试');
+                }
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="share-outline" size={16} color={tc.primaryOn} />
+              <Text style={[styles.shareBtnText, { color: tc.primaryOn }]}>分享</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* ── 档期选择器 ── */}
@@ -954,6 +982,13 @@ const styles = StyleSheet.create({
   headerRow: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
   brand: { fontSize: fontSize.xs, letterSpacing: -0.1 },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
+
+  shareBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: spacing.md, paddingVertical: 8,
+    borderRadius: borderRadius.full,
+  },
+  shareBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 
   // 档期选择器
   periodRow: {
