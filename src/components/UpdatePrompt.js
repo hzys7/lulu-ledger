@@ -477,7 +477,6 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     if (!uri) return;
     if (installingRef.current) return;
     installingRef.current = true;
-    setStatus('installing');
     try {
       let IntentLauncher;
       try {
@@ -498,18 +497,22 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           type: 'application/vnd.android.package-archive',
           flags: FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK,
         });
-        // v1.2.49: the system install dialog has been handed off. Keep the
-        // modal open showing '安装已启动…' so the user has visible feedback.
-        // Previously we closed the modal here (1.2.46), but that caused Bug 1
-        // where the user saw the modal vanish and didn't know if the install
-        // actually started. The user can dismiss it manually via '完成'.
+        // Intent successfully dispatched — now show 'installing' feedback.
+        // Keeping the setStatus AFTER the dispatch ensures that if the
+        // async call throws, the user stays on 'done' with a clear error
+        // instead of briefly seeing an 'installing' state with just a
+        // '完成' button that does nothing.
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
       }
-      await Linking.openURL(uri);
-      // v1.2.49: same as the IntentLauncher path -- keep modal open.
+      // Fallback: use Linking.openURL. On Android N+, file:// URIs are
+      // blocked for cross-app intents, so openURL may return false (no
+      // app can handle the URI) instead of throwing. We must check the
+      // return value and treat false as an error.
+      const opened = await Linking.openURL(uri);
+      if (opened === false) throw new Error('系统无法打开此文件，请手动安装');
       flowActiveRef.current = false;
       installingRef.current = false;
       setStatus('installing');
