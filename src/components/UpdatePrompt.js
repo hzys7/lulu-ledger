@@ -479,9 +479,20 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           type: 'application/vnd.android.package-archive',
           flags: FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK,
         });
+        // 1.2.46: the system install dialog has been handed off. Close
+        // our own modal so it does not re-appear when the user comes
+        // back to the app (which is the bug we are fixing). Also clear
+        // installingRef so a future re-tap of 'click to install' is
+        // not silently blocked by the reentrancy guard.
+        setVisible(false);
+        installingRef.current = false;
         return;
       }
       await Linking.openURL(uri);
+      // 1.2.46: same as the IntentLauncher path -- hand off the
+      // install to the OS, close our modal, clear installingRef.
+      setVisible(false);
+      installingRef.current = false;
     } catch (e) {
       const msg = e?.message || String(e);
       // If the intent is already started (e.g. we re-entered from a
