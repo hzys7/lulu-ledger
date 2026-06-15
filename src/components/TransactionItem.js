@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { memo } from 'react';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CategoryIcon } from './CategoryIcon';
@@ -23,7 +23,7 @@ function timeLabel(iso) {
   return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
 
-export function TransactionItem({ transaction, onPress, currency = 'CNY', isLast }) {
+export const TransactionItem = memo(function TransactionItem({ transaction, onPress, currency = 'CNY', isLast }) {
   const tc = useThemeColors();
   const isExpense = transaction.type === 'expense';
   const amountColor = isExpense ? tc.text : tc.text;
@@ -61,7 +61,7 @@ export function TransactionItem({ transaction, onPress, currency = 'CNY', isLast
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

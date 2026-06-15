@@ -1,9 +1,9 @@
-﻿import React from 'react';
+﻿import React, { memo } from 'react';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { spacing, fontSize, fontWeight } from '../theme';
 
-export function SectionHeader({ title, subtitle, action, onAction, style }) {
+export const SectionHeader = memo(function SectionHeader({ title, subtitle, action, onAction, style }) {
   const tc = useThemeColors();
   return (
     <View style={[styles.row, style]}>
@@ -18,7 +18,7 @@ export function SectionHeader({ title, subtitle, action, onAction, style }) {
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

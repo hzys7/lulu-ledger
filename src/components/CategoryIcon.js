@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { memo } from 'react';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +29,7 @@ function withAlpha(hex, alpha) {
   return hex + Math.round(alpha * 255).toString(16).padStart(2, '0');
 }
 
-export function CategoryIcon({ category, size = 40, type = 'expense' }) {
+export const CategoryIcon = memo(function CategoryIcon({ category, size = 40, type = 'expense' }) {
   const tc = useThemeColors();
   const tint = (tc.categories && tc.categories[category]) || (type === 'income' ? tc.success : tc.textSubtle);
   const radius = Math.round(size * 0.32);
@@ -51,4 +51,4 @@ export function CategoryIcon({ category, size = 40, type = 'expense' }) {
       />
     </View>
   );
-}
+});

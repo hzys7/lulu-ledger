@@ -1,10 +1,10 @@
-﻿import React from 'react';
+﻿import React, { memo } from 'react';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 
-export function NumberPad({ onInput, onDelete, onConfirm, style, confirmLabel = '确定' }) {
+export const NumberPad = memo(function NumberPad({ onInput, onDelete, onConfirm, style, confirmLabel = '确定' }) {
   const tc = useThemeColors();
 
   const keys = [
@@ -46,7 +46,7 @@ export function NumberPad({ onInput, onDelete, onConfirm, style, confirmLabel = 
       </TouchableOpacity>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

@@ -1,7 +1,7 @@
 // 手画环形图
 // props: data = [{ value, color }], size, thickness, center (React node)
 import { useThemeColors } from '../hooks/useThemeColors';
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { fontSize } from '../theme';
@@ -29,7 +29,7 @@ function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
   ].join(' ');
 }
 
-export default function PieRing({ data, size = 180, thickness = 28, center = null }) {
+const PieRing = memo(function PieRing({ data, size = 180, thickness = 28, center = null }) {
   const tc = useThemeColors();
 
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -76,7 +76,9 @@ export default function PieRing({ data, size = 180, thickness = 28, center = nul
       ) : null}
     </View>
   );
-}
+});
+
+export default PieRing;
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },

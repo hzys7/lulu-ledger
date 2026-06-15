@@ -18,16 +18,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
-import { TransactionItem, EmptyState } from '../components/SharedComponents';
+import { TransactionItem, EmptyState, SectionHeader } from '../components/SharedComponents';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
 import { loadAiConfig } from '../utils/aiConfig';
 import AiChatScreen from './AiChatScreen';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
-
-function hexAlpha(hex, a) {
-  if (!hex) return hex;
-  return hex + Math.round(a * 255).toString(16).padStart(2, '0');
-}
 
 function dayKey(iso) {
   return new Date(iso).toLocaleDateString('zh-CN', {
@@ -430,25 +425,6 @@ export default function HomeScreen({ navigation }) {
         onSaved={() => { setShowAiChat(false); reload(); }}
       />
 
-    </View>
-  );
-}
-
-// SectionHeader 在该文件里需要定义（不能仅依赖导入的 SectionHeader）
-function SectionHeader({ title, subtitle, action, onAction, style }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
-  return (
-    <View style={[styles.sectionRow, style]}>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.sectionTitle, { color: tc.text }]}>{title}</Text>
-        {subtitle ? <Text style={[styles.sectionSubtitle, { color: tc.textMuted }]}>{subtitle}</Text> : null}
-      </View>
-      {action ? (
-        <TouchableOpacity onPress={onAction} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={[styles.sectionAction, { color: tc.text }]}>{action}</Text>
-        </TouchableOpacity>
-      ) : null}
     </View>
   );
 }

@@ -1,10 +1,10 @@
-﻿import React from 'react';
+﻿import React, { memo } from 'react';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, fontSize, fontWeight } from '../theme';
 
-export function EmptyState({ icon = 'wallet-outline', title, subtitle, compact = false }) {
+export const EmptyState = memo(function EmptyState({ icon = 'wallet-outline', title, subtitle, compact = false }) {
   const tc = useThemeColors();
   return (
     <View style={[styles.wrap, compact && styles.compact]}>
@@ -15,7 +15,7 @@ export function EmptyState({ icon = 'wallet-outline', title, subtitle, compact =
       {subtitle && <Text style={[styles.subtitle, { color: tc.textMuted }]}>{subtitle}</Text>}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {

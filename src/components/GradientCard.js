@@ -1,10 +1,10 @@
-﻿import React from 'react';
+﻿import React, { memo } from 'react';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { spacing, borderRadius, shadows } from '../theme';
 
 // 一张干净的实心卡：用于"高级"信息的展示（如概览卡）。不再使用渐变光晕。
-export function GradientCard({ children, style, onPress, dark = false, padded = true }) {
+export const GradientCard = memo(function GradientCard({ children, style, onPress, dark = false, padded = true }) {
   const tc = useThemeColors();
 
   const bg = dark ? tc.primary : tc.surface;
@@ -28,7 +28,7 @@ export function GradientCard({ children, style, onPress, dark = false, padded = 
         : children}
     </Component>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
