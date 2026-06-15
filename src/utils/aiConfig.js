@@ -8,25 +8,25 @@ export const AI_PROVIDERS = {
   deepseek: {
     label: 'DeepSeek',
     defaultBaseURL: 'https://api.deepseek.com/v1',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
+    models: ['deepseek-v4-flash', 'deepseek-v4-pro'],
     needsPath: false,
   },
   zhipu: {
     label: '智谱 GLM',
     defaultBaseURL: 'https://open.bigmodel.cn/api/paas/v4/',
-    models: ['glm-4-flash', 'glm-4-air', 'glm-4-plus'],
+    models: ['glm-5', 'glm-5-turbo', 'glm-4.7-flash'],
     needsPath: false,
   },
   qwen: {
     label: '通义千问',
     defaultBaseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    models: ['qwen-turbo', 'qwen-plus', 'qwen-max'],
+    models: ['qwen3.5-flash', 'qwen3.5-plus', 'qwen3-max'],
     needsPath: false,
   },
   openai: {
     label: 'OpenAI',
     defaultBaseURL: 'https://api.openai.com/v1',
-    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'],
+    models: ['gpt-5.5-instant', 'gpt-5.4-thinking', 'gpt-5.3-codex'],
     needsPath: false,
   },
   custom: {
@@ -41,7 +41,7 @@ export const DEFAULT_CONFIG = {
   provider: 'deepseek',
   apiKey: '',
   baseURL: AI_PROVIDERS.deepseek.defaultBaseURL,
-  model: 'deepseek-chat',
+  model: 'deepseek-v4-flash',
   customModel: '',
   enabled: false,
 };

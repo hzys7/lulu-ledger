@@ -208,40 +208,29 @@ export default function AiSettingsScreen({ visible, onClose }) {
               />
 
               {/* 模型 */}
-              <Text style={[styles.label, { color: tc.textMuted }]}>
-                模型
-                <Text style={{ color: tc.textSubtle }}> · 可选择或自定义</Text>
-              </Text>
-              {modelList.length > 0 ? (
-                <TouchableOpacity
-                  style={[styles.input, styles.selectInput, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
-                  onPress={() => setShowModelPicker(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.inputText, { color: tc.text }]}>
-                    {config.model === '__custom__' ? '自定义' : config.model}
-                  </Text>
-                  <Ionicons name="chevron-down" size={18} color={tc.textMuted} />
-                </TouchableOpacity>
+              <Text style={[styles.label, { color: tc.textMuted }]}>模型</Text>
+              <TouchableOpacity
+                style={[styles.input, styles.selectInput, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+                onPress={() => setShowModelPicker(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.inputText, { color: tc.text }]}>
+                  {config.model === '__custom__' ? (config.customModel || '自定义...') : config.model}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color={tc.textMuted} />
+              </TouchableOpacity>
+              {config.model === '__custom__' ? (
+                <TextInput
+                  style={[styles.input, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border, marginTop: spacing.sm }]}
+                  value={config.customModel}
+                  onChangeText={(v) => updateField('customModel', v)}
+                  placeholder="输入自定义模型名称"
+                  placeholderTextColor={tc.textSubtle}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                />
               ) : null}
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: tc.surfaceMuted,
-                    color: tc.text,
-                    borderColor: tc.border,
-                    marginTop: modelList.length > 0 ? spacing.sm : 0,
-                  },
-                ]}
-                value={config.model === '__custom__' ? config.customModel : ''}
-                onChangeText={(v) => updateField('customModel', v)}
-                placeholder="自定义模型名称"
-                placeholderTextColor={tc.textSubtle}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="off"
-              />
 
               <Text style={[styles.hint, { color: tc.textSubtle }]}>
                 说明：任意 OpenAI 兼容端点
