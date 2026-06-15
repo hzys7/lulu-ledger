@@ -288,7 +288,6 @@ export default function SettingsScreen({ navigation }) {
         ]}
       >
         <View style={styles.headerRow}>
-          <Text style={[styles.brand, { color: tc.textMuted }]}>个人</Text>
           <Text style={[styles.title, { color: tc.text }]}>设置</Text>
         </View>
 

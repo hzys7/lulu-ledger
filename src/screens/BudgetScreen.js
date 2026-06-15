@@ -143,8 +143,7 @@ export default function BudgetScreen() {
           { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xxl },
         ]}
       >
-        <View style={styles.headerRow}>
-          <Text style={[styles.brand, { color: tc.textMuted }]}>规划</Text>
+        <View style={[styles.headerRow, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }]}>
           <Text style={[styles.title, { color: tc.text }]}>预算</Text>
         </View>
 
@@ -409,7 +408,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: spacing.xxxl },
 
   headerRow: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
-  brand: { fontSize: fontSize.xs, letterSpacing: -0.1 },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
 
   monthBar: {

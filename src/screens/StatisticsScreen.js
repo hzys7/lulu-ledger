@@ -358,7 +358,6 @@ export default function StatisticsScreen({ navigation }) {
       >
         <View style={styles.headerRow}>
           <View>
-            <Text style={[styles.brand, { color: tc.textMuted }]}>收支报表</Text>
             <Text style={[styles.title, { color: tc.text }]}>统计</Text>
           </View>
           {/* 分享按钮 */}
@@ -980,7 +979,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 0, paddingBottom: spacing.xl },
 
   headerRow: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
-  brand: { fontSize: fontSize.xs, letterSpacing: -0.1 },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
 
   shareBtn: {

@@ -89,7 +89,6 @@ export default function HomeScreen({ navigation }) {
         {/* 顶部标题 */}
         <View style={styles.headerRow}>
           <View>
-            <Text style={[styles.brand, { color: tc.textMuted }]}>璐璐记账</Text>
             <Text style={[styles.title, { color: tc.text }]}>我的账本</Text>
           </View>
           <TouchableOpacity
@@ -295,7 +294,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: spacing.base, paddingBottom: spacing.sm,
   },
-  brand: { fontSize: fontSize.xs, letterSpacing: -0.1 },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
   quickAddBtn: {
     flexDirection: 'row', alignItems: 'center',
