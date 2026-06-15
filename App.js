@@ -3,7 +3,7 @@ import React from 'react';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import UpdatePrompt, { triggerUpdateCheck } from './src/components/UpdatePrompt';
 import { Platform, StyleSheet, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';

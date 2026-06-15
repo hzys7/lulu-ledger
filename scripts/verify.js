@@ -143,6 +143,25 @@ files.forEach(function (f) {
 });
 console.log("Checked", importCount, "relative imports");
 
+console.log("=== 2.5) Undeclared package imports ===");
+// Catch 1.2.37-style bugs where package.json dropped a dep but source still imports it.
+// expo prebuild / metro bundle both fail with "Unable to resolve module X".
+var PKG = require(path.join(ROOT, "package.json"));
+var declaredPkgs = new Set([].concat(Object.keys(PKG.dependencies || {}), Object.keys(PKG.devDependencies || {})));
+var importSpecRe = /from\s+["']([^"'./][^"']*)["']/g;
+var undeclaredCount = 0;
+files.concat([APP_JS, ENTRY].filter(function (p) { return fs.existsSync(p); })).forEach(function (file) {
+  if (!fs.existsSync(file)) return;
+  var data = fs.readFileSync(file, "utf8");
+  var m;
+  while ((m = importSpecRe.exec(data))) {
+    var spec = m[1];
+    var pkgName = spec.indexOf("@") === 0 ? spec.split("/").slice(0, 2).join("/") : spec.split("/")[0];
+    if (!declaredPkgs.has(pkgName)) { err(file, "imports from \"" + spec + "\" but package \"" + pkgName + "\" is not declared in package.json (CI bundle will fail with \"Unable to resolve module\")"); undeclaredCount++; }
+  }
+});
+console.log("Undeclared package imports:", undeclaredCount);
+
 console.log("=== 3) forwardRef pattern check ===");
 var forwardRefFiles = 0, forwardRefWithoutDefault = 0;
 files.forEach(function (f) {
