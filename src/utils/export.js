@@ -2,6 +2,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getCurrencySymbol } from './currency';
+import { parseCSVToTransactions as _parseCSV } from './csvParser';
 
 // ============ CSV 导出 ============
 
@@ -235,50 +236,7 @@ function genTxId() {
 // mode:
 //   'auto'  - 自动识别本 APP 格式或通用格式（推荐）
 //   'native' - 只识别本 APP 自己的导出格式
-export function parseCSVToTransactions(csvText, mode = 'auto') {
-  if (!csvText || typeof csvText !== 'string') return [];
-  // 去 BOM
-  let text = csvText.replace(/^\uFEFF/, '');
-  // 去掉空行
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length < 2) return [];
-
-  const headerCells = parseCSVLine(lines[0]).map((c) => c.trim());
-  const cols = detectColumns(headerCells);
-
-  // 至少要能识别日期和金额
-  if (cols.date === -1 || cols.amount === -1) {
-    // 尝试按"位置"猜测：本 APP 格式是 [日期,类型,分类,金额,货币,账本,备注]
-    if (mode === 'auto' && headerCells.length >= 4) {
-      return parseNativeCSV(lines, headerCells);
-    }
-    return [];
-  }
-
-  const out = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cells = parseCSVLine(lines[i]);
-    const rawAmount = cells[cols.amount] || '';
-    const amountNum = parseAmountCell(rawAmount);
-    if (!amountNum) continue;
-    const type = cols.type >= 0 ? detectType(cells[cols.type]) : 'expense';
-    out.push({
-      id: genTxId(),
-      type,
-      amount: amountNum,
-      category: cols.category >= 0 ? (cells[cols.category] || '其他') : '其他',
-      note: cols.note >= 0 ? (cells[cols.note] || '') : '',
-      date: parseDateCell(cells[cols.date]),
-      currency: cols.currency >= 0 ? (cells[cols.currency] || 'CNY') : 'CNY',
-      bookId: 'default',
-      bookName: cols.book >= 0 ? (cells[cols.book] || '') : '',
-      createdAt: new Date().toISOString(),
-    });
-  }
-  return out;
-}
-
-// 本 APP 自己的导出格式：[日期,类型,分类,金额,货币,账本,备注]
+export const parseCSVToTransactions = (csvText, mode = 'auto') => _parseCSV(csvText, mode);
 function parseNativeCSV(lines, headerCells) {
   const out = [];
   // 找表头各列位置（按本 APP 默认顺序）
