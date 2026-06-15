@@ -237,26 +237,32 @@ export async function getTransactions(bookId) {
 }
 
 export async function addTransaction(transaction) {
-  const all = (await readField('transactions')) || [];
+  // Direct cache mutation: eliminates readField (deep copy) + writeField
+  // (another deep copy + persist). Now: ensureLoaded → unshift → persist once.
+  const env = await ensureLoaded();
+  const all = env.data.transactions || [];
   all.unshift(transaction);
-  await writeField('transactions', all);
+  await persist();
   return all;
 }
 
 export async function updateTransaction(id, updates) {
-  const all = (await readField('transactions')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.transactions || [];
   const index = all.findIndex(t => t && t.id === id);
   if (index !== -1) {
     all[index] = { ...all[index], ...updates };
-    await writeField('transactions', all);
+    await persist();
   }
   return all;
 }
 
 export async function deleteTransaction(id) {
-  const all = (await readField('transactions')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.transactions || [];
   const filtered = all.filter(t => t && t.id !== id);
-  await writeField('transactions', filtered);
+  env.data.transactions = filtered;
+  await persist();
   return filtered;
 }
 
@@ -280,29 +286,33 @@ export async function getBooks() {
 }
 
 export async function addBook(book) {
-  const all = await getBooks();
+  // Direct cache mutation — getBooks() returns a deep copy via readField
+  // so we must use ensureLoaded() to reach the live cache.
+  const env = await ensureLoaded();
+  const all = env.data.books || [];
   all.push(book);
-  await writeField('books', all);
+  await persist();
   return all;
 }
 
 export async function updateBook(id, updates) {
-  const all = await getBooks();
+  const env = await ensureLoaded();
+  const all = env.data.books || [];
   const index = all.findIndex(b => b && b.id === id);
   if (index !== -1) {
     all[index] = { ...all[index], ...updates };
-    await writeField('books', all);
+    await persist();
   }
   return all;
 }
 
 export async function deleteBook(id) {
-  const all = await getBooks();
-  const filtered = all.filter(b => b && b.id !== id);
-  await writeField('books', filtered);
-  const tx = (await readField('transactions')) || [];
-  await writeField('transactions', tx.filter(t => t && t.bookId !== id));
-  return filtered;
+  // Single persist: both books and transactions updates in one pass
+  const env = await ensureLoaded();
+  env.data.books = (env.data.books || []).filter(b => b && b.id !== id);
+  env.data.transactions = (env.data.transactions || []).filter(t => t && t.bookId !== id);
+  await persist();
+  return env.data.books;
 }
 
 export async function getCurrentBookId() {
@@ -323,7 +333,8 @@ export async function getBudgets(bookId) {
 }
 
 export async function setBudget(budget) {
-  const all = (await readField('budgets')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.budgets || [];
   const index = all.findIndex(
     b => b && b.bookId === budget.bookId && b.category === budget.category && b.month === budget.month
   );
@@ -332,16 +343,18 @@ export async function setBudget(budget) {
   } else {
     all.push(budget);
   }
-  await writeField('budgets', all);
+  await persist();
   return all;
 }
 
 export async function deleteBudget(bookId, category, month) {
-  const all = (await readField('budgets')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.budgets || [];
   const filtered = all.filter(
     b => !(b && b.bookId === bookId && b.category === category && b.month === month)
   );
-  await writeField('budgets', filtered);
+  env.data.budgets = filtered;
+  await persist();
   return filtered;
 }
 
@@ -352,10 +365,11 @@ export async function getSettings() {
 }
 
 export async function updateSettings(updates) {
-  const current = (await readField('settings')) || {};
-  const next = { ...current, ...updates };
-  await writeField('settings', next);
-  return next;
+  const env = await ensureLoaded();
+  const current = env.data.settings || {};
+  env.data.settings = { ...current, ...updates };
+  await persist();
+  return env.data.settings;
 }
 
 // --------------- accounts ---------------
@@ -367,37 +381,42 @@ export async function getAccounts(bookId) {
 }
 
 export async function addAccount(account) {
-  const all = (await readField('accounts')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.accounts || [];
   all.push(account);
-  await writeField('accounts', all);
+  await persist();
   return all;
 }
 
 export async function updateAccount(id, updates) {
-  const all = (await readField('accounts')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.accounts || [];
   const index = all.findIndex(a => a && a.id === id);
   if (index !== -1) {
     all[index] = { ...all[index], ...updates };
-    await writeField('accounts', all);
+    await persist();
   }
   return all;
 }
 
 export async function deleteAccount(id) {
-  const all = (await readField('accounts')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.accounts || [];
   const filtered = all.filter(a => a && a.id !== id);
-  await writeField('accounts', filtered);
+  env.data.accounts = filtered;
+  await persist();
   return filtered;
 }
 
 // 直接加减账户余额（用于记账联动调账、手动对账）
 export async function adjustAccountBalance(id, delta) {
-  const all = (await readField('accounts')) || [];
+  const env = await ensureLoaded();
+  const all = env.data.accounts || [];
   const index = all.findIndex(a => a && a.id === id);
   if (index !== -1) {
     const cur = Number(all[index].balance) || 0;
     all[index] = { ...all[index], balance: cur + Number(delta) };
-    await writeField('accounts', all);
+    await persist();
   }
   return all;
 }
@@ -502,21 +521,27 @@ export async function getRecurring() {
 }
 
 export async function addRecurring(item) {
-  const all = await getRecurring();
+  const env = await ensureLoaded();
+  const all = env.data.recurring || [];
   all.push(item);
-  await writeField('recurring', all);
+  await persist();
   return all;
 }
 
 export async function deleteRecurring(id) {
-  const all = await getRecurring();
-  const filtered = all.filter(r => r && r.id !== id);
-  await writeField('recurring', filtered);
-  return filtered;
+  const env = await ensureLoaded();
+  const all = env.data.recurring || [];
+  env.data.recurring = all.filter(r => r && r.id !== id);
+  await persist();
+  return env.data.recurring;
 }
 
 export async function processRecurring(currentBookId) {
-  const all = await getRecurring();
+  // Must use ensureLoaded() — getRecurring() returns a deep copy.
+  // Without this, the updated lastProcessedDate in `remaining` is never
+  // written back to the cache and the same items get re-processed forever.
+  const env = await ensureLoaded();
+  const all = env.data.recurring || [];
   if (all.length === 0) return [];
 
   const now = new Date();
@@ -555,7 +580,8 @@ export async function processRecurring(currentBookId) {
   });
 
   if (toProcess.length > 0) {
-    await writeField('recurring', remaining);
+    env.data.recurring = remaining;
+    await persist();
   }
 
   return toProcess;
