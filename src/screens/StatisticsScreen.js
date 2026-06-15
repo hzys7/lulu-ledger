@@ -423,7 +423,6 @@ export default function StatisticsScreen({ navigation }) {
               <Ionicons name="share-outline" size={16} color={tc.primaryOn} />
               <Text style={[styles.shareBtnText, { color: tc.primaryOn }]}>分享</Text>
             </TouchableOpacity>
-          ) : null}
         </View>
 
         {/* ── 档期选择器 ── */}
@@ -503,14 +502,14 @@ export default function StatisticsScreen({ navigation }) {
 
           <View style={[styles.segment, { backgroundColor: tc.surfaceMuted }]}>
             <TouchableOpacity
-              style={[styles.segmentItem, dataType === 'expense' && styles.segmentItemActive]}
+              style={[styles.segmentItem, dataType === 'expense' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
               onPress={() => { setDataType('expense'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
               <Text style={[styles.segmentText, { color: dataType === 'expense' ? tc.text : tc.textMuted }]}>支出</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segmentItem, dataType === 'income' && styles.segmentItemActive]}
+              style={[styles.segmentItem, dataType === 'income' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
               onPress={() => { setDataType('income'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
@@ -1091,13 +1090,13 @@ const styles = StyleSheet.create({
 
   segment: { flexDirection: 'row', borderRadius: borderRadius.full, padding: 3 },
   segmentItem: { paddingVertical: 6, paddingHorizontal: spacing.md, borderRadius: borderRadius.full },
-  segmentItemActive: { backgroundColor: '#FFFFFF' },
+  segmentItemActive: {},
   segmentText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, letterSpacing: -0.2 },
 
   // AI 卡片
   aiCard: {
     flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginBottom: spacing.base,
-    padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md,
+    padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md, ...shadows.sm,
   },
   aiIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   aiTextWrap: { flex: 1 },
@@ -1111,7 +1110,7 @@ const styles = StyleSheet.create({
   summaryAmount: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, marginTop: spacing.xs, letterSpacing: -0.6, fontVariant: ['tabular-nums'] },
 
   // 通用卡片
-  card: { marginHorizontal: spacing.base, marginBottom: spacing.base, padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth },
+  card: { marginHorizontal: spacing.base, marginBottom: spacing.base, padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.base },
   cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
   cardUnit: { fontSize: fontSize.xs },

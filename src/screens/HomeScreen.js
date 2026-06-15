@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', paddingHorizontal: spacing.base, paddingBottom: spacing.sm, gap: spacing.sm },
   statCard: {
     flex: 1, padding: spacing.base, borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: StyleSheet.hairlineWidth, ...shadows.sm,
   },
   statCardLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
   statCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   aiCardWrap: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
   aiCard: {
     flexDirection: 'row', alignItems: 'center', padding: spacing.md,
-    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md,
+    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md, ...shadows.sm,
   },
   aiCardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   aiCardEmoji: { fontSize: 32 },
@@ -331,5 +331,5 @@ const styles = StyleSheet.create({
   filterRow: { flexDirection: 'row', gap: spacing.sm, paddingBottom: spacing.sm },
   filterChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.full, borderWidth: StyleSheet.hairlineWidth },
   filterChipText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
-  recentList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  recentList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', ...shadows.sm },
 });

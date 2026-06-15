@@ -319,7 +319,7 @@ export default function BudgetScreen() {
         >
           <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowModal(false)} />
           <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
-            <View style={styles.handle} />
+            <View style={[styles.handle, { backgroundColor: tc.divider }]} />
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: tc.text }]}>
                 {editingCategory === '__total__'
@@ -486,6 +486,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
+    ...shadows.sm,
   },
   budgetTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   budgetLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
@@ -504,7 +505,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D4D4D8',
     alignSelf: 'center',
     marginTop: spacing.sm,
     marginBottom: spacing.sm,

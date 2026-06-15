@@ -376,6 +376,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
+    ...shadows.sm,
   },
   heroLabel: { fontSize: fontSize.sm, letterSpacing: -0.1 },
   heroAmount: {
@@ -415,6 +416,7 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
+    ...shadows.sm,
   },
   accountIcon: {
     width: 40,

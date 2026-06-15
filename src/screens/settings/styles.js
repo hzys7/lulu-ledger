@@ -81,7 +81,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D4D4D8',
     alignSelf: 'center',
     marginTop: spacing.sm,
     marginBottom: spacing.sm,

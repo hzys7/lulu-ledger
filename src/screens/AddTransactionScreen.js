@@ -178,7 +178,7 @@ export default function AddTransactionScreen({ navigation, route }) {
       <View style={styles.pageWrap}>
         <View style={[styles.segment, { backgroundColor: tc.surfaceMuted }]}>
           <TouchableOpacity
-            style={[styles.segmentItem, type === 'expense' && styles.segmentItemActive]}
+            style={[styles.segmentItem, type === 'expense' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
             onPress={() => setType('expense')}
             activeOpacity={0.7}
           >
@@ -193,7 +193,7 @@ export default function AddTransactionScreen({ navigation, route }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentItem, type === 'income' && styles.segmentItemActive]}
+            style={[styles.segmentItem, type === 'income' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
             onPress={() => setType('income')}
             activeOpacity={0.7}
           >
@@ -257,7 +257,7 @@ export default function AddTransactionScreen({ navigation, route }) {
             ]}
           >
             {/* 顶部条带 */}
-            <View style={styles.handle} />
+            <View style={[styles.handle, { backgroundColor: tc.divider }]} />
             <FormHeader
               category={formCategory}
               type={type}
@@ -435,7 +435,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentItemActive: {
-    backgroundColor: '#FFFFFF',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -490,7 +489,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D4D4D8',
     alignSelf: 'center',
     marginBottom: spacing.md,
   },
