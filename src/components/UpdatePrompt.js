@@ -420,6 +420,13 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           setStatus("done");
           setErrorMsg("");
           abortRef.current = null;
+          // Auto-install 500ms after download completes.
+          // The user can still tap "点击安装" before the timer fires;
+          // handleInstall's installingRef guard will prevent double-launch.
+          autoInstallTimerRef.current = setTimeout(() => {
+            autoInstallTimerRef.current = null;
+            handleInstall(file.uri || file.path);
+          }, 500);
           return;
         } catch (e) {
           if (e?.name === "AbortError") {
@@ -566,7 +573,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         setStatus('installing');
         return;
       } catch (e1) {
-        console.warn('[UpdatePrompt] method 1 (ACTION_VIEW) failed:', e1?.message || e1);
+        console.warn('[UpdatePrompt] method 1 (INSTALL_PACKAGE) failed:', e1?.message || e1);
       }
 
       // Method 2: Linking.openURL with content URI.
@@ -728,7 +735,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
             </>          ) : null}            {status === 'done' ? (
             <View style={styles.doneBlock}>
               <Text style={[styles.doneText, { color: tc.success }]}>✅ 下载完成</Text>
-              <Text style={[styles.doneSubText, { color: tc.textMuted }]}>点击下方按钮开始安装</Text>
+              <Text style={[styles.doneSubText, { color: tc.textMuted }]}>正在启动安装…</Text>
               {(installError || showInstallError) ? (
                 <View style={[styles.installErrorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
