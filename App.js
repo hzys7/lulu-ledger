@@ -12,6 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { FinanceProvider, useFinance } from './src/context/FinanceContext';
 import HomeScreen from './src/screens/HomeScreen';
+import RecordsScreen from './src/screens/RecordsScreen';
 import AddTransactionScreen from './src/screens/AddTransactionScreen';
 import StatisticsScreen from './src/screens/StatisticsScreen';
 import NetWorthScreen from './src/screens/NetWorthScreen';
@@ -54,8 +55,8 @@ function MainTabs() {
           }
           const icons = {
             Home: focused ? 'home' : 'home-outline',
+            Records: focused ? 'list' : 'list-outline',
             Statistics: focused ? 'pie-chart' : 'pie-chart-outline',
-            NetWorth: focused ? 'wallet' : 'wallet-outline',
             Settings: focused ? 'settings' : 'settings-outline',
           };
           return <Ionicons name={icons[route.name] || 'ellipse-outline'} size={size || 22} color={color} />;
@@ -89,7 +90,7 @@ function MainTabs() {
           },
         })}
       />
-      <Tab.Screen name="Statistics" component={StatisticsScreen} options={{ tabBarLabel: '统计' }} />
+      <Tab.Screen name="Records" component={RecordsScreen} options={{ tabBarLabel: '记录' }} />
       <Tab.Screen
         name="AddTab"
         component={AddTabScreen}
@@ -102,7 +103,7 @@ function MainTabs() {
           },
         })}
       />
-      <Tab.Screen name="NetWorth" component={NetWorthScreen} options={{ tabBarLabel: '净资产' }} />
+      <Tab.Screen name="Statistics" component={StatisticsScreen} options={{ tabBarLabel: '统计' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: '设置' }} />
     </Tab.Navigator>
   );
@@ -145,6 +146,20 @@ function RootNavigator() {
         options={{
           headerShown: true,
           headerTitle: '记一笔',
+          headerTitleStyle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: tc.text, letterSpacing: -0.3 },
+          headerStyle: { backgroundColor: tc.background, elevation: 0, shadowOpacity: 0 },
+          headerTintColor: tc.text,
+          headerShadowVisible: false,
+          headerBackTitle: '',
+          headerBackTitleVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="NetWorth"
+        component={NetWorthScreen}
+        options={{
+          headerShown: true,
+          headerTitle: '净资产',
           headerTitleStyle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: tc.text, letterSpacing: -0.3 },
           headerStyle: { backgroundColor: tc.background, elevation: 0, shadowOpacity: 0 },
           headerTintColor: tc.text,
