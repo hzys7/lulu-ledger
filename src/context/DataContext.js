@@ -3,7 +3,7 @@
 // the previous behaviour where ANY field change re-rendered EVERY consumer:
 // the value only changes when one of [transactions, budgets, accounts,
 // recurring, loaded] or one of the CRUD callbacks changes.
-import React, { createContext, useState, useContext, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useContext, useCallback, useMemo, useRef, useEffect } from 'react';
 import * as storage from '../utils/storage';
 import {
   sanitizeTransactions,
@@ -13,6 +13,7 @@ import {
 } from './sanitizers';
 import { useBooks } from './BooksContext';
 import { useSettings } from './SettingsContext';
+import UndoToast from '../components/UndoToast';
 
 const DataContext = createContext(null);
 
@@ -25,6 +26,18 @@ export function DataProvider({ children }) {
   const [accounts, setAccounts] = useState([]);
   const [recurring, setRecurring] = useState([]);
   const [loaded, setLoaded] = useState(false);
+
+  // --------------- undo delete ---------------
+  const [undoInfo, setUndoInfo] = useState(null);
+  const undoTimeoutRef = useRef(null);
+  const undoDataRef = useRef(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    };
+  }, []);
 
   const initFromStorage = useCallback(async () => {
     if (!currentBookId) return;
@@ -117,16 +130,56 @@ export function DataProvider({ children }) {
     const old = transactions.find(t => t.id === id);
     const updated = await storage.deleteTransaction(id);
     setTransactions(sanitizeTransactions(updated.filter(t => t.bookId === currentBookId)));
+    let accId = null;
+    let accDelta = 0;
     if (old) {
-      const accId = old.accountId
+      accId = old.accountId
         || (accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id);
       if (accId) {
-        const delta = old.type === 'income' ? -Number(old.amount) : Number(old.amount);
-        const r = await storage.adjustAccountBalance(accId, delta);
+        accDelta = old.type === 'income' ? -Number(old.amount) : Number(old.amount);
+        const r = await storage.adjustAccountBalance(accId, accDelta);
         setAccounts(sanitizeAccounts(r.filter(a => a.bookId === currentBookId)));
       }
     }
+    // Show undo toast for 5 seconds
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    undoDataRef.current = old ? { deletedTx: old, accId, accDelta } : null;
+    setUndoInfo(old ? { deletedTx: old, accId, accDelta } : { deletedTx: null });
+    undoTimeoutRef.current = setTimeout(() => {
+      undoDataRef.current = null;
+      setUndoInfo(null);
+      undoTimeoutRef.current = null;
+    }, 5000);
   }, [currentBookId, transactions, accounts]);
+
+  const undoDelete = useCallback(async () => {
+    const info = undoDataRef.current;
+    if (!info || !info.deletedTx) return;
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+    // Re-add the transaction (preserves original id)
+    await storage.addTransaction(info.deletedTx);
+    const refreshed = await storage.getTransactions(currentBookId);
+    setTransactions(sanitizeTransactions(refreshed.filter(t => t.bookId === currentBookId)));
+    // Reverse the account balance reversal (re-apply original effect)
+    if (info.accId) {
+      const r = await storage.adjustAccountBalance(info.accId, -info.accDelta);
+      setAccounts(sanitizeAccounts(r.filter(a => a.bookId === currentBookId)));
+    }
+    undoDataRef.current = null;
+    setUndoInfo(null);
+  }, [currentBookId]);
+
+  const clearUndo = useCallback(() => {
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+    undoDataRef.current = null;
+    setUndoInfo(null);
+  }, []);
 
   // --------------- accounts ---------------
 
@@ -299,7 +352,17 @@ export function DataProvider({ children }) {
     reload,
   ]);
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <>
+      <DataContext.Provider value={value}>{children}</DataContext.Provider>
+      <UndoToast
+        visible={undoInfo !== null && undoInfo.deletedTx !== null}
+        message="已删除 1 笔交易"
+        onUndo={undoDelete}
+        onTimeout={clearUndo}
+      />
+    </>
+  );
 }
 
 export function useData() {
