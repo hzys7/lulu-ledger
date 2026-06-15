@@ -24,13 +24,11 @@ import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile 
 import { exportAllData, importData } from '../utils/storage';
 import { Section, ActionRow } from "./settings/Section";
 import BookModal from "./settings/BookModal";
-import CurrencyModal from "./settings/CurrencyModal";
 import ImportModal from "./settings/ImportModal";
 import RecurringModal from "./settings/RecurringModal";
 import { styles } from "./settings/styles";
 import BookManagerSection from "./settings/BookManagerSection";
 import BudgetSection from "./settings/BudgetSection";
-import CurrencySection from "./settings/CurrencySection";
 import AppearanceSection from "./settings/AppearanceSection";
 import UpdateSection from "./settings/UpdateSection";
 import RecurringSection from "./settings/RecurringSection";
@@ -94,7 +92,6 @@ export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
   const [showBookModal, setShowBookModal] = useState(false);
-  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [newBookName, setNewBookName] = useState('');
   const [newBookIcon, setNewBookIcon] = useState('wallet');
@@ -158,10 +155,6 @@ export default function SettingsScreen({ navigation }) {
     await switchBook(bookId);
   };
 
-  const handleCurrencyChange = async (code) => {
-    await updateAppSettings({ currency: code });
-    setShowCurrencyModal(false);
-  };
 
   const handleExportCSV = async () => {
     try {
@@ -307,7 +300,6 @@ export default function SettingsScreen({ navigation }) {
           onAdd={openAddBook}
         />
         <BudgetSection onNavigate={() => navigation.navigate("Budget")} />
-        <CurrencySection onOpenModal={() => setShowCurrencyModal(true)} />
         <AppearanceSection onToggleTheme={handleToggleTheme} />
         <UpdateSection
           isChecking={isChecking}
@@ -353,11 +345,6 @@ export default function SettingsScreen({ navigation }) {
         onDelete={() => { setShowBookModal(false); handleDeleteBook(editingBook); }}
       />
 
-      <CurrencyModal
-        visible={showCurrencyModal}
-        onClose={() => setShowCurrencyModal(false)}
-        onSelect={handleCurrencyChange}
-      />
       <ImportModal
         visible={showImportModal}
         onClose={() => setShowImportModal(false)}
