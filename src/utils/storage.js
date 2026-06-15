@@ -76,14 +76,23 @@ async function rawGet(key) {
   }
 }
 
-async function rawSet(key, value) {
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (e) {
-    console.error('Storage write error:', e);
-    return false;
+async function rawSet(key, value, _retries = 1) {
+  for (let attempt = 0; attempt <= _retries; attempt++) {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      if (attempt < _retries) {
+        // Brief backoff before retrying (250 ms) -- in case of a transient
+        // storage contention or low-memory pressure.
+        await new Promise((r) => setTimeout(r, 250));
+        continue;
+      }
+      console.error('Storage write error:', e);
+      return false;
+    }
   }
+  return false;
 }
 
 async function rawRemove(key) {

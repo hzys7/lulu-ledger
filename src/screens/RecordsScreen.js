@@ -95,11 +95,62 @@ export default function RecordsScreen({ navigation }) {
         return d.getFullYear() === monthFilter.year && d.getMonth() === monthFilter.month;
       });
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter((t) =>
-        t.category.toLowerCase().includes(q) || (t.note && t.note.toLowerCase().includes(q)),
-      );
+    const q = searchQuery.trim();
+    if (q) {
+      // Multi-dimensional search: support amount range, account name,
+      // category, and note keywords.
+      //
+      // Syntax examples:
+      //   >100       — amount greater than 100
+      //   <50        — amount less than 50
+      //   100-500    — amount between 100 and 500
+      //   微信        — matches account name, category, or note
+      //   >100 吃饭  — combination: amount > 100 AND (category/note has 吃饭)
+      const ql = q.toLowerCase();
+      let minAmount = null;
+      let maxAmount = null;
+      const keywords = [];
+
+      // Parse amount range patterns from the query string
+      const gtMatch = ql.match(/>\s*(\d+(\.\d+)?)/);
+      if (gtMatch) minAmount = parseFloat(gtMatch[1]);
+      const ltMatch = ql.match(/<\s*(\d+(\.\d+)?)/);
+      if (ltMatch) maxAmount = parseFloat(ltMatch[1]);
+      const rangeMatch = ql.match(/(\d+(\.\d+)?)\s*-\s*(\d+(\.\d+)?)/);
+      if (rangeMatch) {
+        minAmount = parseFloat(rangeMatch[1]);
+        maxAmount = parseFloat(rangeMatch[3]);
+      }
+
+      // The remaining text (after stripping parsed patterns) are keywords
+      // matched against category, note, and account name.
+      let remainder = ql
+        .replace(/>\s*\d+(\.\d+)?/g, '')
+        .replace(/<\s*\d+(\.\d+)?/g, '')
+        .replace(/\d+(\.\d+)?\s*-\s*\d+(\.\d+)?/g, '')
+        .trim();
+      if (remainder) {
+        remainder.split(/\s+/).forEach((kw) => {
+          const w = kw.trim();
+          if (w) keywords.push(w);
+        });
+      }
+
+      list = list.filter((t) => {
+        // Amount filter
+        if (minAmount !== null && t.amount < minAmount) return false;
+        if (maxAmount !== null && t.amount > maxAmount) return false;
+        // Keyword filter: match against category, note, AND account name
+        if (keywords.length > 0) {
+          const acctName = (t.account || '').toLowerCase();
+          const catName = (t.category || '').toLowerCase();
+          const noteText = (t.note || '').toLowerCase();
+          return keywords.some((kw) =>
+            catName.includes(kw) || noteText.includes(kw) || acctName.includes(kw),
+          );
+        }
+        return true;
+      });
     }
     return list;
   }, [transactions, searchQuery, monthFilter]);
@@ -233,7 +284,7 @@ export default function RecordsScreen({ navigation }) {
                 <Ionicons name="search" size={16} color={tc.textSubtle} />
                 <TextInput
                   style={[styles.searchInput, { color: tc.text }]}
-                  placeholder="搜索分类或备注"
+                  placeholder="搜金额 >100 · 关键词 · 账户"
                   placeholderTextColor={tc.textSubtle}
                   value={inputValue}
                   onChangeText={onChangeSearch}

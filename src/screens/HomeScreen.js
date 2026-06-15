@@ -62,15 +62,20 @@ export default function HomeScreen({ navigation }) {
   const expenseDiff = summary.expense - lastSummary.expense;
   const expenseDiffPct = lastSummary.expense > 0 ? Math.round((expenseDiff / lastSummary.expense) * 100) : 0;
 
-  // 近期交易（最近 5 笔）
+  const [txFilter, setTxFilter] = useState('all'); // all | income | expense
+
+  // 近期交易（最近 5 笔，可筛选收支类型）
   const recentTransactions = useMemo(() => {
-    return [...transactions]
+    let list = [...transactions];
+    if (txFilter === 'income') list = list.filter((t) => t.type === 'income');
+    if (txFilter === 'expense') list = list.filter((t) => t.type === 'expense');
+    return list
       .sort((a, b) => {
         if (a.date !== b.date) return a.date < b.date ? 1 : -1;
         return (a.createdAt || '') < (b.createdAt || '') ? 1 : -1;
       })
       .slice(0, 5);
-  }, [transactions]);
+  }, [transactions, txFilter]);
 
   const hasData = transactions.length > 0;
 
@@ -215,6 +220,36 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             ) : null}
           </View>
+          {/* 收支筛选 */}
+          {hasData ? (
+            <View style={styles.filterRow}>
+              {['all', 'expense', 'income'].map((f) => {
+                const active = txFilter === f;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    style={[
+                      styles.filterChip,
+                      { backgroundColor: tc.surfaceMuted, borderColor: tc.divider },
+                      active && { backgroundColor: tc.primary, borderColor: tc.primary },
+                    ]}
+                    onPress={() => setTxFilter(f)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        { color: tc.textSecondary },
+                        active && { color: tc.primaryOn, fontWeight: fontWeight.semibold },
+                      ]}
+                    >
+                      {f === 'all' ? '全部' : f === 'expense' ? '支出' : '收入'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
 
           {hasData ? (
             <View style={[styles.recentList, { backgroundColor: tc.surface, borderColor: tc.border }]}>
@@ -319,5 +354,8 @@ const styles = StyleSheet.create({
   recentTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
   recentViewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   recentViewAllText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+  filterRow: { flexDirection: 'row', gap: spacing.sm, paddingBottom: spacing.sm },
+  filterChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.full, borderWidth: StyleSheet.hairlineWidth },
+  filterChipText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
   recentList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
 });

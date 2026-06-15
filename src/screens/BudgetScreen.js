@@ -41,7 +41,7 @@ export default function BudgetScreen() {
   const [editingCategory, setEditingCategory] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const selectedYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [budgetAlerts, setBudgetAlerts] = useState([]);
 
   const currentMonth = selectedYear + '-' + String(selectedMonth + 1).padStart(2, '0');
@@ -150,21 +150,40 @@ export default function BudgetScreen() {
 
         <View style={styles.monthBar}>
           <TouchableOpacity
-            onPress={() => setSelectedMonth(Math.max(0, selectedMonth - 1))}
-            disabled={selectedMonth === 0}
+            onPress={() => {
+              if (selectedMonth === 0) {
+                setSelectedYear(selectedYear - 1);
+                setSelectedMonth(11);
+              } else {
+                setSelectedMonth(selectedMonth - 1);
+              }
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-back" size={20} color={selectedMonth === 0 ? tc.textSubtle : tc.text} />
+            <Ionicons name="chevron-back" size={20} color={tc.text} />
           </TouchableOpacity>
-          <Text style={[styles.monthText, { color: tc.text }]}>
-            {selectedYear} 年 {selectedMonth + 1} 月
-          </Text>
           <TouchableOpacity
-            onPress={() => setSelectedMonth(Math.min(11, selectedMonth + 1))}
-            disabled={selectedMonth === 11}
+            onPress={() => setSelectedYear(selectedYear - 1)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.yearNav}
+          >
+            <Text style={[styles.monthText, { color: tc.text }]}>
+              {selectedYear} 年 {selectedMonth + 1} 月
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={tc.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              if (selectedMonth === 11) {
+                setSelectedYear(selectedYear + 1);
+                setSelectedMonth(0);
+              } else {
+                setSelectedMonth(selectedMonth + 1);
+              }
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-forward" size={20} color={selectedMonth === 11 ? tc.textSubtle : tc.text} />
+            <Ionicons name="chevron-forward" size={20} color={tc.text} />
           </TouchableOpacity>
         </View>
 
@@ -400,7 +419,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     gap: spacing.xl,
   },
-  monthText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, minWidth: 110, textAlign: 'center', letterSpacing: -0.2 },
+  monthText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, textAlign: 'center', letterSpacing: -0.2 },
+  yearNav: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 110, justifyContent: 'center' },
 
   totalWrap: { paddingHorizontal: spacing.base, marginBottom: spacing.base },
   totalCard: {
