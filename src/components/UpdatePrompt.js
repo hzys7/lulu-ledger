@@ -170,16 +170,13 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }
 
   useEffect(() => {
-    // 启动时查一次（force 绕过任何缓存）
+    // 启动时查一次。
+    // 1.2.33 之前还有一段 AppState 'change' 监听，会在 app 回前台时
+    // 强制 runCheck。但 Android 在系统安装 dialog 弹起/收回时 AppState
+    // 会自动 inactive->active 一次，触发重检 -> 拿回同一个新版 ->
+    // 立即重弹'发现新版本'，覆盖掉系统安装框，导致无法安装。
+    // 直接删掉这个监听器：用户需要查更新时去设置页点'立即检查更新'。
     runCheck({ force: true });
-    // App 回到前台再查（用户离开期间可能有新版本发布），但仅当
-    // 当前没有进行中的下载/安装流程。
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') return;
-      if (flowActiveRef.current) return;
-      runCheck({ force: true });
-    });
-    return () => sub.remove();
   }, []);
 
   async function getDismissedInfo() {
