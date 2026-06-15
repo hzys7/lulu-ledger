@@ -1,5 +1,4 @@
-﻿export { GradientCard } from './GradientCard';
-export { CategoryIcon } from './CategoryIcon';
+﻿export { CategoryIcon } from './CategoryIcon';
 export { TransactionItem } from './TransactionItem';
 export { EmptyState } from './EmptyState';
 export { Button } from './Button';

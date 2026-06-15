@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline, Circle, Line, G, Rect } from 'react-native-svg';
 import { useFinance } from '../context/FinanceContext';
-import { EmptyState, SectionHeader } from '../components/SharedComponents';
+import { EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
 import {
   spacing,
