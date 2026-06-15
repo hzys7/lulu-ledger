@@ -1,5 +1,5 @@
 // 璐璐记账 · 统计（周报 / 月报 / 年报）
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,8 +22,10 @@ import {
   shadows,
   getThemeColors,
 } from '../theme';
+import ViewShot from 'react-native-view-shot';
 import PieRing from '../components/PieRing';
-import { shareMonthlyReport, shareYearlyReport } from '../utils/shareReport';
+import ShareCard from '../components/ShareCard';
+import { shareCard } from '../utils/shareReport';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -350,37 +352,72 @@ export default function StatisticsScreen({ navigation }) {
 
   const totalLabel = dataType === 'expense' ? '支出' : '收入';
 
+  // ── ViewShot ref for sharing ──
+  const cardRef = useRef(null);
+
+  // ── Share card data ──
+  const shareCardData = useMemo(() => {
+    if (period === 'week') {
+      return {
+        period: 'week',
+        weekLabel: getWeekLabel(weekStart),
+        totalIncome: transactions.filter(t => {
+          const d = new Date(t.date);
+          return d >= weekStart && d <= weekEnd && t.type === 'income';
+        }).reduce((s, t) => s + t.amount, 0),
+        totalExpense: weekTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || weekSummaryTotal,
+        balance: weekBalance,
+        topCategories: weekCategoryItems,
+      };
+    }
+    if (period === 'month') {
+      return {
+        period: 'month',
+        year: selectedYear,
+        month: selectedMonth,
+        totalIncome: monthSummary.income,
+        totalExpense: monthSummary.expense,
+        balance: monthSummary.balance,
+        topCategories: monthCategoryItems,
+      };
+    }
+    return {
+      period: 'year',
+      year: reportYear,
+      totalIncome: transactions.filter(t => new Date(t.date).getFullYear() === reportYear && t.type === 'income')
+        .reduce((s, t) => s + t.amount, 0),
+      totalExpense: yearSummaryTotal,
+      balance: yearBalance,
+      topCategories: yearCategoryItems,
+    };
+  }, [period, transactions, weekStart, weekEnd, weekTx, weekSummaryTotal, weekBalance, weekCategoryItems,
+    selectedYear, selectedMonth, monthSummary, monthCategoryItems, reportYear, yearSummaryTotal, yearBalance, yearCategoryItems]);
+
+  const handleShare = async () => {
+    try {
+      const dialogTitle = period === 'week'
+        ? '分享周报'
+        : period === 'month'
+        ? `分享${selectedMonth + 1}月月报`
+        : `分享${reportYear}年年报`;
+      await shareCard(cardRef, dialogTitle);
+    } catch (e) {
+      Alert.alert('分享失败', e?.message || '请稍后重试');
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: tc.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
       >
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.title, { color: tc.text }]}>统计</Text>
-          </View>
-          {/* 分享按钮 */}
-          {period !== 'week' ? (
-            <TouchableOpacity
+        <View style={styles.shareHeaderRow}>
+          {/* 分享按钮 — 周/月/年报都显示 */}
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
               style={[styles.shareBtn, { backgroundColor: tc.primary }]}
-              onPress={async () => {
-                try {
-                  if (period === 'month') {
-                    await shareMonthlyReport(
-                      transactions, selectedYear, selectedMonth,
-                      settings, tc.categories,
-                    );
-                  } else {
-                    await shareYearlyReport(
-                      transactions, reportYear,
-                      settings, tc.categories,
-                    );
-                  }
-                } catch (e) {
-                  Alert.alert('分享失败', e?.message || '请稍后重试');
-                }
-              }}
+              onPress={handleShare}
               activeOpacity={0.85}
             >
               <Ionicons name="share-outline" size={16} color={tc.primaryOn} />
@@ -721,6 +758,25 @@ export default function StatisticsScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
+
+      {/* 隐藏的报告卡片 — 供 ViewShot 截图分享用 */}
+      {/* collapsable=false 防止 Android 优化掉屏幕外的 View */}
+      <View style={{ position: 'absolute', left: -9999 }} collapsable={false}>
+        <ViewShot ref={cardRef} options={{ format: 'png', quality: 0.92 }}>
+          <ShareCard
+            period={period}
+            year={shareCardData.year}
+            month={shareCardData.month}
+            weekLabel={shareCardData.weekLabel}
+            totalIncome={shareCardData.totalIncome}
+            totalExpense={shareCardData.totalExpense}
+            balance={shareCardData.balance}
+            topCategories={shareCardData.topCategories}
+            dataType={dataType}
+            currency={settings.currency}
+          />
+        </ViewShot>
+      </View>
     </View>
   );
 }
@@ -978,9 +1034,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 0, paddingBottom: spacing.xl },
 
-  headerRow: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
-
+  shareHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.sm,
+    minHeight: 0,
+  },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: spacing.md, paddingVertical: 8,

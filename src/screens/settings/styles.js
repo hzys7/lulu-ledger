@@ -8,7 +8,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: spacing.base, paddingBottom: spacing.xxxl },
 
   headerRow: { paddingBottom: spacing.lg },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
 
   section: { marginBottom: spacing.lg },
   sectionHeader: {

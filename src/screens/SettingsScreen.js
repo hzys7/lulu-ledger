@@ -287,10 +287,6 @@ export default function SettingsScreen({ navigation }) {
           { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xxl },
         ]}
       >
-        <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: tc.text }]}>设置</Text>
-        </View>
-
         <BookManagerSection
           books={books}
           currentBookId={currentBookId}

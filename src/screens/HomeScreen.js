@@ -86,20 +86,8 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tc.text} />}
       >
-        {/* 顶部标题 */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.title, { color: tc.text }]}>我的账本</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('AddTransaction', { type: 'expense' })}
-            style={[styles.quickAddBtn, { backgroundColor: tc.primary }]}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="add" size={20} color={tc.primaryOn} />
-            <Text style={[styles.quickAddText, { color: tc.primaryOn }]}>记一笔</Text>
-          </TouchableOpacity>
-        </View>
+        {/* 顶部间距（已删除标题和记一笔按钮） */}
+        <View style={{ height: spacing.sm }} />
 
         {/* 余额卡片 */}
         <View style={styles.balanceSection}>
@@ -289,18 +277,6 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  headerRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: spacing.base, paddingBottom: spacing.sm,
-  },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
-  quickAddBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingVertical: 8,
-    borderRadius: borderRadius.full, gap: 4,
-  },
-  quickAddText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 
   // 余额卡
   balanceSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
