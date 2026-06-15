@@ -71,6 +71,13 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   // if the user dismisses the modal (otherwise it fires into a closed
   // modal and leaves installingRef=true forever).
   const autoInstallTimerRef = useRef(null);
+  // While a download or install is in flight, suppress the AppState
+  // 'active' listener from re-running the check. Otherwise when the
+  // system install dialog steals focus and the user comes back, the
+  // re-check sees the same remote version, calls setVisible(true),
+  // and immediately overlays the install dialog with a brand-new
+  // 'Update available' modal -- effectively a download/install loop.
+  const flowActiveRef = useRef(false);
 
   useImperativeHandle(ref, () => {
     const api = {
@@ -93,6 +100,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       clearTimeout(autoInstallTimerRef.current);
       autoInstallTimerRef.current = null;
     }
+    flowActiveRef.current = false;
     installingRef.current = false;
     setStatus('idle');
     setProgress(0);
@@ -107,6 +115,10 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }
 
   async function runCheck({ force } = {}) {
+    // If a download/install flow is in flight, do not start another
+    // check. This guards against both the AppState 'active' listener
+    // and the Settings 'check now' button from interrupting a flow.
+    if (flowActiveRef.current) return;
     // 设置里关了就不查（force=true 时也尊重显式触发）
     if (!force && settings?.autoCheckUpdate === false) {
       _lastCheck = { at: Date.now(), status: 'disabled', current: getLocalVersion(), latest: '', error: '自动检查已关闭' };
@@ -172,9 +184,12 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   useEffect(() => {
     // 启动时查一次（force 绕过任何缓存）
     runCheck({ force: true });
-    // App 回到前台再查（用户离开期间可能有新版本发布）
+    // App 回到前台再查（用户离开期间可能有新版本发布），但仅当
+    // 当前没有进行中的下载/安装流程。
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') runCheck({ force: true });
+      if (state !== 'active') return;
+      if (flowActiveRef.current) return;
+      runCheck({ force: true });
     });
     return () => sub.remove();
   }, []);
@@ -346,6 +361,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       ]);
       return;
     }
+    flowActiveRef.current = true;
     setStatus("downloading");
     setProgress(0);
     setInstallError("");
