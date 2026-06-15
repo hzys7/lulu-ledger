@@ -172,7 +172,7 @@ var GLOBALS = new Set([
   "getSnapshotBeforeUpdate",
   "AbortController", "AbortSignal", "RequestInit", "Response", "Request", "Headers",
   "FormData", "Blob", "File", "FileReader", "atob", "btoa", "encodeURIComponent", "decodeURIComponent", "encodeURI", "decodeURI",
-  "Proxy", "Reflect", "WeakMap", "WeakSet", "Map", "Set",
+  "Proxy", "Reflect", "WeakMap", "WeakSet", "Map", "Set", "RegExp", "Intl", "BigInt",
   "DeviceEventEmitter",
   "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
   "id","tx","ok","no","go","item","cat","amt","raw","val","acc","key","idx","err","res","req","fn",

@@ -177,16 +177,15 @@ jobs:
           unset ANDROID_SDK_ROOT
           ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 
-      - name: Rename APK with version + date
+      - name: Rename APK with stable name (version only)
         working-directory: android/app/build/outputs/apk/release
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
           unset ANDROID_SDK_ROOT
           PKG_VERSION=$(node -p "require('${{ github.workspace }}/app.json').expo.version")
-          DATE=$(date +%Y%m%d)
           cd "${{ github.workspace }}/android/app/build/outputs/apk/release"
-          mv app-release.apk "lulu-ledger-${PKG_VERSION}-${DATE}-arm64.apk"
+          mv app-release.apk "lulu-ledger-${PKG_VERSION}-arm64.apk"
           echo "PKG_VERSION=${PKG_VERSION}" >> $GITHUB_ENV
           ls -la
 
