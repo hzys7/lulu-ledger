@@ -54,7 +54,9 @@ function buildFlatData(grouped) {
 
 export default function HomeScreen({ navigation }) {
   const { transactions, currentBook, settings, getMonthSummary, reload, getNetWorth } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  // Memoize theme colors so renderItem/renderHeader useCallback deps are stable
+  // (getThemeColors creates a new object on every call).
+  const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   // 月份筛选（null = 全部；{year, month} = 限定到该月）
