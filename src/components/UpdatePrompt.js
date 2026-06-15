@@ -214,8 +214,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         if (totalBytes > 0) {
           setTotal(totalBytes);
           setProgress(Math.round((bytesWritten / totalBytes) * 100));
-        } else {
-          setProgress(-1);
+        } else if (bytesWritten > 0) {
+          // We have bytes but no Content-Length. Don't flicker between
+          // -1 and 0 -- stay indeterminate (-1) once we know there's
+          // actually data coming in.
+          setProgress((prev) => (prev < 0 ? prev : -1));
         }
         const now = Date.now();
         setStartTime((prev) => {
@@ -490,7 +493,15 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
 
   const localVer = getLocalVersion();
   const remoteVer = updateInfo.remote?.version;
-  const fileSizeMB = updateInfo.apk ? (updateInfo.apk.size / 1024 / 1024).toFixed(1) : '?';
+  // When the release comes from the GitHub API we get a real size; when
+  // it comes from the Atom feed (fallback in mainland China) size is 0.
+  // Show '未知' instead of a misleading '0.0 MB'.
+  const fileSizeMB = (() => {
+    if (!updateInfo.apk) return '?';
+    const s = updateInfo.apk.size;
+    if (!s || s <= 0) return '未知';
+    return (s / 1024 / 1024).toFixed(1);
+  })();
 
   return (
     <Modal
@@ -654,12 +665,12 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
                 <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>点击安装</Text>
               </TouchableOpacity>
             ) : null}
-          </View>
             {status === 'installing' ? (
               <View style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1, opacity: 0.6 }]}>
                 <ActivityIndicator size="small" color={tc.primaryOn} />
               </View>
             ) : null}
+          </View>
         </View>
       </View>
     </Modal>
