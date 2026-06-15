@@ -442,7 +442,13 @@ export async function importData(data, mode = 'merge') {
 }
 
 async function mergeTransactions(newOnes) {
-  const existing = (await readField('transactions')) || [];
+  // Incremental write: work directly with the in-memory cache to avoid
+  // two deep-copy round-trips (readField → JSON.parse, writeField →
+  // JSON.stringify). Previously this read all transactions, created a
+  // deep copy, processed, then wrote back — another deep copy + persist.
+  // Now we read the cached array once, mutate in place, and persist once.
+  const env = await ensureLoaded();
+  const existing = env.data.transactions || [];
   const seen = new Set();
   for (const t of existing) {
     seen.add(makeTxFingerprint(t));
@@ -456,9 +462,10 @@ async function mergeTransactions(newOnes) {
     seen.add(fp);
     toAdd.push(t);
   }
-  const merged = toAdd.concat(existing);
-  await writeField('transactions', merged);
-  return { added: toAdd.length, skipped, total: merged.length };
+  // Prepend new transactions (newest first) — mutate cache directly
+  env.data.transactions = toAdd.concat(existing);
+  await persist();
+  return { added: toAdd.length, skipped, total: env.data.transactions.length };
 }
 
 function makeTxFingerprint(t) {

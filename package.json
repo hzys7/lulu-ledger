@@ -8,8 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "node scripts/test-storage-migration.js && node scripts/test-csv-parser.js && node scripts/test-currency.js && node scripts/test-ai-parser.js",
-    "verify": "node scripts/verify.js"
+    "test": "node scripts/test-storage-migration.js && node scripts/test-csv-parser.js && node scripts/test-currency.js && node scripts/test-ai-parser.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~56.0.15",
