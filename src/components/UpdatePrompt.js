@@ -66,6 +66,10 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   const installingRef = useRef(false);
   const lastProgressAtRef = useRef(0);
   const currentSourceRef = useRef("");
+  // Track the post-download auto-install setTimeout so we can cancel it
+  // if the user dismisses the modal (otherwise it fires into a closed
+  // modal and leaves installingRef=true forever).
+  const autoInstallTimerRef = useRef(null);
 
   useImperativeHandle(ref, () => {
     const api = {
@@ -79,6 +83,27 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   useEffect(() => {
     return () => { if (_ref) _ref = null; };
   }, []);
+
+  // Reset all per-check state. Called whenever a new update flow begins
+  // (or the modal is dismissed) so we never get stuck in 'installing'
+  // or 'done' from a previous round.
+  function resetUpdateFlow() {
+    if (autoInstallTimerRef.current) {
+      clearTimeout(autoInstallTimerRef.current);
+      autoInstallTimerRef.current = null;
+    }
+    installingRef.current = false;
+    setStatus('idle');
+    setProgress(0);
+    setSpeed(0);
+    setReceived(0);
+    setTotal(0);
+    setStartTime(0);
+    setErrorMsg('');
+    setInstallError('');
+    setShowInstallError(false);
+    setLocalFile(null);
+  }
 
   async function runCheck({ force } = {}) {
     // 设置里关了就不查（force=true 时也尊重显式触发）
@@ -116,6 +141,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           return;
         }
       }
+      resetUpdateFlow();
       setUpdateInfo(result);
       setVisible(true);
       _lastCheck = { at: Date.now(), status: 'update-available', current: getLocalVersion(), latest: result.remote.version, error: '' };
@@ -336,7 +362,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           setLocalFile(file);
           setStatus("done");
           setErrorMsg("");
-          setTimeout(() => handleInstall(file.uri || file.path), 300);
+          if (autoInstallTimerRef.current) clearTimeout(autoInstallTimerRef.current);
+          autoInstallTimerRef.current = setTimeout(() => {
+            autoInstallTimerRef.current = null;
+            handleInstall(file.uri || file.path);
+          }, 300);
           abortRef.current = null;
           return;
         } catch (e) {
@@ -415,9 +445,17 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       }
       await Linking.openURL(uri);
     } catch (e) {
+      const msg = e?.message || String(e);
+      // If the intent is already started (e.g. we re-entered from a
+      // stale setTimeout), don't show a scary red box -- the system
+      // install dialog is already on screen.
+      if (/already started/i.test(msg)) {
+        // Keep installingRef=true; the in-flight activity will pop.
+        return;
+      }
       installingRef.current = false;
       setStatus('done');
-      setInstallError(e?.message || String(e));
+      setInstallError(msg);
       setShowInstallError(true);
     }
   }
@@ -436,16 +474,15 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }
 
   function handleLater() {
+    resetUpdateFlow();
     setVisible(false);
-    // 标记这个版本本次会话内不再弹
-    installingRef.current = false;
   }
 
   async function handleSkip() {
-    installingRef.current = false;
     if (updateInfo?.remote?.version) {
       await setDismissedInfo(updateInfo.remote.version);
     }
+    resetUpdateFlow();
     setVisible(false);
   }
 
