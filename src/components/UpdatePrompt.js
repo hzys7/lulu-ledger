@@ -467,8 +467,14 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
 
   // Convert a file:// URI in the app cache dir to a content:// URI
   // served by expo-file-system's FileProvider. Required for
-  // android.intent.action.INSTALL_PACKAGE on Android N+; the platform
+  // android.intent.action.VIEW on Android N+; the platform
   // rejects file:// URIs exposed across apps (FileUriExposedException).
+  //
+  // WARNING: expo-intent-launcher sets data and type SEPARATELY on the
+  // Android Intent (setData() then setType()). On Android, setType()
+  // CLEARS the data URI. Therefore we MUST NOT pass both data + type
+  // to startActivityAsync — pass only the content URI and let Android
+  // query the FileProvider for the MIME type automatically.
   function fileUriToContentUri(fileUri) {
     if (!fileUri || !fileUri.startsWith('file://')) return fileUri;
     const path = fileUri.replace(/^file:\/\//, '');
@@ -481,12 +487,33 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     const pkg = (Application && Application.applicationId) || 'com.lululedger.app';
     return 'content://' + pkg + '.FileSystemFileProvider/cached_expo_files/' + encodeURIComponent(base);
   }
+
+  // Wrap startActivityAsync with a timeout. Without this, if the intent
+  // is malformed (e.g. data URI cleared by setType), Android does not
+  // launch any activity and the promise hangs FOREVER — the button
+  // appears dead, installingRef stays true, and no error is shown.
+  function startActivityWithTimeout(action, opts, ms) {
+    return new Promise((resolve, reject) => {
+      let IntentLauncher;
+      try { IntentLauncher = require('expo-intent-launcher'); } catch { IntentLauncher = null; }
+      if (!IntentLauncher?.startActivityAsync) {
+        reject(new Error('expo-intent-launcher not available'));
+        return;
+      }
+      const timer = setTimeout(() => {
+        reject(new Error('启动超时：系统未响应安装请求'));
+      }, ms);
+      IntentLauncher.startActivityAsync(action, opts).then(
+        (r) => { clearTimeout(timer); resolve(r); },
+        (e) => { clearTimeout(timer); reject(e); }
+      );
+    });
+  }
+
   async function openInstallSettings() {
     try {
       let IntentLauncher;
-      try {
-        IntentLauncher = require('expo-intent-launcher');
-      } catch {}
+      try { IntentLauncher = require('expo-intent-launcher'); } catch {}
       if (IntentLauncher?.startActivityAsync) {
         const pkg = (Application && Application.applicationId) || 'com.lululedger.app';
         await IntentLauncher.startActivityAsync('android.settings.MANAGE_UNKNOWN_APP_SOURCES', {
@@ -500,69 +527,88 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     }
   }
 
-    async function handleInstall(uri) {
+  async function handleInstall(uri) {
     if (!uri) return;
     if (installingRef.current) return;
     installingRef.current = true;
     try {
-      let IntentLauncher;
-      try {
-        IntentLauncher = require('expo-intent-launcher');
-      } catch (e) {
-        IntentLauncher = null;
+      let contentUri = uri;
+      if (uri && uri.startsWith('file://')) {
+        const mapped = fileUriToContentUri(uri);
+        if (mapped) contentUri = mapped;
       }
-      if (IntentLauncher?.startActivityAsync) {
-        const FLAG_GRANT_READ_URI_PERMISSION = 0x00000001;
-        const FLAG_ACTIVITY_NEW_TASK = 0x10000000;
-        let contentUri = uri;
-        if (uri && uri.startsWith('file://')) {
-          const mapped = fileUriToContentUri(uri);
-          if (mapped) contentUri = mapped;
-        }
-        await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
-          data: contentUri,
-          type: 'application/vnd.android.package-archive',
-          flags: FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK,
-        });
-        // Intent successfully dispatched — now show 'installing' feedback.
-        // Keeping the setStatus AFTER the dispatch ensures that if the
-        // async call throws, the user stays on 'done' with a clear error
-        // instead of briefly seeing an 'installing' state with just a
-        // '完成' button that does nothing.
+
+      // Method 1: ACTION_INSTALL_PACKAGE via expo-intent-launcher
+      // with ONLY data (no type).
+      //
+      // CRITICAL: Do NOT pass type! expo-intent-launcher calls
+      // setData() then setType() separately. On Android, setType()
+      // CLEARS the data URI (internal: setDataAndType(null, type)),
+      // so the Intent ends up with no data URI and the installer
+      // receives an empty Intent — hangs forever, no error shown.
+      //
+      // ACTION_INSTALL_PACKAGE is purpose-built for APK install.
+      // The system PackageInstaller handles this action directly
+      // from the data URI; no MIME type is needed.
+      try {
+        await startActivityWithTimeout(
+          'android.intent.action.INSTALL_PACKAGE',
+          {
+            data: contentUri,
+            flags: 0x00000001 | 0x10000000, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
+          },
+          10000
+        );
+        // If we reach here, the user saw the installer and either
+        // installed or cancelled it. Show 'installing' status.
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
+      } catch (e1) {
+        console.warn('[UpdatePrompt] method 1 (ACTION_VIEW) failed:', e1?.message || e1);
       }
-      // Fallback: use Linking.openURL. On Android N+, file:// URIs are
-      // blocked for cross-app intents, so openURL may return false (no
-      // app can handle the URI) instead of throwing. We must check the
-      // return value and treat false as an error.
-      const opened = await Linking.openURL(uri);
-      if (opened === false) throw new Error('系统无法打开此文件，请手动安装');
-      flowActiveRef.current = false;
-      installingRef.current = false;
-      setStatus('installing');
+
+      // Method 2: Linking.openURL with content URI.
+      // Sends ACTION_VIEW; Android auto-detects MIME type from URI.
+      try {
+        const opened = await Linking.openURL(contentUri);
+        if (opened !== false) {
+          flowActiveRef.current = false;
+          installingRef.current = false;
+          setStatus('installing');
+          return;
+        }
+      } catch (e2) {
+        console.warn('[UpdatePrompt] method 2 (Linking.openURL) failed:', e2?.message || e2);
+      }
+
+      // Method 3: expo-sharing as last resort.
+      try {
+        const { shareAsync } = await import('expo-sharing');
+        const isAvailable = await shareAsync(contentUri, {
+          mimeType: 'application/vnd.android.package-archive',
+          dialogTitle: '安装璐璐记账更新',
+        });
+        if (isAvailable) {
+          flowActiveRef.current = false;
+          installingRef.current = false;
+          setStatus('installing');
+          return;
+        }
+      } catch (e3) {
+        console.warn('[UpdatePrompt] method 3 (expo-sharing) failed:', e3?.message || e3);
+      }
+
+      // All methods failed. Show actionable error with file path.
+      throw new Error('系统无法自动安装 APK。\n\n请打开文件管理器，找到以下路径手动安装：\n' + uri);
     } catch (e) {
       const msg = e?.message || String(e);
-      // If the intent is already started (e.g. we re-entered from a
-      // stale setTimeout), don't show a scary red box -- the system
-      // install dialog is already on screen.
-      if (/already started/i.test(msg)) {
-        // Keep installingRef=true; the in-flight activity will pop.
-        return;
-      }
+      console.warn('[UpdatePrompt] install failed:', msg);
       installingRef.current = false;
       flowActiveRef.current = false;
       setStatus('done');
-      // Detect permission-related errors and show actionable guidance.
-      // On Android 8+ (API 26+), REQUEST_INSTALL_PACKAGES permission must
-      // be declared AND the user must enable "Install unknown apps" in
-      // system settings for this app.
-      const isPermissionIssue = /permission|denied|forbidden|SecurityException|not allowed|PackageInstaller/i.test(msg);
-      setInstallError(isPermissionIssue
-        ? '权限不足：请在系统设置中开启「安装未知应用」权限'
-        : msg);
+      setInstallError(msg);
       setShowInstallError(true);
     }
   }
@@ -701,32 +747,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
                   </TouchableOpacity>
                 </View>
               ) : null}
-              {localFile ? (
-                <View style={styles.pathBlock}>
-                  <Text style={[styles.pathLabel, { color: tc.textMuted }]}>APK 已下载到：</Text>
-                  <Text style={[styles.pathValue, { color: tc.text }]} selectable numberOfLines={2}>
-                    {localFile.uri || localFile.path}
-                  </Text>
-                  <View style={styles.pathActions}>
-                    <TouchableOpacity
-                      style={[styles.pathBtn, { backgroundColor: tc.primary, flex: 2 }]}
-                      onPress={() => handleInstall(localFile.uri || localFile.path)}
-                      activeOpacity={0.85}
-                    >
-                      <Ionicons name="download" size={16} color={tc.primaryOn} />
-                      <Text style={[styles.pathBtnText, { color: tc.primaryOn, fontWeight: fontWeight.semibold }]}>点击安装</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.pathBtn, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
-                      onPress={openFileManager}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="folder-open-outline" size={14} color={tc.text} />
-                      <Text style={[styles.pathBtnText, { color: tc.text }]}>打开位置</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
+
             </View>
           ) : null}
 
@@ -902,35 +923,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
   },
-  pathBlock: {
-    marginTop: spacing.sm,
-    padding: spacing.sm,
-    borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.08)",
-  },
-  pathLabel: { fontSize: fontSize.xs, marginBottom: 2 },
-  pathValue: {
-    fontSize: fontSize.xs,
-    fontFamily: Platform.OS === "android" ? "monospace" : "Menlo",
-    backgroundColor: "rgba(0,0,0,0.04)",
-    padding: 6,
-    borderRadius: 4,
-    marginBottom: spacing.sm,
-  },
-  pathActions: { flexDirection: "row", gap: 6 },
-  pathBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    borderRadius: borderRadius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 4,
-  },
-  pathBtnText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
+
   doneText: {
     fontSize: fontSize.md,
     textAlign: 'center',
