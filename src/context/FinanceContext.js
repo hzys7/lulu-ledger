@@ -15,11 +15,10 @@
 //
 // 内部 useFinance() 是个聚合 hook：按字段名路由到对应 context，所以旧代码
 // `const { transactions, settings, addTx } = useFinance();` 一行不用改。
-import React from 'react';
 import { useSettings } from './SettingsContext';
 import { useBooks } from './BooksContext';
 import { useData } from './DataContext';
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import * as storage from '../utils/storage';
 
 export function FinanceProvider({ children }) {

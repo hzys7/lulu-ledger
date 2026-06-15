@@ -1,12 +1,11 @@
 ﻿import React from 'react';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, fontSize, fontWeight, getThemeColors } from '../theme';
-import { useFinance } from '../context/FinanceContext';
+import { spacing, fontSize, fontWeight } from '../theme';
 
 export function EmptyState({ icon = 'wallet-outline', title, subtitle, compact = false }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  const tc = useThemeColors();
   return (
     <View style={[styles.wrap, compact && styles.compact]}>
       <View style={[styles.iconWrap, { backgroundColor: tc.surfaceMuted }]}>

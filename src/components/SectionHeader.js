@@ -1,11 +1,10 @@
 ﻿import React from 'react';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { spacing, fontSize, fontWeight, getThemeColors } from '../theme';
-import { useFinance } from '../context/FinanceContext';
+import { spacing, fontSize, fontWeight } from '../theme';
 
 export function SectionHeader({ title, subtitle, action, onAction, style }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  const tc = useThemeColors();
   return (
     <View style={[styles.row, style]}>
       <View style={styles.left}>

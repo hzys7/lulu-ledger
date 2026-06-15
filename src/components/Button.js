@@ -1,12 +1,11 @@
 ﻿import React from 'react';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, borderRadius, fontSize, fontWeight, getThemeColors } from '../theme';
-import { useFinance } from '../context/FinanceContext';
+import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 
 export function Button({ title, onPress, variant = 'primary', icon, style, disabled, loading }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  const tc = useThemeColors();
 
   const variants = {
     primary: { bg: tc.primary, text: tc.primaryOn, border: tc.primary },

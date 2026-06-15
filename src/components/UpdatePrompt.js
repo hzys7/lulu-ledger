@@ -1,5 +1,7 @@
 // 璐璐记账 · 自动更新提示
 // App 启动时检查 GitHub Releases，发现新版本弹窗让用户点下载
+import { useSettings } from '../context/SettingsContext';
+import { useThemeColors } from '../hooks/useThemeColors';
 import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { AppState } from 'react-native';
 import {
@@ -18,8 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { File, Paths } from 'expo-file-system';
 import * as Application from 'expo-application';
-import { useFinance } from '../context/FinanceContext';
-import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
 
 function formatBytes(n) {
@@ -41,8 +42,8 @@ export function triggerUpdateCheck(force = true) {
 }
 
 const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  const { settings } = useSettings();
+  const tc = useThemeColors();
   const insets = useSafeAreaInsets();
 
   const [visible, setVisible] = useState(false);

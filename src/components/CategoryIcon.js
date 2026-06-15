@@ -1,8 +1,8 @@
 ﻿import React from 'react';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getThemeColors } from '../theme';
-import { useFinance } from '../context/FinanceContext';
+import {  } from '../theme';
 
 const ICONS = {
   '餐饮': 'restaurant',
@@ -31,8 +31,7 @@ function withAlpha(hex, alpha) {
 }
 
 export function CategoryIcon({ category, size = 40, type = 'expense' }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  const tc = useThemeColors();
   const tint = (tc.categories && tc.categories[category]) || (type === 'income' ? tc.success : tc.textSubtle);
   const radius = Math.round(size * 0.32);
   return (

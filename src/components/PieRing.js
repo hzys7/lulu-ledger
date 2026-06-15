@@ -1,10 +1,10 @@
 // 手画环形图
 // props: data = [{ value, color }], size, thickness, center (React node)
+import { useThemeColors } from '../hooks/useThemeColors';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
-import { fontSize, fontWeight, getThemeColors } from '../theme';
-import { useFinance } from '../context/FinanceContext';
+import { fontSize } from '../theme';
 
 function polarToCartesian(cx, cy, r, angleDeg) {
   const angleRad = ((angleDeg - 90) * Math.PI) / 180;
@@ -30,8 +30,7 @@ function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
 }
 
 export default function PieRing({ data, size = 180, thickness = 28, center = null }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  const tc = useThemeColors();
 
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) {

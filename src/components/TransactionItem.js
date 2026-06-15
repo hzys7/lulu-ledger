@@ -1,9 +1,9 @@
 ﻿import React from 'react';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CategoryIcon } from './CategoryIcon';
-import { spacing, fontSize, fontWeight, getThemeColors } from '../theme';
+import { spacing, fontSize, fontWeight } from '../theme';
 import { formatMoney } from '../utils/currency';
-import { useFinance } from '../context/FinanceContext';
 
 function timeLabel(iso) {
   const d = new Date(iso);
@@ -24,8 +24,7 @@ function timeLabel(iso) {
 }
 
 export function TransactionItem({ transaction, onPress, currency = 'CNY', isLast }) {
-  const { settings } = useFinance();
-  const tc = getThemeColors(settings.theme);
+  const tc = useThemeColors();
   const isExpense = transaction.type === 'expense';
   const amountColor = isExpense ? tc.text : tc.text;
   const prefix = isExpense ? '-' : '+';
