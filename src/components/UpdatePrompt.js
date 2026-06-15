@@ -217,6 +217,72 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     return file;
   }
 
+  // Probe a URL by issuing a Range request for the first ~64KB and
+  // measuring how long the body took to arrive. Returns speed in KB/s,
+  // or 0 on failure. Used to rank mirror sources before downloading
+  // the full APK.
+  async function probeSpeed(url, signal) {
+    const startedAt = Date.now();
+    let received = 0;
+    let host = 'unknown';
+    try { host = new URL(url).hostname; } catch {}
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Range: 'bytes=0-65535' },
+        signal: signal || null,
+      });
+      if (!res.ok && res.status !== 206) return 0;
+      const reader = res.body && res.body.getReader();
+      if (!reader) return 0;
+      // Read at most 64KB then cancel.
+      while (received < 65536) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        received += value.byteLength;
+      }
+      try { await reader.cancel(); } catch {}
+      const elapsed = (Date.now() - startedAt) / 1000;
+      if (elapsed <= 0) return 0;
+      return received / 1024 / elapsed;
+    } catch (e) {
+      console.warn('[UpdatePrompt] probe failed for', host, e?.message || e);
+      return 0;
+    }
+  }
+
+  // Probe all candidate URLs in parallel and return them sorted by
+  // measured speed (fastest first). Sources that fail to respond are
+  // pushed to the end of the list with speed 0 (so they are still
+  // attempted as a last resort if every other source failed).
+  async function rankBySpeed(urls, signal) {
+    if (!urls || urls.length <= 1) return urls || [];
+    setErrorMsg(`正在测速 ${urls.length} 个镜像源…`);
+    const results = await Promise.all(
+      urls.map(async (u) => {
+        // Give each probe up to 6s; the slowest will just report 0.
+        const perSignal = new AbortController();
+        const timer = setTimeout(() => perSignal.abort(), 6000);
+        const onAbort = () => { try { perSignal.abort(); } catch {} };
+        if (signal) signal.addEventListener('abort', onAbort);
+        const speed = await probeSpeed(u, perSignal.signal);
+        clearTimeout(timer);
+        if (signal) signal.removeEventListener('abort', onAbort);
+        return { url: u, speed: speed };
+      })
+    );
+    results.sort((a, b) => b.speed - a.speed);
+    const fastest = results[0];
+    if (fastest && fastest.speed > 0) {
+      let host = 'unknown';
+      try { host = new URL(fastest.url).hostname; } catch {}
+      setErrorMsg(`测速完成：${host} 最快 (${Math.round(fastest.speed)} KB/s)`);
+    } else {
+      setErrorMsg('测速失败，将按原顺序尝试');
+    }
+    return results.map((r) => r.url);
+  }
+
   async function handleDownload() {
     if (!updateInfo?.apk) {
       Alert.alert("下载链接缺失", "请前往 GitHub 仓库手动下载。", [
@@ -238,7 +304,9 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     abortRef.current = ac;
     const apkName = `update-${updateInfo.apk.name}`;
     const dest = new File(Paths.cache, apkName);
-    const candidates = buildCandidateUrls();
+    const initialCandidates = buildCandidateUrls();
+    // Probe sources by speed before committing to a full download.
+    const candidates = await rankBySpeed(initialCandidates, ac.signal);
     let lastErr = null;
     try {
       for (let i = 0; i < candidates.length; i++) {

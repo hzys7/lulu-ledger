@@ -1,5 +1,5 @@
 // 璐璐记账 · 设置
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -180,23 +180,33 @@ export default function SettingsScreen({ navigation }) {
     await updateAppSettings({ autoCheckUpdate: !settings.autoCheckUpdate });
   };
 
-  const [isChecking, setIsChecking] = React.useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+  const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = React.useState(null);
   const handleCheckNow = () => {
     if (isChecking) return;
     setIsChecking(true);
     setCheckResult(null);
-    const sub = DeviceEventEmitter.addListener('lulu:update-check-result', (payload) => {
-      setCheckResult(payload);
-      setIsChecking(false);
-      sub.remove();
-    });
-    setTimeout(() => {
-      setIsChecking((cur) => {
-        if (cur) setCheckResult({ status: 'error', error: '检查超时' });
-        return false;
-      });
+    // Track the timer + subscription so we can clean them up on
+    // unmount and avoid setState-on-unmounted-component crashes.
+    let timeoutId = null;
+    let fired = false;
+    const finish = (payload, error) => {
+      if (fired) return;
+      fired = true;
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
       try { sub.remove(); } catch {}
+      // Skip setState on unmounted component to avoid crash.
+      if (!mountedRef.current) return;
+      setCheckResult(error ? { status: 'error', error } : payload);
+      setIsChecking(false);
+    };
+    const sub = DeviceEventEmitter.addListener('lulu:update-check-result', (payload) => {
+      finish(payload);
+    });
+    timeoutId = setTimeout(() => {
+      finish(null, '检查超时');
     }, 8000);
     triggerUpdateCheck(true);
   };
