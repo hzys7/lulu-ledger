@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { File, Paths } from 'expo-file-system';
+import * as Application from 'expo-application';
 import { useFinance } from '../context/FinanceContext';
 import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../theme';
 import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
@@ -287,6 +288,22 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     }
   }
 
+  // Convert a file:// URI in the app cache dir to a content:// URI
+  // served by expo-file-system's FileProvider. Required for
+  // android.intent.action.INSTALL_PACKAGE on Android N+; the platform
+  // rejects file:// URIs exposed across apps (FileUriExposedException).
+  function fileUriToContentUri(fileUri) {
+    if (!fileUri || !fileUri.startsWith('file://')) return fileUri;
+    const path = fileUri.replace(/^file:\/\//, '');
+    const slash = path.lastIndexOf('/');
+    const dir = slash >= 0 ? path.substring(0, slash) : '';
+    const base = slash >= 0 ? path.substring(slash + 1) : path;
+    if (!dir.endsWith('/cache') && !dir.endsWith('/cache/')) {
+      return null;
+    }
+    const pkg = (Application && Application.applicationId) || 'com.lululedger.app';
+    return 'content://' + pkg + '.FileSystemFileProvider/cached_expo_files/' + encodeURIComponent(base);
+  }
     async function handleInstall(uri) {
     if (!uri) return;
     try {
@@ -297,10 +314,17 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         IntentLauncher = null;
       }
       if (IntentLauncher?.startActivityAsync) {
+        const FLAG_GRANT_READ_URI_PERMISSION = 0x00000001;
+        const FLAG_ACTIVITY_NEW_TASK = 0x10000000;
+        let contentUri = uri;
+        if (uri && uri.startsWith('file://')) {
+          const mapped = fileUriToContentUri(uri);
+          if (mapped) contentUri = mapped;
+        }
         await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
-          data: uri,
+          data: contentUri,
           type: 'application/vnd.android.package-archive',
-          flags: 1,
+          flags: FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK,
         });
         return;
       }
@@ -314,7 +338,12 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   function openFileManager() {
     if (!localFile) return;
     const path = localFile.uri || localFile.path;
-    Linking.openURL('file://' + path).catch(() => {
+    // On Android N+, file:// URIs are blocked in cross-app Intents; try the
+    // FileProvider-backed content:// first, then fall back.
+    const __openTarget = (Platform.OS === 'android' && path && path.startsWith && path.startsWith('file://'))
+      ? (fileUriToContentUri(path) || path)
+      : 'file://' + path;
+    Linking.openURL(__openTarget).catch(() => {
       Alert.alert('提示', '请用文件管理器打开：' + path);
     });
   }

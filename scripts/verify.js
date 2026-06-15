@@ -150,7 +150,7 @@ var GLOBALS = new Set([
   "getDerivedStateFromError", "getDerivedStateFromProps", "componentDidCatch", "shouldComponentUpdate",
   "getSnapshotBeforeUpdate",
   "AbortController", "AbortSignal", "RequestInit", "Response", "Request", "Headers",
-  "FormData", "Blob", "File", "FileReader", "atob", "btoa",
+  "FormData", "Blob", "File", "FileReader", "atob", "btoa", "encodeURIComponent", "decodeURIComponent", "encodeURI", "decodeURI",
   "Proxy", "Reflect", "WeakMap", "WeakSet", "Map", "Set",
   "DeviceEventEmitter",
   "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
