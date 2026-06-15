@@ -477,11 +477,9 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   // android.intent.action.VIEW on Android N+; the platform
   // rejects file:// URIs exposed across apps (FileUriExposedException).
   //
-  // WARNING: expo-intent-launcher sets data and type SEPARATELY on the
-  // Android Intent (setData() then setType()). On Android, setType()
-  // CLEARS the data URI. Therefore we MUST NOT pass both data + type
-  // to startActivityAsync — pass only the content URI and let Android
-  // query the FileProvider for the MIME type automatically.
+  // The FileProvider authority is: {applicationId}.FileSystemFileProvider
+  // (registered in expo-file-system's AndroidManifest.xml),
+  // and the cache directory path alias is "cached_expo_files".
   function fileUriToContentUri(fileUri) {
     if (!fileUri || !fileUri.startsWith('file://')) return fileUri;
     const path = fileUri.replace(/^file:\/\//, '');
@@ -558,26 +556,49 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       // The system PackageInstaller handles this action directly
       // from the data URI; no MIME type is needed.
       try {
+        // Method 1: ACTION_VIEW + data + type.
+        // The standard Android way to open an APK file. The system
+        // routes to PackageInstaller via the MIME type.
+        // In SDK 56+, expo-intent-launcher uses setDataAndType()
+        // when both data and type are provided, so no clearing bug.
         await startActivityWithTimeout(
-          'android.intent.action.INSTALL_PACKAGE',
+          'android.intent.action.VIEW',
           {
             data: contentUri,
-            flags: 0x00000001 | 0x10000000, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
+            type: 'application/vnd.android.package-archive',
+            flags: 0x00000001 | 0x10000000,
           },
           10000
         );
-        // If we reach here, the user saw the installer and either
-        // installed or cancelled it. Show 'installing' status.
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
       } catch (e1) {
-        console.warn('[UpdatePrompt] method 1 (INSTALL_PACKAGE) failed:', e1?.message || e1);
+        console.warn('[UpdatePrompt] method 1 (VIEW) failed:', e1?.message || e1);
       }
 
-      // Method 2: Linking.openURL with content URI.
-      // Sends ACTION_VIEW; Android auto-detects MIME type from URI.
+      // Method 2: ACTION_INSTALL_PACKAGE without type.
+      // Some devices handle INSTALL_PACKAGE better than VIEW.
+      try {
+        await startActivityWithTimeout(
+          'android.intent.action.INSTALL_PACKAGE',
+          {
+            data: contentUri,
+            flags: 0x00000001 | 0x10000000,
+          },
+          10000
+        );
+        flowActiveRef.current = false;
+        installingRef.current = false;
+        setStatus('installing');
+        return;
+      } catch (e2) {
+        console.warn('[UpdatePrompt] method 2 (INSTALL_PACKAGE) failed:', e2?.message || e2);
+      }
+
+      // Method 3: Linking.openURL with content URI (fallback).
+      // Some devices handle ACTION_VIEW via openURL natively.
       try {
         const opened = await Linking.openURL(contentUri);
         if (opened !== false) {
@@ -586,11 +607,12 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           setStatus('installing');
           return;
         }
-      } catch (e2) {
-        console.warn('[UpdatePrompt] method 2 (Linking.openURL) failed:', e2?.message || e2);
+      } catch (e3) {
+        console.warn('[UpdatePrompt] method 3 (Linking.openURL) failed:', e3?.message || e3);
       }
 
-      // Method 3: expo-sharing as last resort.
+      // Method 4: expo-sharing as last resort.
+      // Shares the file via system share sheet; user picks PackageInstaller.
       try {
         const { shareAsync } = await import('expo-sharing');
         const isAvailable = await shareAsync(contentUri, {
@@ -603,8 +625,8 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           setStatus('installing');
           return;
         }
-      } catch (e3) {
-        console.warn('[UpdatePrompt] method 3 (expo-sharing) failed:', e3?.message || e3);
+      } catch (e4) {
+        console.warn('[UpdatePrompt] method 4 (expo-sharing) failed:', e4?.message || e4);
       }
 
       // All methods failed. Show actionable error with file path.
