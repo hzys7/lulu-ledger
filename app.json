@@ -2,7 +2,7 @@
   "expo": {
     "name": "璐璐记账",
     "slug": "lulu-ledger",
-    "version": "1.2.36",
+    "version": "1.2.37",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
@@ -31,9 +31,6 @@
       "output": "single",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-font"
-    ],
     "icon": "./assets/icon.png"
   }
 }
