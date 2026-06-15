@@ -22,6 +22,18 @@ import * as Application from 'expo-application';
 import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
 
+// Custom native module — bypasses expo-intent-launcher, constructs the
+// Intent directly in Kotlin so there is no JS-bridge / setDataAndType bug.
+// The module is auto-discovered by Expo from modules/lulu-apk-installer/.
+let LuluApkInstaller = null;
+try {
+  const { requireNativeModule } = require('expo-modules-core');
+  LuluApkInstaller = requireNativeModule('LuluApkInstaller');
+} catch (e) {
+  // Module not available (web / dev build without EAS). That's fine;
+  // handleInstall will fall through to expo-sharing.
+}
+
 function formatBytes(n) {
   if (!n || n <= 0) return '0 B';
   if (n < 1024) return n + ' B';
@@ -481,7 +493,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   // (registered in expo-file-system's AndroidManifest.xml),
   // and the cache directory path alias is "cached_expo_files".
   function fileUriToContentUri(fileUri) {
-    if (!fileUri || !fileUri.startsWith('file://')) return fileUri;
+    if (!fileUri || !fileUri.startsWith('file://')) return null;
     const path = fileUri.replace(/^file:\/\//, '');
     const slash = path.lastIndexOf('/');
     const dir = slash >= 0 ? path.substring(0, slash) : '';
@@ -493,26 +505,22 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     return 'content://' + pkg + '.FileSystemFileProvider/cached_expo_files/' + encodeURIComponent(base);
   }
 
-  // Wrap startActivityAsync with a timeout. Without this, if the intent
-  // is malformed (e.g. data URI cleared by setType), Android does not
-  // launch any activity and the promise hangs FOREVER — the button
-  // appears dead, installingRef stays true, and no error is shown.
-  function startActivityWithTimeout(action, opts, ms) {
-    return new Promise((resolve, reject) => {
-      let IntentLauncher;
-      try { IntentLauncher = require('expo-intent-launcher'); } catch { IntentLauncher = null; }
-      if (!IntentLauncher?.startActivityAsync) {
-        reject(new Error('expo-intent-launcher not available'));
-        return;
+  // Quick size check before trying to install.  Reject files under 1 MB
+  // (too small to be a real APK — likely a truncated / failed download).
+  async function verifyApkIntegrity(fileUri) {
+    try {
+      const apkFile = new File(fileUri);
+      const info = await apkFile.info();
+      if (!info || !info.exists || info.size < 1 * 1024 * 1024) {
+        return { ok: false, reason: '文件大小异常（' + ((info && info.size) || 0) + ' B）' };
       }
-      const timer = setTimeout(() => {
-        reject(new Error('启动超时：系统未响应安装请求'));
-      }, ms);
-      IntentLauncher.startActivityAsync(action, opts).then(
-        (r) => { clearTimeout(timer); resolve(r); },
-        (e) => { clearTimeout(timer); reject(e); }
-      );
-    });
+      return { ok: true };
+    } catch (e) {
+      // If info() is not available (e.g. raw path instead of File object),
+      // skip the check and try anyway.
+      console.warn('[UpdatePrompt] integrity check skipped:', e?.message || e);
+      return { ok: true };
+    }
   }
 
   async function openInstallSettings() {
@@ -537,100 +545,69 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     if (installingRef.current) return;
     installingRef.current = true;
     try {
+      // --- Step 0: verify APK integrity before touching the Intent ---
+      const filePath = uri.replace(/^file:\/\//, '');
+      const check = await verifyApkIntegrity(filePath);
+      if (!check.ok) {
+        throw new Error('APK 验证失败：' + check.reason + '。请重新下载。');
+      }
+
+      // Build the content:// URI for the native module
       let contentUri = uri;
-      if (uri && uri.startsWith('file://')) {
+      if (uri.startsWith('file://')) {
         const mapped = fileUriToContentUri(uri);
-        if (mapped) contentUri = mapped;
+        if (!mapped) {
+          throw new Error('无法生成文件访问 URI（不在缓存目录中）');
+        }
+        contentUri = mapped;
       }
 
-      // Method 1: ACTION_INSTALL_PACKAGE via expo-intent-launcher
-      // with ONLY data (no type).
-      //
-      // CRITICAL: Do NOT pass type! expo-intent-launcher calls
-      // setData() then setType() separately. On Android, setType()
-      // CLEARS the data URI (internal: setDataAndType(null, type)),
-      // so the Intent ends up with no data URI and the installer
-      // receives an empty Intent — hangs forever, no error shown.
-      //
-      // ACTION_INSTALL_PACKAGE is purpose-built for APK install.
-      // The system PackageInstaller handles this action directly
-      // from the data URI; no MIME type is needed.
-      try {
-        // Method 1: ACTION_VIEW + data + type.
-        // The standard Android way to open an APK file. The system
-        // routes to PackageInstaller via the MIME type.
-        // In SDK 56+, expo-intent-launcher uses setDataAndType()
-        // when both data and type are provided, so no clearing bug.
-        await startActivityWithTimeout(
-          'android.intent.action.VIEW',
-          {
-            data: contentUri,
-            type: 'application/vnd.android.package-archive',
-            flags: 0x00000001 | 0x10000000,
-          },
-          10000
-        );
-        flowActiveRef.current = false;
-        installingRef.current = false;
-        setStatus('installing');
-        return;
-      } catch (e1) {
-        console.warn('[UpdatePrompt] method 1 (VIEW) failed:', e1?.message || e1);
+      // --- Method 1: Custom native module (primary) ---
+      // Directly constructs the Intent in Kotlin, bypassing all
+      // JS-bridge bugs in expo-intent-launcher.
+      if (LuluApkInstaller && typeof LuluApkInstaller.installApk === 'function') {
+        try {
+          await LuluApkInstaller.installApk(contentUri);
+          // startActivity resolves immediately (fire-and-forget).
+          // The user is now looking at the PackageInstaller dialog.
+          flowActiveRef.current = false;
+          installingRef.current = false;
+          setStatus('installing');
+          return;
+        } catch (e1) {
+          console.warn('[UpdatePrompt] native module install failed:', e1?.message || e1);
+        }
       }
 
-      // Method 2: ACTION_INSTALL_PACKAGE without type.
-      // Some devices handle INSTALL_PACKAGE better than VIEW.
+      // --- Method 2: expo-sharing (fallback) ---
+      // Opens the system share sheet; user picks PackageInstaller.
       try {
-        await startActivityWithTimeout(
-          'android.intent.action.INSTALL_PACKAGE',
-          {
-            data: contentUri,
-            flags: 0x00000001 | 0x10000000,
-          },
-          10000
-        );
+        const { shareAsync } = await import('expo-sharing');
+        await shareAsync(contentUri, {
+          mimeType: 'application/vnd.android.package-archive',
+          dialogTitle: '安装璐璐记账更新',
+        });
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
       } catch (e2) {
-        console.warn('[UpdatePrompt] method 2 (INSTALL_PACKAGE) failed:', e2?.message || e2);
+        console.warn('[UpdatePrompt] expo-sharing failed:', e2?.message || e2);
       }
 
-      // Method 3: Linking.openURL with content URI (fallback).
-      // Some devices handle ACTION_VIEW via openURL natively.
+      // --- Method 3: Linking.openURL (last resort) ---
       try {
-        const opened = await Linking.openURL(contentUri);
-        if (opened !== false) {
-          flowActiveRef.current = false;
-          installingRef.current = false;
-          setStatus('installing');
-          return;
-        }
+        await Linking.openURL(contentUri);
+        flowActiveRef.current = false;
+        installingRef.current = false;
+        setStatus('installing');
+        return;
       } catch (e3) {
-        console.warn('[UpdatePrompt] method 3 (Linking.openURL) failed:', e3?.message || e3);
+        console.warn('[UpdatePrompt] Linking.openURL failed:', e3?.message || e3);
       }
 
-      // Method 4: expo-sharing as last resort.
-      // Shares the file via system share sheet; user picks PackageInstaller.
-      try {
-        const { shareAsync } = await import('expo-sharing');
-        const isAvailable = await shareAsync(contentUri, {
-          mimeType: 'application/vnd.android.package-archive',
-          dialogTitle: '安装璐璐记账更新',
-        });
-        if (isAvailable) {
-          flowActiveRef.current = false;
-          installingRef.current = false;
-          setStatus('installing');
-          return;
-        }
-      } catch (e4) {
-        console.warn('[UpdatePrompt] method 4 (expo-sharing) failed:', e4?.message || e4);
-      }
-
-      // All methods failed. Show actionable error with file path.
-      throw new Error('系统无法自动安装 APK。\n\n请打开文件管理器，找到以下路径手动安装：\n' + uri);
+      // All methods failed.
+      throw new Error('系统无法自动安装 APK。\n\n请尝试用文件管理器打开：' + filePath);
     } catch (e) {
       const msg = e?.message || String(e);
       console.warn('[UpdatePrompt] install failed:', msg);
