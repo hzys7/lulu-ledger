@@ -383,6 +383,20 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     return results.map((r) => r.url);
   }
 
+  async function checkInstallPermission() {
+    if (Platform.OS !== 'android') return true;
+    try {
+      if (LuluApkInstaller && typeof LuluApkInstaller.isInstallPermissionGranted === 'function') {
+        const granted = await LuluApkInstaller.isInstallPermissionGranted();
+        return granted !== false; // treat null/undefined as denied
+      }
+    } catch (e) {
+      console.warn('[UpdatePrompt] permission check failed:', e?.message || e);
+    }
+    // Can't check — assume not granted so we show the guidance
+    return false;
+  }
+
   async function handleDownload() {
     if (!updateInfo?.apk) {
       Alert.alert("下载链接缺失", "请前往 GitHub 仓库手动下载。", [
@@ -391,6 +405,26 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       ]);
       return;
     }
+
+    // --- Step 0: Check install permission BEFORE downloading ---
+    // On Android 8+, the user must explicitly enable "Install unknown apps"
+    // for this app in system settings. If we skip this check, the download
+    // finishes but installation silently fails.
+    if (Platform.OS === 'android') {
+      const hasPermission = await checkInstallPermission();
+      if (!hasPermission) {
+        Alert.alert(
+          '需要安装权限',
+          '下载前需要先授权「璐璐记账」安装APK。\n\n请点击「去设置」，然后在「安装未知应用」页面中打开「允许来自此来源」开关。',
+          [
+            { text: '取消', style: 'cancel' },
+            { text: '去设置', onPress: openInstallSettings },
+          ]
+        );
+        return;
+      }
+    }
+
     // 1.2.47: outer try/catch wraps the entire body. Without it, an
     // exception thrown outside the inner try (rankBySpeed,
     // buildCandidateUrls, the pre-loop setErrorMsg state updates

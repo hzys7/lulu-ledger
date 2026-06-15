@@ -15,8 +15,11 @@ yarn-error.*
 *.tsbuildinfo
 
 # Android (prebuild output, regenerated on each build)
-android/
-android-app/
+/android/
+/android-app/
+
+# But track our custom native module's Android code
+!modules/*/android/
 
 # iOS (regenerated on each build)
 ios/
