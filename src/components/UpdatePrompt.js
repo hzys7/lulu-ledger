@@ -481,6 +481,25 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     const pkg = (Application && Application.applicationId) || 'com.lululedger.app';
     return 'content://' + pkg + '.FileSystemFileProvider/cached_expo_files/' + encodeURIComponent(base);
   }
+  async function openInstallSettings() {
+    try {
+      let IntentLauncher;
+      try {
+        IntentLauncher = require('expo-intent-launcher');
+      } catch {}
+      if (IntentLauncher?.startActivityAsync) {
+        const pkg = (Application && Application.applicationId) || 'com.lululedger.app';
+        await IntentLauncher.startActivityAsync('android.settings.MANAGE_UNKNOWN_APP_SOURCES', {
+          data: 'package:' + pkg,
+        });
+      } else {
+        Linking.openSettings();
+      }
+    } catch {
+      Linking.openSettings();
+    }
+  }
+
     async function handleInstall(uri) {
     if (!uri) return;
     if (installingRef.current) return;
@@ -534,10 +553,16 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         return;
       }
       installingRef.current = false;
-      // Clear the flow guard so the next check is not silently blocked.
       flowActiveRef.current = false;
       setStatus('done');
-      setInstallError(msg);
+      // Detect permission-related errors and show actionable guidance.
+      // On Android 8+ (API 26+), REQUEST_INSTALL_PACKAGES permission must
+      // be declared AND the user must enable "Install unknown apps" in
+      // system settings for this app.
+      const isPermissionIssue = /permission|denied|forbidden|SecurityException|not allowed|PackageInstaller/i.test(msg);
+      setInstallError(isPermissionIssue
+        ? '权限不足：请在系统设置中开启「安装未知应用」权限'
+        : msg);
       setShowInstallError(true);
     }
   }
@@ -660,10 +685,20 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
               <Text style={[styles.doneSubText, { color: tc.textMuted }]}>点击下方按钮开始安装</Text>
               {(installError || showInstallError) ? (
                 <View style={[styles.installErrorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
-                  <Ionicons name="alert-circle" size={14} color={tc.danger} />
-                  <Text style={[styles.installErrorText, { color: tc.danger }]}>
-                    安装失败：{installError || '未知错误'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+                    <Ionicons name="alert-circle" size={14} color={tc.danger} />
+                    <Text style={[styles.installErrorText, { color: tc.danger }]}>
+                      安装失败：{installError || '未知错误'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.settingsLinkBtn, { backgroundColor: tc.danger }]}
+                    onPress={openInstallSettings}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="settings-outline" size={13} color="#fff" />
+                    <Text style={styles.settingsLinkText}>去设置</Text>
+                  </TouchableOpacity>
                 </View>
               ) : null}
               {localFile ? (
@@ -845,15 +880,28 @@ const styles = StyleSheet.create({
   },
   doneBlock: { marginBottom: spacing.base },
   installErrorBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
     padding: spacing.sm,
     borderRadius: borderRadius.md,
     borderWidth: StyleSheet.hairlineWidth,
     marginTop: spacing.sm,
-    gap: 4,
+    gap: 6,
   },
   installErrorText: { fontSize: fontSize.xs, flex: 1, lineHeight: 17 },
+  settingsLinkBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: borderRadius.sm,
+    marginTop: 4,
+  },
+  settingsLinkText: {
+    color: '#fff',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
   pathBlock: {
     marginTop: spacing.sm,
     padding: spacing.sm,
