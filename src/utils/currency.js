@@ -36,21 +36,6 @@ export function formatMoney(amount, currencyCode = 'CNY') {
   return `${amount < 0 ? '-' : ''}${currency.symbol}${formatted}`;
 }
 
-export function formatMoneyFull(amount, currencyCode = 'CNY') {
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return '0.00';
-  const currency = currencies[currencyCode];
-  if (!currency) return `${n.toFixed(2)}`;
-  
-  const absAmount = Math.abs(amount);
-  const formatted = absAmount.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  
-  return `${amount < 0 ? '-' : ''}${currency.symbol}${formatted}`;
-}
-
 export function convertCurrency(amount, fromCode, toCode) {
   const from = currencies[fromCode];
   const to = currencies[toCode];

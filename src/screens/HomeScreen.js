@@ -145,7 +145,7 @@ export default function HomeScreen({ navigation }) {
   // Animated.Value：stickyTrans.setValue 修改后 RN 自动同步到 native，不触发 React 重渲染，无 setState 闪烁
   const stickyTrans = useRef(new Animated.Value(-200)).current;
 
-  const renderItem = ({ item, index }) => {
+  const renderItem = useCallback(({ item, index }) => {
     if (item.type === 'header') {
       const dayExpense = item.txs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
       const dayIncome = item.txs.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -182,9 +182,9 @@ export default function HomeScreen({ navigation }) {
         isLast={isLastInList}
       />
     );
-  };
+  }, [tc, settings.currency, navigation, flatData]);
 
-  const renderHeader = () => (
+  const renderHeader = useCallback(() => (
     <View>
       {/* 余额卡 */}
       <View style={styles.headerSection}>
@@ -267,7 +267,7 @@ export default function HomeScreen({ navigation }) {
 
 <SectionHeader title={searchQuery ? '搜索结果' : '全部记录'} subtitle={searchQuery ? `匹配到 ${displayTransactions.length} 笔` : `共 ${displayTransactions.length} 笔`} />
     </View>
-  );
+  ), [tc, summary, settings, navigation, netWorth, displayTransactions.length, aiEnabled, searchQuery, setShowAiChat]);
 
   return (
     <View style={[styles.container, { backgroundColor: tc.background }]}>
@@ -357,7 +357,7 @@ export default function HomeScreen({ navigation }) {
 
       <FlatList
         data={flatData}
-        keyExtractor={(item, idx) => (item.type === 'header' ? `h_${item.date}` : `t_${item.data.id}_${idx}`)}
+        keyExtractor={(item) => (item.type === 'header' ? `h_${item.date}` : `t_${item.data.id}`)}
         renderItem={renderItem}
         onScroll={(e) => {
           const y = e.nativeEvent.contentOffset.y;

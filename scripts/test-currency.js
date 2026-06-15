@@ -8,7 +8,6 @@ const path = require("node:path");
 const {
   formatMoney,
   getCurrencySymbol,
-  formatMoneyFull,
   convertCurrency,
   getCurrencyList,
 } = require(path.resolve(__dirname, "../src/utils/currency.js"));
@@ -54,10 +53,10 @@ assert.equal(getCurrencySymbol("XYZ"), "XYZ");
 assert.equal(getCurrencySymbol(null), null);
 console.log("  ok  test6_getCurrencySymbolUnknown");
 
-// 7) formatMoneyFull — positive
-assert.equal(formatMoneyFull(1234.5, "CNY"), "¥1,234.50");
-assert.equal(formatMoneyFull(-100, "CNY"), "-¥100.00");
-console.log("  ok  test7_formatMoneyFull");
+// 7) formatMoney — positive
+assert.equal(formatMoney(1234.5, "CNY"), "¥1,234.50");
+assert.equal(formatMoney(-100, "CNY"), "-¥100.00");
+console.log("  ok  test7_formatMoney_positive");
 
 // 8) convertCurrency — CNY to USD and back
 const usdAmount = convertCurrency(100, "CNY", "USD");

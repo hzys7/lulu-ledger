@@ -181,7 +181,7 @@ export default function StatisticsScreen({ navigation }) {
           <View style={[styles.segment, { backgroundColor: tc.surfaceMuted }]}>
             <TouchableOpacity
               style={[styles.segmentItem, dataType === 'expense' && styles.segmentItemActive]}
-              onPress={() => setDataType('expense')}
+              onPress={() => { setDataType('expense'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
               <Text style={[styles.segmentText, { color: dataType === 'expense' ? tc.text : tc.textMuted }]}>
@@ -190,7 +190,7 @@ export default function StatisticsScreen({ navigation }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.segmentItem, dataType === 'income' && styles.segmentItemActive]}
-              onPress={() => setDataType('income')}
+              onPress={() => { setDataType('income'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
               <Text style={[styles.segmentText, { color: dataType === 'income' ? tc.text : tc.textMuted }]}>
@@ -225,19 +225,19 @@ export default function StatisticsScreen({ navigation }) {
             {/* 4 格汇总数字 */}
             <View style={styles.summaryGrid}>
               <View style={[styles.summaryCell, { backgroundColor: tc.surface, borderColor: tc.border, ...shadows.sm }]}>
-                <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>{selectedMonth + 1}月{'支出'}({'元'})</Text>
+                <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>{selectedMonth + 1}月{dataType === 'expense' ? '支出' : '收入'}(元)</Text>
                 <Text style={[styles.summaryAmount, { color: tc.text }]} numberOfLines={1} adjustsFontSizeToFit>
                   {dataType === 'expense' ? totalAmount.toFixed(2) : totalAmount.toFixed(0)}
                 </Text>
               </View>
               <View style={[styles.summaryCell, { backgroundColor: tc.surface, borderColor: tc.border, ...shadows.sm }]}>
-                <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>{'日均支出'}({'元'})</Text>
+                <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>日均{dataType === 'expense' ? '支出' : '收入'}(元)</Text>
                 <Text style={[styles.summaryAmount, { color: tc.text }]} numberOfLines={1} adjustsFontSizeToFit>
                   {dataType === 'expense' ? dailyAvg.toFixed(2) : dailyAvg.toFixed(0)}
                 </Text>
               </View>
               <View style={[styles.summaryCell, { backgroundColor: tc.surface, borderColor: tc.border, ...shadows.sm }]}>
-                <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>{'比上月支出'}({'元'})</Text>
+                <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>比上月{dataType === 'expense' ? '支出' : '收入'}(元)</Text>
                 <Text style={[styles.summaryAmount, { color: diffVsLast > 0 ? tc.danger : tc.success }]} numberOfLines={1} adjustsFontSizeToFit>
                   {diffVsLast >= 0 ? '+' : ''}{diffVsLast.toFixed(2)}
                 </Text>
