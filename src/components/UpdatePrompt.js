@@ -273,11 +273,14 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         try { task.cancel(); } catch {}
       }
     }, 5000);
-    clearInterval(watchdog);
-    const file = await task.downloadAsync();
-    downloadTaskRef.current = null;
-    if (!file) throw new Error("下载被取消");
-    return file;
+    try {
+      const file = await task.downloadAsync();
+      downloadTaskRef.current = null;
+      if (!file) throw new Error("下载被取消");
+      return file;
+    } finally {
+      clearInterval(watchdog);
+    }
   }
 
   // Probe a URL by issuing a Range request for the first ~64KB and
@@ -363,26 +366,33 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       ]);
       return;
     }
-    flowActiveRef.current = true;
-    setStatus("downloading");
-    setProgress(0);
-    setInstallError("");
-    setShowInstallError(false);
-    setSpeed(0);
-    setReceived(0);
-    setTotal(0);
-    setStartTime(0);
-    setErrorMsg("");
-    const ac = new AbortController();
-    abortRef.current = ac;
-    const apkName = `update-${updateInfo.apk.name}`;
-    const dest = new File(Paths.cache, apkName);
-    const initialCandidates = buildCandidateUrls();
-    // Probe sources by speed before committing to a full download.
-    const candidates = await rankBySpeed(initialCandidates, ac.signal);
-    let lastErr = null;
+    // 1.2.47: outer try/catch wraps the entire body. Without it, an
+    // exception thrown outside the inner try (rankBySpeed,
+    // buildCandidateUrls, the pre-loop setErrorMsg state updates
+    // when the component has just been unmounted) escapes the
+    // function, React swallows it, and the user sees the modal
+    // stuck on 'downloading' with no error message and no
+    // progress -- the 'nothing happens when I tap Update' bug.
     try {
-      for (let i = 0; i < candidates.length; i++) {
+      flowActiveRef.current = true;
+      setStatus("downloading");
+      setProgress(0);
+      setInstallError("");
+      setShowInstallError(false);
+      setSpeed(0);
+      setReceived(0);
+      setTotal(0);
+      setStartTime(0);
+      setErrorMsg("");
+      const ac = new AbortController();
+      abortRef.current = ac;
+      const apkName = `update-${updateInfo.apk.name}`;
+      const dest = new File(Paths.cache, apkName);
+      const initialCandidates = buildCandidateUrls();
+      // Probe sources by speed before committing to a full download.
+      const candidates = await rankBySpeed(initialCandidates, ac.signal);
+    let lastErr = null;
+    for (let i = 0; i < candidates.length; i++) {
         const url = candidates[i];
         if (candidates.length > 1) {
           let host = "源";
@@ -425,17 +435,25 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         }
       }
       throw lastErr || new Error("所有下载源均失败");
-    } catch (e) {
-      console.warn("[UpdatePrompt] download failed:", e?.message || e);
-      setErrorMsg((candidates.length > 1 ? "所有下载源均失败：" : "") + (e?.message || "下载失败"));
-      setStatus("error");
-      abortRef.current = null;
-      // Clear the flow guard so the next check (auto or manual) is not
-      // silently blocked. Without this, a download failure leaves
-      // flowActiveRef=true and Settings 'Check now' will return the
-      // stale status from the previous check.
-      flowActiveRef.current = false;
-    }
+    // 1.2.47: all sources failed. Surface a clear, actionable error in the
+    // modal instead of calling a (non-existent) helper. Also clear the
+    // flow guard so the next tap of "立即更新" is not silently blocked.
+    const failed = lastErr || new Error("所有下载源均失败");
+    console.warn("[UpdatePrompt] all sources failed:", failed?.message || failed);
+    setErrorMsg("下载失败：" + (failed?.message || "未知错误") + "。可稍后重试，或前往 GitHub 手动下载。");
+    setStatus("error");
+    abortRef.current = null;
+    flowActiveRef.current = false;
+  } catch (e) {
+    // 1.2.47: outer catch for anything that escaped the inner try
+    // (rankBySpeed, buildCandidateUrls, post-await state updates).
+    // Inline (no helper) so the candidates closure stays in scope.
+    console.warn("[UpdatePrompt] download failed (outer):", e?.message || e);
+    setErrorMsg("下载失败：" + (e?.message || String(e)));
+    setStatus("error");
+    abortRef.current = null;
+    flowActiveRef.current = false;
+  }
   }
 
   // Convert a file:// URI in the app cache dir to a content:// URI
