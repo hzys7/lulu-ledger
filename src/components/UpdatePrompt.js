@@ -13,7 +13,6 @@ import {
   Linking,
   Platform,
   DeviceEventEmitter,
-  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -156,18 +155,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       }
       resetUpdateFlow();
       setUpdateInfo(result);
-      // Wait for any pending Modal hide animation to finish before
-      // showing again. setTimeout(50) was unreliable on Android -- the
-      // native Modal can drop a false->true transition that lands
-      // within ~300ms of the previous hide. InteractionManager fires
-      // AFTER all pending interactions/animations, which is the only
-      // reliable way to reopen a Modal that was just dismissed.
-      const handle = InteractionManager.runAfterInteractions(() => {
-        setVisible(true);
-      });
-      // Safety net: if the interaction manager never resolves (some
-      // Android builds), still open the modal after 350ms.
-      setTimeout(() => { try { handle && handle.cancel && handle.cancel(); } catch {}; setVisible(true); }, 350);
+      setVisible(true);
       _lastCheck = { at: Date.now(), status: 'update-available', current: getLocalVersion(), latest: result.remote.version, error: '' };
       DeviceEventEmitter.emit('lulu:update-check-result', {
         status: 'update-available',
@@ -507,7 +495,6 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   function handleLater() {
     setVisible(false);
     resetUpdateFlow();
-    setUpdateInfo(null);
   }
 
   async function handleSkip() {
@@ -516,7 +503,6 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     }
     setVisible(false);
     resetUpdateFlow();
-    setUpdateInfo(null);
   }
 
   if (!updateInfo) return null;
