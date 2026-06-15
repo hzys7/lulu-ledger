@@ -59,6 +59,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   const [showInstallError, setShowInstallError] = useState(false);
   const downloadTaskRef = useRef(null);
   const abortRef = useRef(null);
+  // Reentrancy guard: handleInstall may be called both automatically
+  // 300ms after download completes and again when the user taps
+  // the install button. expo-intent-launcher rejects the second call
+  // with 'IntentLauncher activity is already started'.
+  const installingRef = useRef(false);
   const lastProgressAtRef = useRef(0);
   const currentSourceRef = useRef("");
 
@@ -383,6 +388,9 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }
     async function handleInstall(uri) {
     if (!uri) return;
+    if (installingRef.current) return;
+    installingRef.current = true;
+    setStatus('installing');
     try {
       let IntentLauncher;
       try {
@@ -407,6 +415,8 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       }
       await Linking.openURL(uri);
     } catch (e) {
+      installingRef.current = false;
+      setStatus('done');
       setInstallError(e?.message || String(e));
       setShowInstallError(true);
     }
@@ -428,9 +438,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   function handleLater() {
     setVisible(false);
     // 标记这个版本本次会话内不再弹
+    installingRef.current = false;
   }
 
   async function handleSkip() {
+    installingRef.current = false;
     if (updateInfo?.remote?.version) {
       await setDismissedInfo(updateInfo.remote.version);
     }
@@ -606,6 +618,11 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
               </TouchableOpacity>
             ) : null}
           </View>
+            {status === 'installing' ? (
+              <View style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1, opacity: 0.6 }]}>
+                <ActivityIndicator size="small" color={tc.primaryOn} />
+              </View>
+            ) : null}
         </View>
       </View>
     </Modal>
