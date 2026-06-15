@@ -65,6 +65,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   // with 'IntentLauncher activity is already started'.
   const installingRef = useRef(false);
   const lastProgressAtRef = useRef(0);
+  const lastBytesRef = useRef(0);
   const currentSourceRef = useRef("");
   // Track the post-download auto-install setTimeout so we can cancel it
   // if the user dismisses the modal (otherwise it fires into a closed
@@ -107,6 +108,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     setReceived(0);
     setTotal(0);
     setStartTime(0);
+    lastBytesRef.current = 0;
     setErrorMsg('');
     setInstallError('');
     setShowInstallError(false);
@@ -256,10 +258,15 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         }
         const now = Date.now();
         setStartTime((prev) => {
-          if (prev === 0) return now;
+          if (prev === 0) {
+            lastBytesRef.current = bytesWritten;
+            return now;
+          }
           const elapsed = (now - prev) / 1000;
           if (elapsed >= 0.5) {
-            setSpeed(Math.round(bytesWritten / 1024 / elapsed));
+            const deltaBytes = bytesWritten - lastBytesRef.current;
+            lastBytesRef.current = bytesWritten;
+            setSpeed(Math.round(deltaBytes / 1024 / elapsed));
             return now;
           }
           return prev;
@@ -389,6 +396,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       setReceived(0);
       setTotal(0);
       setStartTime(0);
+      lastBytesRef.current = 0;
       setErrorMsg("");
       const ac = new AbortController();
       abortRef.current = ac;
