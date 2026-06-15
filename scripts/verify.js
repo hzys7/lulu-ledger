@@ -155,7 +155,7 @@ var GLOBALS = new Set([
   "DeviceEventEmitter",
   "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
   "id","tx","ok","no","go","item","cat","amt","raw","val","acc","key","idx","err","res","req","fn",
-  "formatTimeAgo","styles",
+  "styles",
 ]);
 
 function isDeclCtx(node, parent) {

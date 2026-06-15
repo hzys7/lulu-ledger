@@ -49,6 +49,15 @@ function checkResultText(r) {
   }
 }
 
+function formatTimeAgo(ms) {
+  if (!ms || ms <= 0) return '从未';
+  const sec = Math.floor((Date.now() - ms) / 1000);
+  if (sec < 60) return sec + ' 秒前';
+  if (sec < 3600) return Math.floor(sec / 60) + ' 分钟前';
+  if (sec < 86400) return Math.floor(sec / 3600) + ' 小时前';
+  return Math.floor(sec / 86400) + ' 天前';
+}
+
 export default function SettingsScreen({ navigation }) {
   const {
     books,
