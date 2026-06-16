@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 4,
   },
-  defaultBadgeText: { fontSize: 10, fontWeight: fontWeight.medium },
+  defaultBadgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
   accountType: { fontSize: fontSize.xs, marginTop: 2, letterSpacing: -0.1 },
   accountRight: { alignItems: 'flex-end' },
   accountBalance: {

@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md, ...shadows.sm,
   },
   aiCardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  aiCardEmoji: { fontSize: 32 },
+  aiCardEmoji: { fontSize: fontSize.xxl },
   aiCardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: 2, letterSpacing: -0.2 },
   aiCardHint: { fontSize: fontSize.xs, lineHeight: 16 },
   aiCardBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: borderRadius.full, gap: 4 },

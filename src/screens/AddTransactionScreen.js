@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   amountBlock: { paddingVertical: spacing.sm },
   amountRow: { flexDirection: 'row', alignItems: 'flex-end' },
   currencySign: {
-    fontSize: 28,
+    fontSize: fontSize.xxl,
     fontWeight: fontWeight.medium,
     marginRight: spacing.sm,
     letterSpacing: -0.5,
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     gap: 3,
   },
-  moodEmoji: { fontSize: 13 },
+  moodEmoji: { fontSize: fontSize.sm },
   moodLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
 
   // 数字键盘

@@ -19,7 +19,7 @@ import NetWorthScreen from './src/screens/NetWorthScreen';
 import BudgetScreen from './src/screens/BudgetScreen';
 import AiMonthlyReportScreen from './src/screens/AiMonthlyReportScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import { getThemeColors, fontSize, fontWeight, spacing } from './src/theme';
+import { colors, getThemeColors, fontSize, fontWeight, spacing } from './src/theme';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -39,17 +39,17 @@ function MainTabs() {
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: '#000000',
+                backgroundColor: colors.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginTop: -10,
-                shadowColor: '#000',
+                shadowColor: colors.primary,
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.15,
                 shadowRadius: 3,
                 elevation: 3,
               }}>
-                <Ionicons name="add" size={24} color="#FFFFFF" />
+                <Ionicons name="add" size={24} color={colors.primaryOn} />
               </View>
             );
           }

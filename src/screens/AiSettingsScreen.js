@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  headerIcon: { fontSize: 24, marginRight: spacing.xs },
+  headerIcon: { fontSize: fontSize.xl, marginRight: spacing.xs },
   headerTitle: {
     fontSize: fontSize.xl,
     fontWeight: fontWeight.semibold,

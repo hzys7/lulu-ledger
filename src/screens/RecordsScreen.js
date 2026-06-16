@@ -186,11 +186,11 @@ export default function RecordsScreen({ navigation }) {
   const HEADER_HEIGHT = 260;
   const stickyTranslateY = useMemo(() =>
     scrollY.interpolate({
-      inputRange: [0, monthFilter ? 0 : HEADER_HEIGHT],
-      outputRange: [monthFilter ? 0 : -90, 0],
+      inputRange: [0, HEADER_HEIGHT],
+      outputRange: [-90, 0],
       extrapolate: 'clamp',
     }),
-    [scrollY, monthFilter],
+    [scrollY],
   );
 
   const renderItem = useCallback(({ item, index }) => {

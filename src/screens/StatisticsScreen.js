@@ -720,8 +720,8 @@ export default function StatisticsScreen({ navigation }) {
               <View style={styles.pieRow}>
                 <PieRing
                   data={categoryItems.map(it => ({ value: it.amount, color: it.color }))}
-                  size={150}
-                  thickness={26}
+                  size={130}
+                  thickness={22}
                   selectedIndex={selectedPieIndex}
                   onSegmentPress={(idx) => setSelectedPieIndex(prev => prev === idx ? null : idx)}
                   center={(
@@ -754,8 +754,12 @@ export default function StatisticsScreen({ navigation }) {
               </View>
               <View style={styles.rankList}>
                 {(period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).slice(0, 3).map((item, idx) => (
-                  <View key={item.name} style={styles.rankRow}>
-                    <Text style={[styles.rankIndex, { color: tc.textMuted }]}>{idx + 1}</Text>
+                  <View key={item.name} style={[styles.rankRow, { backgroundColor: tc.surfaceMuted }]}>
+                    <View style={[styles.rankIndex, { backgroundColor: idx === 0 ? item.color : tc.surfaceSubtle }]}>
+                      <Text style={{ color: idx === 0 ? '#fff' : tc.textMuted, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                        {idx + 1}
+                      </Text>
+                    </View>
                     <View style={[styles.colorDot, { backgroundColor: item.color }]} />
                     <Text style={[styles.rankName, { color: tc.text }]}>{item.name}</Text>
                     <Text style={[styles.rankPercent, { color: tc.textMuted }]}>{item.percent}%</Text>
@@ -790,38 +794,56 @@ export default function StatisticsScreen({ navigation }) {
             {moodStats.items.length > 0 && (
               <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
                 <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: tc.text }]}>
-                    <Ionicons name="sparkles" size={16} color={tc.accent} />  AI 心情分析
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <View style={[styles.aiIconWrap, { backgroundColor: tc.accentSubtle }]}>
+                      <Ionicons name="sparkles" size={14} color={tc.accent} />
+                    </View>
+                    <Text style={[styles.cardTitle, { color: tc.text }]}>心情分析</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                     <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>{moodStats.total}笔</Text>
                     <TouchableOpacity
                       onPress={handleRefreshMoodAnalysis}
                       disabled={moodAnalysisLoading}
+                      style={[styles.refreshBtn, { backgroundColor: tc.surfaceMuted }]}
                       hitSlop={8}
                     >
-                      <Ionicons name="refresh" size={15} color={moodAnalysisLoading ? tc.textSubtle : tc.textMuted} />
+                      <Ionicons name="refresh" size={13} color={moodAnalysisLoading ? tc.textSubtle : tc.textMuted} />
                     </TouchableOpacity>
                   </View>
                 </View>
 
+                {/* 心情标签云 */}
+                <View style={styles.moodTagRow}>
+                  {moodStats.items.slice(0, 5).map((item) => (
+                    <View key={item.key} style={[styles.moodTag, { backgroundColor: tc.surfaceMuted }]}>
+                      <Text style={styles.moodTagEmoji}>{item.emoji}</Text>
+                      <Text style={[styles.moodTagLabel, { color: tc.textSecondary }]}>{item.label}</Text>
+                      <Text style={[styles.moodTagCount, { color: tc.textMuted }]}>{item.count}</Text>
+                    </View>
+                  ))}
+                </View>
+
                 {moodAnalysisLoading ? (
-                  <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>AI 分析中…</Text>
+                  <View style={styles.moodLoadingWrap}>
+                    <Ionicons name="hourglass-outline" size={14} color={tc.textMuted} />
+                    <Text style={[styles.cardSubtitle, { color: tc.textMuted, marginLeft: spacing.xs }]}>AI 分析中…</Text>
+                  </View>
                 ) : moodAnalysis ? (
-                  <Text style={{ color: tc.text, fontSize: fontSize.sm, lineHeight: 20, letterSpacing: -0.1 }}>
+                  <Text style={[styles.moodAnalysisText, { color: tc.text }]}>
                     {moodAnalysis}
                   </Text>
                 ) : moodAnalysisError === '未配置 AI' || moodAnalysisError === 'AI 未启用' ? (
-                  <Text style={{ color: tc.textMuted, fontSize: fontSize.sm, lineHeight: 19 }}>
+                  <Text style={[styles.moodPlaceholderText, { color: tc.textMuted }]}>
                     请到 设置 → AI 配置 中开启后获取心情分析
                   </Text>
                 ) : moodAnalysisError ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
-                    <Ionicons name="alert-circle-outline" size={14} color={tc.textMuted} />
-                    <Text style={[styles.cardSubtitle, { color: tc.textMuted, flex: 1 }]}>{moodAnalysisError}</Text>
+                  <View style={styles.moodErrorWrap}>
+                    <Ionicons name="alert-circle-outline" size={14} color={tc.danger} />
+                    <Text style={[styles.cardSubtitle, { color: tc.danger, flex: 1 }]}>{moodAnalysisError}</Text>
                   </View>
                 ) : (
-                  <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>点击刷新按钮生成分析</Text>
+                  <Text style={[styles.moodPlaceholderText, { color: tc.textMuted }]}>点击刷新按钮生成分析</Text>
                 )}
               </View>
             )}
@@ -853,7 +875,12 @@ export default function StatisticsScreen({ navigation }) {
                     {(period === 'week' ? topWeekTx : period === 'month' ? topMonthTx : topYearTx).map((tx, i, arr) => {
                       const item = (period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).find(c => c.name === tx.category);
                       return (
-                        <View key={tx.id} style={[styles.txRow, i < arr.length - 1 && { borderBottomColor: tc.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+                        <View key={tx.id} style={[styles.txRow, { backgroundColor: tc.surfaceMuted }]}>
+                          <View style={[styles.rankIndex, { backgroundColor: tc.surfaceSubtle }]}>
+                            <Text style={{ color: tc.textMuted, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                              {i + 1}
+                            </Text>
+                          </View>
                           <View style={[styles.colorDot, { backgroundColor: item?.color || tc.textSubtle }]} />
                           <View style={styles.txInfo}>
                             <Text style={[styles.txCategory, { color: tc.text }]} numberOfLines={1}>{tx.category}</Text>
@@ -972,16 +999,19 @@ const styles = StyleSheet.create({
   // AI 卡片
   aiCard: {
     flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginBottom: spacing.base,
-    padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md, ...shadows.sm,
+    padding: spacing.base, borderRadius: borderRadius.lg, gap: spacing.md,
   },
-  aiIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  aiIconWrap: {
+    width: 40, height: 40, borderRadius: borderRadius.sm,
+    alignItems: 'center', justifyContent: 'center',
+  },
   aiTextWrap: { flex: 1 },
   aiTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
-  aiSubtitle: { fontSize: fontSize.xs, marginTop: 2, letterSpacing: -0.1 },
+  aiSubtitle: { fontSize: fontSize.xs, marginTop: 3, letterSpacing: -0.1 },
 
   // 通用卡片
-  card: { marginHorizontal: spacing.base, marginBottom: spacing.base, padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.base },
+  card: { marginHorizontal: spacing.base, marginBottom: spacing.base, padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
   cardUnit: { fontSize: fontSize.xs },
 
@@ -989,27 +1019,73 @@ const styles = StyleSheet.create({
   dayHintText: { fontSize: fontSize.xs, letterSpacing: -0.1, fontVariant: ['tabular-nums'] },
 
   // Pie
-  pieRow: { alignItems: 'center', justifyContent: 'center', marginVertical: spacing.sm, position: 'relative' },
+  pieRow: { alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs, marginBottom: spacing.sm, position: 'relative' },
   pieCenter: { position: 'absolute', alignItems: 'center' },
-  pieCenterLabel: { fontSize: fontSize.xs },
-  pieCenterAmount: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginTop: 2, fontVariant: ['tabular-nums'] },
+  pieCenterLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
+  pieCenterAmount: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginTop: 3, fontVariant: ['tabular-nums'] },
 
   cardSubtitle: { fontSize: fontSize.xs },
 
+  // 心情标签云
+  moodTagRow: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  moodTag: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full, gap: 4,
+  },
+  moodTagEmoji: { fontSize: fontSize.sm },
+  moodTagLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
+  moodTagCount: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
+
+  // 心情分析文本
+  moodAnalysisText: {
+    fontSize: fontSize.sm, lineHeight: 22, letterSpacing: -0.1,
+  },
+  moodPlaceholderText: {
+    fontSize: fontSize.sm, lineHeight: 20, fontStyle: 'italic',
+  },
+  moodLoadingWrap: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm,
+  },
+  moodErrorWrap: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs,
+  },
+
+  // 刷新按钮
+  refreshBtn: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
   // 排行
-  rankList: { marginTop: spacing.base },
-  rankRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm },
-  rankIndex: { fontSize: fontSize.md, width: 16, fontWeight: fontWeight.medium },
+  rankList: { marginTop: spacing.sm },
+  rankRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm, marginBottom: spacing.xs, gap: spacing.md,
+  },
+  rankIndex: {
+    width: 20, height: 20, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    fontSize: fontSize.xs, fontWeight: fontWeight.semibold,
+  },
   colorDot: { width: 10, height: 10, borderRadius: 5 },
-  rankName: { fontSize: fontSize.md, fontWeight: fontWeight.medium, flex: 0, width: 60, letterSpacing: -0.2 },
-  rankPercent: { fontSize: fontSize.xs, width: 35, textAlign: 'right' },
+  rankName: { fontSize: fontSize.md, fontWeight: fontWeight.medium, flex: 0, minWidth: 50, letterSpacing: -0.2 },
+  rankPercent: { fontSize: fontSize.xs, width: 40, textAlign: 'right' },
   rankAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, flex: 1, textAlign: 'right', fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
 
   // 交易排行
-  txRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm },
+  txRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm, marginBottom: spacing.xs, gap: spacing.md,
+  },
   txInfo: { flex: 1 },
   txCategory: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
-  txNote: { fontSize: fontSize.xs, marginTop: 2, letterSpacing: -0.1 },
+  txNote: { fontSize: fontSize.xs, marginTop: 3, letterSpacing: -0.1, opacity: 0.7 },
   txAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
 
   emptyWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.xl },

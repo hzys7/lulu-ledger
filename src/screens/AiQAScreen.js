@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  titleIcon: { fontSize: 18 },
+  titleIcon: { fontSize: fontSize.md },
   topTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
 
   // 空状态
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  avatarText: { fontSize: 16 },
+  avatarText: { fontSize: fontSize.sm },
   bubble: {
     maxWidth: '75%',
     paddingHorizontal: spacing.md,
