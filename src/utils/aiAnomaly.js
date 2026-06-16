@@ -206,13 +206,18 @@ function buildLocalMessage(anomalies) {
 
 /**
  * 获取缓存的异常检测结果
+ * @param {number} [currentTxCount] - 当前交易总数。传入后会对比缓存时的交易数，
+ *   如果不同则视为缓存失效（说明有新交易产生），返回 null 触发重新检测
  */
-export async function getCachedAnomalies() {
+export async function getCachedAnomalies(currentTxCount) {
   try {
     const raw = await AsyncStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
+    // 6 小时过期
     if (Date.now() - data.timestamp > CACHE_TTL) return null;
+    // 交易数变了 → 缓存失效（有新交易未检测）
+    if (currentTxCount != null && data.txCount != null && data.txCount !== currentTxCount) return null;
     return data;
   } catch {
     return null;
@@ -222,11 +227,12 @@ export async function getCachedAnomalies() {
 /**
  * 缓存异常检测结果
  */
-export async function setCachedAnomalies(anomalies, message) {
+export async function setCachedAnomalies(anomalies, message, txCount) {
   try {
     await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({
       anomalies,
       message,
+      txCount,
       timestamp: Date.now(),
     }));
   } catch {}

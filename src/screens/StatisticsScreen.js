@@ -216,17 +216,21 @@ export default function StatisticsScreen({ navigation }) {
     return d;
   }, [weekStart]);
 
-  const weekTx = useMemo(() => {
+  // 缓存当周所有交易，避免多个 useMemo 重复过滤
+  const weekAllTx = useMemo(() => {
     return transactions.filter(t => {
       const d = new Date(t.date);
-      return d >= weekStart && d <= weekEnd && t.type === dataType;
+      return d >= weekStart && d <= weekEnd;
     });
-  }, [transactions, weekStart, weekEnd, dataType]);
+  }, [transactions, weekStart, weekEnd]);
+
+  const weekTx = useMemo(() => {
+    return weekAllTx.filter(t => t.type === dataType);
+  }, [weekAllTx, dataType]);
 
   const weekSummaryTotal = useMemo(() => {
-    const filtered = weekTx.filter(t => t.type === dataType);
-    return filtered.reduce((s, t) => s + t.amount, 0);
-  }, [weekTx, dataType]);
+    return weekTx.reduce((s, t) => s + t.amount, 0);
+  }, [weekTx]);
 
   const weekDailyData = useMemo(() => {
     const arr = [0, 0, 0, 0, 0, 0, 0];
@@ -259,21 +263,11 @@ export default function StatisticsScreen({ navigation }) {
   const weekDailyAvg = 7 > 0 ? weekSummaryTotal / 7 : 0;
   const weekDiffVsLast = weekSummaryTotal - lastWeekTotal;
   const weekBalance = useMemo(() => {
-    const allWeekTx = transactions.filter(t => {
-      const d = new Date(t.date);
-      return d >= weekStart && d <= weekEnd;
-    });
-    return calcBalance(allWeekTx);
-  }, [transactions, weekStart, weekEnd]);
+    return calcBalance(weekAllTx);
+  }, [weekAllTx]);
 
   const weekCategoryItems = useMemo(() => {
-    const { byCategory } = calcSummary(
-      transactions.filter(t => {
-        const d = new Date(t.date);
-        return d >= weekStart && d <= weekEnd;
-      }),
-      dataType,
-    );
+    const { byCategory } = calcSummary(weekAllTx, dataType);
     return Object.entries(byCategory)
       .sort((a, b) => b[1] - a[1])
       .map(([name, value], i) => ({
@@ -286,6 +280,14 @@ export default function StatisticsScreen({ navigation }) {
   const topWeekTx = useMemo(() => {
     return [...weekTx].sort((a, b) => b.amount - a.amount).slice(0, 10);
   }, [weekTx]);
+
+  // =============== 年报数据 ===============
+  const reportYear = currentYear + yearOffset;
+
+  // 缓存年内所有交易，避免多个 useMemo 重复过滤
+  const yearAllTx = useMemo(() => {
+    return transactions.filter(t => new Date(t.date).getFullYear() === reportYear);
+  }, [transactions, reportYear]);
 
   // =============== 心情统计 ===============
   // MOOD_LABELS / MOOD_EMOJIS 已在模块级定义为常量
@@ -326,20 +328,11 @@ export default function StatisticsScreen({ navigation }) {
       }))
       .sort((a, b) => b.count - a.count);
     return { items, total };
-  }, [period, transactions, weekStart, weekEnd, selectedYear, selectedMonth, reportYear, MOOD_LABELS, MOOD_EMOJIS]);
-
-  // =============== 年报数据 ===============
-  const reportYear = currentYear + yearOffset;
-  const canGoNextYear = reportYear < currentYear;
-
-
+  }, [period, transactions, weekStart, weekEnd, selectedYear, selectedMonth, reportYear]);
 
   const yearTx = useMemo(() => {
-    return transactions.filter(t => {
-      const d = new Date(t.date);
-      return d.getFullYear() === reportYear && t.type === dataType;
-    });
-  }, [transactions, reportYear, dataType]);
+    return yearAllTx.filter(t => t.type === dataType);
+  }, [yearAllTx, dataType]);
 
   const yearSummaryTotal = useMemo(() => {
     return yearTx.reduce((s, t) => s + t.amount, 0);
@@ -358,15 +351,11 @@ export default function StatisticsScreen({ navigation }) {
   const yearMonthlyAvg = 12 > 0 ? yearSummaryTotal / 12 : 0;
   const yearDiffVsLast = yearSummaryTotal - lastYearTotal;
   const yearBalance = useMemo(() => {
-    const allYearTx = transactions.filter(t => new Date(t.date).getFullYear() === reportYear);
-    return calcBalance(allYearTx);
-  }, [transactions, reportYear]);
+    return calcBalance(yearAllTx);
+  }, [yearAllTx]);
 
   const yearCategoryItems = useMemo(() => {
-    const { byCategory } = calcSummary(
-      transactions.filter(t => new Date(t.date).getFullYear() === reportYear),
-      dataType,
-    );
+    const { byCategory } = calcSummary(yearAllTx, dataType);
     return Object.entries(byCategory)
       .sort((a, b) => b[1] - a[1])
       .map(([name, value], i) => ({
@@ -374,7 +363,7 @@ export default function StatisticsScreen({ navigation }) {
         color: chartPalette[i % chartPalette.length],
         percent: yearSummaryTotal > 0 ? Math.round((value / yearSummaryTotal) * 100) : 0,
       }));
-  }, [transactions, reportYear, dataType, chartPalette, yearSummaryTotal]);
+  }, [yearAllTx, dataType, chartPalette, yearSummaryTotal]);
 
   const yearMonthlyItems = useMemo(() => {
     return MONTH_LABELS.map((label, idx) => {
@@ -418,11 +407,8 @@ export default function StatisticsScreen({ navigation }) {
       return {
         period: 'week',
         weekLabel: getWeekLabel(weekStart),
-        totalIncome: transactions.filter(t => {
-          const d = new Date(t.date);
-          return d >= weekStart && d <= weekEnd && t.type === 'income';
-        }).reduce((s, t) => s + t.amount, 0),
-        totalExpense: weekTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || weekSummaryTotal,
+        totalIncome: weekAllTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
+        totalExpense: weekAllTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
         balance: weekBalance,
         topCategories: weekCategoryItems,
       };
@@ -441,9 +427,8 @@ export default function StatisticsScreen({ navigation }) {
     return {
       period: 'year',
       year: reportYear,
-      totalIncome: transactions.filter(t => new Date(t.date).getFullYear() === reportYear && t.type === 'income')
-        .reduce((s, t) => s + t.amount, 0),
-      totalExpense: yearSummaryTotal,
+      totalIncome: yearAllTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
+      totalExpense: yearAllTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
       balance: yearBalance,
       topCategories: yearCategoryItems,
     };

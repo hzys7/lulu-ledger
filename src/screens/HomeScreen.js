@@ -80,7 +80,7 @@ export default function HomeScreen({ navigation }) {
     }
     let alive = true;
     (async () => {
-      const cached = await getCachedAnomalies();
+      const cached = await getCachedAnomalies(anomalyTxCount);
       if (cached && cached.anomalies?.length > 0) {
         if (alive) setAnomalyAlert(cached);
         return;
@@ -91,7 +91,7 @@ export default function HomeScreen({ navigation }) {
         if (alive && res.ok && res.message) {
           const data = { message: res.message, anomalies };
           setAnomalyAlert(data);
-          setCachedAnomalies(anomalies, res.message);
+          setCachedAnomalies(anomalies, res.message, anomalyTxCount);
         }
       } else {
         if (alive) setAnomalyAlert(null);
