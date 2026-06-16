@@ -1,5 +1,5 @@
 // 璐璐记账 · 统计（周报 / 月报 / 年报）
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ import ShareCard from '../components/ShareCard';
 import { shareCard } from '../utils/shareReport';
 import LineChartView from '../components/charts/LineChartView';
 import BarChartRow from '../components/charts/BarChartRow';
-
+import { analyzeMood } from '../utils/aiMood';
 import {
   MonthSummaryGrid,
   WeekSummaryGrid,
@@ -276,8 +276,7 @@ export default function StatisticsScreen({ navigation }) {
     return transactions.filter(t => new Date(t.date).getFullYear() === reportYear);
   }, [transactions, reportYear]);
 
-  // =============== 心情统计 ===============
-  // MOOD_LABELS / MOOD_EMOJIS 已在模块级定义为常量
+  // =============== 心情统计 & AI 分析 ===============
 
   // 当前周期内的心情分布（expense only）
   const moodStats = useMemo(() => {
@@ -316,6 +315,82 @@ export default function StatisticsScreen({ navigation }) {
       .sort((a, b) => b.count - a.count);
     return { items, total };
   }, [period, transactions, weekStart, weekEnd, selectedYear, selectedMonth, reportYear]);
+
+  // 当前周期内带心情标记的支出交易（用于 AI 分析）
+  const moodPeriodTx = useMemo(() => {
+    return transactions.filter(t => {
+      if (t.type !== 'expense' || !t.mood) return false;
+      const d = new Date(t.date);
+      if (period === 'week') return d >= weekStart && d <= weekEnd;
+      if (period === 'month') return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
+      return d.getFullYear() === reportYear;
+    });
+  }, [transactions, period, weekStart, weekEnd, selectedYear, selectedMonth, reportYear]);
+
+  const moodTopExpenses = useMemo(() => {
+    return [...moodPeriodTx].sort((a, b) => b.amount - a.amount).slice(0, 10);
+  }, [moodPeriodTx]);
+
+  const periodLabel = period === 'week'
+    ? getWeekLabel(weekStart)
+    : period === 'month'
+    ? `${selectedYear}年${selectedMonth + 1}月`
+    : `${reportYear}年`;
+
+  const [moodAnalysis, setMoodAnalysis] = useState(null);
+  const [moodAnalysisLoading, setMoodAnalysisLoading] = useState(false);
+  const [moodAnalysisError, setMoodAnalysisError] = useState('');
+
+  const moodPeriodTotal = period === 'week' ? weekSummaryTotal : period === 'month' ? monthTotalAmount : yearSummaryTotal;
+
+  const handleRefreshMoodAnalysis = useCallback(async () => {
+    if (moodAnalysisLoading) return;
+    setMoodAnalysisLoading(true);
+    setMoodAnalysisError('');
+    setMoodAnalysis(null);
+    const result = await analyzeMood({
+      period, periodLabel,
+      moodItems: moodStats.items,
+      totalTransactions: moodStats.total,
+      totalAmount: moodPeriodTotal,
+      topExpenses: moodTopExpenses,
+      currency: settings.currency,
+      forceRegenerate: true,
+    });
+    setMoodAnalysisLoading(false);
+    if (result.ok) {
+      setMoodAnalysis(result.content);
+    } else {
+      setMoodAnalysisError(result.error);
+    }
+  }, [period, periodLabel, moodStats, moodPeriodTotal, moodTopExpenses, settings.currency, moodAnalysisLoading]);
+
+  // 当周期切换或心情数据变化时，自动触发 AI 分析
+  useEffect(() => {
+    if (moodStats.items.length === 0 || moodStats.total === 0) return;
+    let alive = true;
+    (async () => {
+      setMoodAnalysisLoading(true);
+      setMoodAnalysisError('');
+      setMoodAnalysis(null);
+      const result = await analyzeMood({
+        period, periodLabel,
+        moodItems: moodStats.items,
+        totalTransactions: moodStats.total,
+        totalAmount: moodPeriodTotal,
+        topExpenses: moodTopExpenses,
+        currency: settings.currency,
+      });
+      if (!alive) return;
+      setMoodAnalysisLoading(false);
+      if (result.ok) {
+        setMoodAnalysis(result.content);
+      } else {
+        setMoodAnalysisError(result.error);
+      }
+    })();
+    return () => { alive = false; };
+  }, [period, periodLabel, moodStats]);
 
   const yearTx = useMemo(() => {
     return yearAllTx.filter(t => t.type === dataType);
@@ -672,38 +747,43 @@ export default function StatisticsScreen({ navigation }) {
               </View>
             ) : null}
 
-            {/* ── 消费心情统计 ── */}
+            {/* ── AI 心情分析 ── */}
             {moodStats.items.length > 0 && (
               <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
                 <View style={styles.cardHeader}>
                   <Text style={[styles.cardTitle, { color: tc.text }]}>
-                    消费心情
+                    <Ionicons name="sparkles" size={16} color={tc.accent} />  AI 心情分析
                   </Text>
-                  <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>
-                    共 {moodStats.total} 笔标记
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>{moodStats.total}笔</Text>
+                    <TouchableOpacity
+                      onPress={handleRefreshMoodAnalysis}
+                      disabled={moodAnalysisLoading}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="refresh" size={15} color={moodAnalysisLoading ? tc.textSubtle : tc.textMuted} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                {moodStats.items.map((m, i) => {
-                  const barWidth = moodStats.total > 0 ? (m.count / moodStats.total) * 100 : 0;
-                  return (
-                    <View key={m.key} style={[styles.moodRow, i === moodStats.items.length - 1 && { borderBottomWidth: 0 }]}>
-                      <View style={styles.moodLabelWrap}>
-                        <Text style={styles.moodEmoji}>{m.emoji}</Text>
-                        <Text style={[styles.moodLabelText, { color: tc.text }]}>{m.label}</Text>
-                      </View>
-                      <View style={[styles.moodBarBg, { backgroundColor: tc.surfaceMuted }]}>
-                        <View style={[styles.moodBar, {
-                          width: `${Math.max(barWidth, 4)}%`,
-                          backgroundColor: i === 0 ? tc.accent : tc.textMuted,
-                          opacity: i === 0 ? 1 : 0.5,
-                        }]} />
-                      </View>
-                      <Text style={[styles.moodCount, { color: tc.textMuted }]}>
-                        {m.count}笔 {m.pct}%
-                      </Text>
-                    </View>
-                  );
-                })}
+
+                {moodAnalysisLoading ? (
+                  <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>AI 分析中…</Text>
+                ) : moodAnalysis ? (
+                  <Text style={{ color: tc.text, fontSize: fontSize.sm, lineHeight: 20, letterSpacing: -0.1 }}>
+                    {moodAnalysis}
+                  </Text>
+                ) : moodAnalysisError === '未配置 AI' || moodAnalysisError === 'AI 未启用' ? (
+                  <Text style={{ color: tc.textMuted, fontSize: fontSize.sm, lineHeight: 19 }}>
+                    请到 设置 → AI 配置 中开启后获取心情分析
+                  </Text>
+                ) : moodAnalysisError ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+                    <Ionicons name="alert-circle-outline" size={14} color={tc.textMuted} />
+                    <Text style={[styles.cardSubtitle, { color: tc.textMuted, flex: 1 }]}>{moodAnalysisError}</Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>点击刷新按钮生成分析</Text>
+                )}
               </View>
             )}
 
@@ -873,14 +953,6 @@ const styles = StyleSheet.create({
   pieCenterLabel: { fontSize: fontSize.xs },
   pieCenterAmount: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginTop: 2, fontVariant: ['tabular-nums'] },
 
-  // 心情统计
-  moodRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
-  moodLabelWrap: { flexDirection: 'row', alignItems: 'center', width: 72, gap: 4 },
-  moodEmoji: { fontSize: 14 },
-  moodLabelText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
-  moodBarBg: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
-  moodBar: { height: 8, borderRadius: 4 },
-  moodCount: { fontSize: fontSize.xs, width: 68, textAlign: 'right', fontVariant: ['tabular-nums'] },
   cardSubtitle: { fontSize: fontSize.xs },
 
   // 排行
