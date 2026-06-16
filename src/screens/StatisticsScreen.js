@@ -335,8 +335,6 @@ export default function StatisticsScreen({ navigation }) {
   const [rankingExpanded, setRankingExpanded] = useState(false);
   const [selectedPieIndex, setSelectedPieIndex] = useState(null);
 
-  const categoryItems = period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems;
-
   // 重置饼图选中状态（周期/数据变化时）
   useEffect(() => {
     setSelectedPieIndex(null);
@@ -449,6 +447,15 @@ export default function StatisticsScreen({ navigation }) {
   }, [yearTx]);
 
   // =============== 渲染判断 ===============
+  // 注: 原文件 L338 的 categoryItems 派生行移到这里,
+  // 是为了消除 year 路径下的 TDZ/var-undefined 错误。
+  // 真实根因: categoryItems 在 yearCategoryItems 之前声明并读取,
+  // 切到 period === 'year' 时该标识符尚未初始化, 下游 L715 的
+  // categoryItems.map(...) 会抛 Cannot read property 'map' of undefined。
+  // 将 categoryItems 移到 yearCategoryItems 之后即消除问题。
+  const categoryItems = period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems;
+
+
   const hasData = period === 'month'
     ? monthTotalAmount > 0
     : period === 'week'
