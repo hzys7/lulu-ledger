@@ -1,9 +1,9 @@
 // 手画环形图
 // props: data = [{ value, color }], size, thickness, center (React node)
 //         selectedIndex, onSegmentPress (支持点击高亮)
-import React, { memo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import Svg, { Path, G, Circle, Defs, ClipPath } from 'react-native-svg';
+import React, { memo, useMemo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Path, G, Circle } from 'react-native-svg';
 import { fontSize } from '../theme';
 
 function polarToCartesian(cx, cy, r, angleDeg) {
@@ -29,8 +29,6 @@ function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
   ].join(' ');
 }
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 const PieRing = memo(function PieRing({
   data,
   size = 180,
@@ -39,36 +37,7 @@ const PieRing = memo(function PieRing({
   selectedIndex = null,
   onSegmentPress,
 }) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-
-  // ── 入场动画 ────────────────────────────────────────────
-  // Ref 初始值固定为 0（隐藏），避免空→有数据时闪现全图
-  const revealR = useRef(new Animated.Value(0)).current;
-  const centerOpacity = useRef(new Animated.Value(0)).current;
-  // 唯一 clip id，避免多个 PieRing 冲突
-  const clipId = useRef(
-    `pie-reveal-${Math.random().toString(36).slice(2, 9)}`
-  ).current;
-
-  useEffect(() => {
-    if (total === 0) return;
-    // 首次有数据或有数据时触发一次绽放
-    revealR.setValue(0);
-    centerOpacity.setValue(0);
-
-    Animated.timing(revealR, {
-      toValue: size * 0.75,
-      duration: 600,
-      useNativeDriver: false,
-    }).start();
-
-    Animated.timing(centerOpacity, {
-      toValue: 1,
-      duration: 350,
-      delay: 400,
-      useNativeDriver: false,
-    }).start();
-  }, [total > 0]);
+  const total = useMemo(() => data.reduce((s, d) => s + d.value, 0), [data]);
 
   if (total === 0) {
     return (
@@ -84,7 +53,6 @@ const PieRing = memo(function PieRing({
   const rInner = rOuter - thickness;
   const trackR = rOuter - thickness / 2;
 
-  // 多个色块时使用更大间隙 + 背景轨道，单色块时保持简洁
   const hasMultiple = data.length > 1;
   const gapDeg = hasMultiple ? 2.5 : 0;
 
@@ -101,72 +69,58 @@ const PieRing = memo(function PieRing({
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <Svg width={size} height={size}>
-        <Defs>
-          <ClipPath id={clipId}>
-            {/* 径向绽放的裁剪圆 */}
-            <AnimatedCircle cx={cx} cy={cy} r={revealR} />
-          </ClipPath>
-        </Defs>
+        {hasMultiple && (
+          <Circle
+            cx={cx}
+            cy={cy}
+            r={trackR}
+            fill="none"
+            stroke="rgba(128,128,128,0.07)"
+            strokeWidth={thickness + 2}
+          />
+        )}
+        {arcs.map(({ d, startAngle, endAngle, key, index }) => {
+          if (endAngle - startAngle <= 0) return null;
 
-        {/* 背景轨道 + 色块统一被裁剪，实现从中心绽放 */}
-        <G clipPath={`url(#${clipId})`}>
-          {hasMultiple && (
-            <Circle
-              cx={cx}
-              cy={cy}
-              r={trackR}
-              fill="none"
-              stroke="rgba(128,128,128,0.07)"
-              strokeWidth={thickness + 2}
-            />
-          )}
-          {arcs.map(({ d, startAngle, endAngle, key, index }) => {
-            if (endAngle - startAngle <= 0) return null;
+          const isSelected = selectedIndex === index;
+          const isDimmed = selectedIndex !== null && !isSelected;
 
-            const isSelected = selectedIndex === index;
-            const isDimmed = selectedIndex !== null && !isSelected;
+          const glowAmt = isSelected ? Math.min(thickness * 0.12, 3) : 0;
+          const rOuterAdj = rOuter + glowAmt;
+          const rInnerAdj = rInner - glowAmt;
 
-            const glowAmt = isSelected ? Math.min(thickness * 0.12, 3) : 0;
-            const rOuterAdj = rOuter + glowAmt;
-            const rInnerAdj = rInner - glowAmt;
+          const path = arcPath(cx, cy, rOuterAdj, rInnerAdj, startAngle, endAngle);
 
-            const path = arcPath(cx, cy, rOuterAdj, rInnerAdj, startAngle, endAngle);
-
-            return (
-              <G key={key}>
-                {isSelected && (
-                  <Path
-                    d={arcPath(cx, cy, rOuter + 3, rInner - 3, startAngle, endAngle)}
-                    fill={d.color}
-                    opacity={0.25}
-                    stroke="none"
-                  />
-                )}
+          return (
+            <G key={key}>
+              {isSelected && (
                 <Path
-                  d={path}
+                  d={arcPath(cx, cy, rOuter + 3, rInner - 3, startAngle, endAngle)}
                   fill={d.color}
-                  stroke="rgba(0,0,0,0.08)"
-                  strokeWidth={0.5}
-                  opacity={isDimmed ? 0.3 : 1}
-                  onPress={() => onSegmentPress?.(index)}
+                  opacity={0.25}
+                  stroke="none"
                 />
-              </G>
-            );
-          })}
-        </G>
+              )}
+              <Path
+                d={path}
+                fill={d.color}
+                stroke="rgba(0,0,0,0.08)"
+                strokeWidth={0.5}
+                opacity={isDimmed ? 0.3 : 1}
+                onPress={() => onSegmentPress?.(index)}
+              />
+            </G>
+          );
+        })}
       </Svg>
 
-      {/* 中心文字淡入 */}
       {center ? (
-        <Animated.View
-          style={[
-            styles.center,
-            { width: size, height: size, opacity: centerOpacity },
-          ]}
+        <View
+          style={[styles.center, { width: size, height: size }]}
           pointerEvents="none"
         >
           {center}
-        </Animated.View>
+        </View>
       ) : null}
     </View>
   );
