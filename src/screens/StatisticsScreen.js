@@ -255,6 +255,19 @@ export default function StatisticsScreen({ navigation }) {
     return [...weekTx].sort((a, b) => b.amount - a.amount).slice(0, 10);
   }, [weekTx]);
 
+  // 周日趋势：周一到周日每天的支出
+  const weekDailyTrend = useMemo(() => {
+    const arr = new Array(7).fill(0);
+    weekAllTx.filter(t => t.type === dataType).forEach(t => {
+      const d = new Date(t.date);
+      const dayOfWeek = d.getDay(); // 0=周日, 1=周一, ...
+      const idx = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 转为 0=周一, 6=周日
+      arr[idx] += t.amount;
+    });
+    const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
+    return arr.map((v, i) => ({ day: i + 1, value: v, label: dayLabels[i] }));
+  }, [weekAllTx, dataType]);
+
   // =============== 年报数据 ===============
   const reportYear = currentYear + yearOffset;
 
@@ -675,18 +688,21 @@ export default function StatisticsScreen({ navigation }) {
             )}
 
             {/* ── 趋势图 ── */}
-            {period === 'month' ? (
+            {(period === 'week' || period === 'month') ? (
               <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
                 <View style={styles.cardHeader}>
                   <Text style={[styles.cardTitle, { color: tc.text }]}>
-                    {selectedMonth + 1}月{totalLabel}趋势
+                    {period === 'week' ? '本周' : `${selectedMonth + 1}月`}{totalLabel}趋势
                   </Text>
                   <Text style={[styles.cardUnit, { color: tc.textSubtle }]}>元</Text>
                 </View>
                 {selectedDay ? (
                   <View style={styles.dayHintRow}>
                     <Text style={[styles.dayHintText, { color: tc.textMuted }]}>
-                      {selectedMonth + 1}月{selectedDay}日 · {formatMoney((dailyTrend.find(d => d.day === selectedDay) || { value: 0 }).value, settings.currency).replace('¥', '')}元
+                      {period === 'week'
+                        ? `周${weekDailyTrend[selectedDay - 1]?.label || ''} · ${formatMoney((weekDailyTrend.find(d => d.day === selectedDay) || { value: 0 }).value, settings.currency).replace('¥', '')}元`
+                        : `${selectedMonth + 1}月${selectedDay}日 · ${formatMoney((dailyTrend.find(d => d.day === selectedDay) || { value: 0 }).value, settings.currency).replace('¥', '')}元`
+                      }
                     </Text>
                     <TouchableOpacity onPress={() => setSelectedDay(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Ionicons name="close-circle" size={16} color={tc.textMuted} />
@@ -696,7 +712,7 @@ export default function StatisticsScreen({ navigation }) {
                   <Text style={[styles.dayHintText, { color: tc.textSubtle, marginBottom: 4 }]}>点击折线查看单日数据</Text>
                 )}
                 <LineChartView
-                  data={dailyTrend}
+                  data={period === 'week' ? weekDailyTrend : dailyTrend}
                   accent={tc.primary}
                   muted={tc.textSubtle}
                   divider={tc.divider}
