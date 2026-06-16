@@ -27,6 +27,7 @@ export default function BudgetPieChart({
 }) {
   const [mode, setMode] = useState(MODE_OVERVIEW);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [overviewSelected, setOverviewSelected] = useState(null); // 'used' | 'remaining' | null
 
   // ─── 预算数据计算 ──────────────────────────────────────────
   const chartData = useMemo(() => {
@@ -149,10 +150,15 @@ export default function BudgetPieChart({
     setSelectedIndex((prev) => (prev === index ? null : index));
   }, []);
 
+  const handleOverviewPress = useCallback((key) => {
+    setOverviewSelected((prev) => (prev === key ? null : key));
+  }, []);
+
   const toggleMode = useCallback(() => {
     if (chartData?.isTotalOnly) return;
     setMode((prev) => prev === MODE_OVERVIEW ? MODE_CATEGORY : MODE_OVERVIEW);
     setSelectedIndex(null);
+    setOverviewSelected(null);
   }, [chartData?.isTotalOnly]);
 
   // ─── 空状态 ────────────────────────────────────────────────
@@ -228,10 +234,13 @@ export default function BudgetPieChart({
                     r={RADIUS}
                     fill="none"
                     stroke={overviewSegments.used.color}
-                    strokeWidth={STROKE_WIDTH}
+                    strokeWidth={overviewSelected === 'used' ? STROKE_WIDTH + 4 : STROKE_WIDTH}
                     strokeDasharray={`${overviewSegments.used.arcLength} ${CIRCUMFERENCE - overviewSegments.used.arcLength}`}
                     strokeDashoffset={0}
                     strokeLinecap="butt"
+                    opacity={overviewSelected && overviewSelected !== 'used' ? 0.45 : 1}
+                    onPress={() => handleOverviewPress('used')}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   />
                 )}
                 {/* 剩余预算 */}
@@ -242,10 +251,13 @@ export default function BudgetPieChart({
                     r={RADIUS}
                     fill="none"
                     stroke={overviewSegments.remaining.color}
-                    strokeWidth={STROKE_WIDTH}
+                    strokeWidth={overviewSelected === 'remaining' ? STROKE_WIDTH + 4 : STROKE_WIDTH}
                     strokeDasharray={`${overviewSegments.remaining.arcLength} ${CIRCUMFERENCE - overviewSegments.remaining.arcLength}`}
                     strokeDashoffset={-overviewSegments.used.arcLength}
                     strokeLinecap="butt"
+                    opacity={overviewSelected && overviewSelected !== 'remaining' ? 0.45 : 1}
+                    onPress={() => handleOverviewPress('remaining')}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   />
                 )}
               </G>
@@ -285,15 +297,37 @@ export default function BudgetPieChart({
         <View style={[styles.centerOverlay, { width: CHART_SIZE, height: CHART_SIZE }]} pointerEvents="none">
           {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
             // ── 整体概览中心 ──
-            <View style={styles.centerContent}>
-              <Text style={[styles.centerLabel, { color: tc.textSubtle }]}>剩余预算</Text>
-              <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
-                {overviewSegments?.isOver ? '-' : ''}{formatMoney(overviewSegments?.totalRemaining || 0, currency)}
-              </Text>
-              <Text style={[styles.centerSub, { color: tc.textMuted }]}>
-                {overviewSegments?.isOver ? '已超支' : `已用 ${overviewSegments?.used.percent || 0}%`}
-              </Text>
-            </View>
+            overviewSelected === 'used' ? (
+              <View style={styles.centerContent}>
+                <Text style={[styles.centerLabel, { color: overviewSegments.used.color }]}>已用</Text>
+                <Text style={[styles.centerTotal, { color: tc.text }]} numberOfLines={1}>
+                  {formatMoney(overviewSegments.totalSpent, currency, 0)}
+                </Text>
+                <Text style={[styles.centerSub, { color: tc.textMuted }]}>
+                  {overviewSegments.used.percent}% 预算
+                </Text>
+              </View>
+            ) : overviewSelected === 'remaining' ? (
+              <View style={styles.centerContent}>
+                <Text style={[styles.centerLabel, { color: overviewSegments.remaining.color }]}>剩余预算</Text>
+                <Text style={[styles.centerTotal, { color: overviewSegments.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
+                  {overviewSegments.isOver ? '-' : ''}{formatMoney(overviewSegments.totalRemaining, currency, 0)}
+                </Text>
+                <Text style={[styles.centerSub, { color: tc.textMuted }]}>
+                  {overviewSegments.isOver ? '已超支' : `可用 ${overviewSegments.remaining.percent}%`}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.centerContent}>
+                <Text style={[styles.centerLabel, { color: tc.textSubtle }]}>剩余预算</Text>
+                <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
+                  {overviewSegments?.isOver ? '-' : ''}{formatMoney(overviewSegments?.totalRemaining || 0, currency, 0)}
+                </Text>
+                <Text style={[styles.centerSub, { color: tc.textMuted }]}>
+                  {overviewSegments?.isOver ? '已超支' : `已用 ${overviewSegments?.used.percent || 0}%`}
+                </Text>
+              </View>
+            )
           ) : selected ? (
             // ── 分类选中态 ──
             <View style={styles.centerContent}>
@@ -338,38 +372,46 @@ export default function BudgetPieChart({
       {/* 整体概览：已用/剩余/总预算 三项指标 */}
       {(mode === MODE_OVERVIEW || chartData.isTotalOnly) && (
         <View style={styles.overviewStats}>
-          <View style={styles.overviewStatItem}>
-            <View style={[styles.overviewDot, { backgroundColor: tc.primary }]} />
+          <TouchableOpacity
+            style={styles.overviewStatItem}
+            onPress={() => handleOverviewPress('used')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.overviewDot, { backgroundColor: overviewSegments?.used.color || tc.primary }]} />
             <View>
               <Text style={[styles.overviewStatLabel, { color: tc.textMuted }]}>已用</Text>
-              <Text style={[styles.overviewStatValue, { color: tc.text }]}>
-                {formatMoney(chartData.totalSpent, currency)}
+              <Text style={[styles.overviewStatValue, { color: overviewSelected === 'used' ? tc.primary : tc.text }]}>
+                {formatMoney(chartData.totalSpent, currency, 0)}
               </Text>
             </View>
             <Text style={[styles.overviewStatPct, { color: tc.textMuted }]}>
               {overviewSegments?.used.percent || 0}%
             </Text>
-          </View>
+          </TouchableOpacity>
           <View style={[styles.overviewStatDivider, { backgroundColor: tc.divider }]} />
-          <View style={styles.overviewStatItem}>
-            <View style={[styles.overviewDot, { backgroundColor: tc.success }]} />
+          <TouchableOpacity
+            style={styles.overviewStatItem}
+            onPress={() => handleOverviewPress('remaining')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.overviewDot, { backgroundColor: overviewSegments?.remaining.color || tc.success }]} />
             <View>
               <Text style={[styles.overviewStatLabel, { color: tc.textMuted }]}>剩余</Text>
-              <Text style={[styles.overviewStatValue, { color: chartData.isOver ? tc.danger : tc.text }]}>
-                {chartData.isOver ? '-' : ''}{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency)}
+              <Text style={[styles.overviewStatValue, { color: chartData.isOver ? tc.danger : (overviewSelected === 'remaining' ? tc.success : tc.text) }]}>
+                {chartData.isOver ? '-' : ''}{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
               </Text>
             </View>
             <Text style={[styles.overviewStatPct, { color: tc.textMuted }]}>
               {overviewSegments?.remaining.percent || 0}%
             </Text>
-          </View>
+          </TouchableOpacity>
           <View style={[styles.overviewStatDivider, { backgroundColor: tc.divider }]} />
           <View style={styles.overviewStatItem}>
             <View style={[styles.overviewDot, { backgroundColor: tc.textSubtle }]} />
             <View>
               <Text style={[styles.overviewStatLabel, { color: tc.textMuted }]}>总预算</Text>
               <Text style={[styles.overviewStatValue, { color: tc.text }]}>
-                {formatMoney(chartData.totalBudget, currency)}
+                {formatMoney(chartData.totalBudget, currency, 0)}
               </Text>
             </View>
           </View>

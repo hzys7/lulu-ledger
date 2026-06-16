@@ -33,18 +33,18 @@ export function getCurrencyName(code) {
   return currencies[code]?.name || code;
 }
 
-export function formatMoney(amount, currencyCode = 'CNY') {
+export function formatMoney(amount, currencyCode = 'CNY', decimals = 2) {
   const n = toDisplayNumber(amount);
-  if (!Number.isFinite(n)) return '0.00';
+  if (!Number.isFinite(n)) return decimals > 0 ? '0.' + '0'.repeat(decimals) : '0';
   const currency = currencies[currencyCode];
-  if (!currency) return `${n.toFixed(2)}`;
+  const symbol = currency ? currency.symbol : '';
 
   const formatted = Math.abs(n).toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   });
 
-  return `${n < 0 ? '-' : ''}${currency.symbol}${formatted}`;
+  return `${n < 0 ? '-' : ''}${symbol}${formatted}`;
 }
 
 export function convertCurrency(amount, fromCode, toCode) {
