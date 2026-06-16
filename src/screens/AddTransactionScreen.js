@@ -12,6 +12,7 @@ import {
   Platform,
   Keyboard,
   Modal,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,6 +89,35 @@ export default function AddTransactionScreen({ navigation, route }) {
   const defaultAccId = (accounts.find(a => a.isDefault) || accounts[0])?.id;
   const [accountId, setAccountId] = useState(defaultAccId);
   const [mood, setMood] = useState('');
+
+  // 光标闪烁动画
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const blink = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cursorOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+        Animated.timing(cursorOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+      ]),
+    );
+    blink.start();
+    return () => blink.stop();
+  }, [cursorOpacity]);
+
+  // 数字键盘按压动画值
+  const keyAnims = useRef({});
+  KEYS.flat().forEach((k) => {
+    if (!keyAnims.current[k]) {
+      keyAnims.current[k] = new Animated.Value(1);
+    }
+  });
+  const animateKey = (key, toValue) => {
+    Animated.spring(keyAnims.current[key], {
+      toValue,
+      useNativeDriver: true,
+      friction: 12,
+      tension: 150,
+    }).start();
+  };
 
   // 打开抽屉：新建（从分类页来）
   function openFormForCategory(catName) {
@@ -288,7 +318,7 @@ export default function AddTransactionScreen({ navigation, route }) {
               <View style={styles.amountRow}>
                 <Text style={[styles.currencySign, { color: tc.text }]}>{currencySymbol}</Text>
                 <Text style={[styles.amountValue, { color: tc.text }]}>{displayAmount}</Text>
-                <View style={[styles.cursor, { backgroundColor: tc.text }]} />
+                <Animated.View style={[styles.cursor, { backgroundColor: tc.text, opacity: cursorOpacity }]} />
               </View>
             </View>
 
@@ -310,7 +340,7 @@ export default function AddTransactionScreen({ navigation, route }) {
                         borderColor: active ? tc.primary : tc.border,
                       },
                     ]}
-                    onPress={() => setMood(m.key)}
+                    onPress={() => setMood(mood === m.key ? '' : m.key)}
                     activeOpacity={0.7}
                   >
                     <Text style={styles.moodEmoji}>{m.emoji}</Text>
@@ -336,22 +366,28 @@ export default function AddTransactionScreen({ navigation, route }) {
                     const isDel = k === 'del';
                     const isLast = ki === row.length - 1;
                     return (
-                      <TouchableOpacity
+                      <Animated.View
                         key={k}
                         style={[
                           styles.keypadKey,
                           !isLast && styles.keypadKeyGap,
-                          { backgroundColor: tc.surfaceMuted },
+                          { backgroundColor: tc.surfaceMuted, transform: [{ scale: keyAnims.current[k] }] },
                         ]}
-                        onPress={() => (isDel ? handleDelete() : handleNumberInput(k))}
-                        activeOpacity={0.6}
                       >
-                        {isDel ? (
-                          <Ionicons name="backspace-outline" size={20} color={tc.text} />
-                        ) : (
-                          <Text style={[styles.keypadKeyText, { color: tc.text }]}>{k}</Text>
-                        )}
-                      </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.keypadKeyInner}
+                          onPress={() => (isDel ? handleDelete() : handleNumberInput(k))}
+                          onPressIn={() => animateKey(k, 0.92)}
+                          onPressOut={() => animateKey(k, 1)}
+                          activeOpacity={0.6}
+                        >
+                          {isDel ? (
+                            <Ionicons name="backspace-outline" size={20} color={tc.text} />
+                          ) : (
+                            <Text style={[styles.keypadKeyText, { color: tc.text }]}>{k}</Text>
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
                     );
                   })}
                 </View>
@@ -602,17 +638,17 @@ const styles = StyleSheet.create({
   },
 
   // 消费心情
-  moodScroll: { gap: 6, paddingBottom: spacing.sm, paddingRight: spacing.base },
+  moodScroll: { gap: 4, paddingBottom: spacing.sm, paddingRight: spacing.base },
   moodChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: borderRadius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 4,
+    gap: 3,
   },
-  moodEmoji: { fontSize: 14 },
+  moodEmoji: { fontSize: 13 },
   moodLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
 
   // 数字键盘
@@ -624,6 +660,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  keypadKeyInner: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.md,
   },
   keypadKeyGap: { marginRight: spacing.sm },
   keypadKeyText: {
