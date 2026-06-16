@@ -1,5 +1,7 @@
 ﻿// 璐璐记账 · AI 解析（自然语言 → 账目 JSON）
 import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
+import { buildCorrectionExamples } from './aiCorrections';
+import { extractAllJsonObjects, validateParsed } from './aiParserUtils';
 
 const SYSTEM_PROMPT = `你是一个记账助手。用户会用自然语言描述一笔消费或收入，你需要严格解析成 JSON。
 
@@ -28,19 +30,24 @@ const SYSTEM_PROMPT = `你是一个记账助手。用户会用自然语言描述
 - 分类严格从列表里选，不在列表里用"其他支出"或"其他收入"
 - note 简洁，例如"打车"、"午餐"、"工资"`;
 
-function buildSystemPrompt() {
+async function buildSystemPrompt() {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);
   const weekDay = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
   const timeStr = now.toTimeString().slice(0, 5);
-  return SYSTEM_PROMPT
+  let prompt = SYSTEM_PROMPT
     .replace('{NOW}', dateStr + ' 周' + weekDay + ' ' + timeStr)
     .replace('{CURRENCY}', 'CNY');
+  // 追加用户分类纠正偏好
+  const corrections = await buildCorrectionExamples();
+  if (corrections) {
+    prompt += corrections;
+  }
+  return prompt;
 }
 
 // 调 AI 解析文本，返回 { ok, data?, error? }
 // data = { amount, type, category, date, note }
-import { extractAllJsonObjects, validateParsed } from './aiParserUtils';
 
 export async function parseTransactionFromText(userText) {
   const config = await loadAiConfig();
@@ -69,7 +76,7 @@ export async function parseTransactionFromText(userText) {
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: 'system', content: buildSystemPrompt() },
+          { role: 'system', content: await buildSystemPrompt() },
           { role: 'user', content: userText },
         ],
         temperature: 0.1,

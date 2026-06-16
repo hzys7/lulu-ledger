@@ -19,6 +19,9 @@ import { TransactionItem, EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
 import { loadAiConfig } from '../utils/aiConfig';
 import AiChatScreen from './AiChatScreen';
+import AiQAScreen from './AiQAScreen';
+import AnomalyAlert from '../components/AnomalyAlert';
+import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
 import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 
@@ -41,23 +44,55 @@ export default function HomeScreen({ navigation }) {
   // AI 配置
   const [aiEnabled, setAiEnabled] = useState(false);
   const [showAiChat, setShowAiChat] = useState(false);
+  const [showAiQA, setShowAiQA] = useState(false);
+  // 异常消费提醒
+  const [anomalyAlert, setAnomalyAlert] = useState(null); // { message, anomalies }
+  const [anomalyDismissed, setAnomalyDismissed] = useState(false);
   const focusCheckRef = useRef(false);
+  // Effect 1: AI 配置刷新（挂载 + 页面聚焦时检查）
   useEffect(() => {
     let alive = true;
-    const refresh = async () => {
+    const refreshAi = async () => {
       const cfg = await loadAiConfig();
       if (alive) setAiEnabled(!!(cfg.enabled && cfg.apiKey));
     };
-    // Check on mount
-    refresh();
-    // Also check when the screen gains focus (e.g. coming back from Settings)
+    refreshAi();
     if (!focusCheckRef.current) {
       focusCheckRef.current = true;
-      const unsub = navigation.addListener('focus', refresh);
+      const unsub = navigation.addListener('focus', refreshAi);
       return () => { alive = false; unsub(); };
     }
     return () => { alive = false; };
   }, [navigation]);
+
+  // Effect 2: 异常消费检测（交易变化时检查，有 6 小时缓存）
+  const anomalyTxCount = transactions.length;
+  useEffect(() => {
+    if (anomalyTxCount <= 5 || anomalyDismissed) {
+      setAnomalyAlert(null);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const cached = await getCachedAnomalies();
+      if (cached && cached.anomalies?.length > 0) {
+        if (alive) setAnomalyAlert(cached);
+        return;
+      }
+      const anomalies = detectAnomalies({ transactions, getMonthSummary });
+      if (anomalies.length > 0) {
+        const res = await generateAnomalyMessage(anomalies);
+        if (alive && res.ok && res.message) {
+          const data = { message: res.message, anomalies };
+          setAnomalyAlert(data);
+          setCachedAnomalies(anomalies, res.message);
+        }
+      } else {
+        if (alive) setAnomalyAlert(null);
+      }
+    })();
+    return () => { alive = false; };
+  }, [anomalyTxCount, anomalyDismissed]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -245,27 +280,49 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* AI 智能记账（仅启用时显示） */}
+        {/* 异常消费提醒 */}
+        {aiEnabled && anomalyAlert && !anomalyDismissed ? (
+          <View style={{ paddingHorizontal: spacing.base }}>
+            <AnomalyAlert
+              message={anomalyAlert.message}
+              anomalies={anomalyAlert.anomalies}
+              tc={tc}
+              onDismiss={() => setAnomalyDismissed(true)}
+            />
+          </View>
+        ) : null}
+
+        {/* AI 智能（仅启用时显示） */}
         {aiEnabled ? (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => setShowAiChat(true)}
-            style={styles.aiCardWrap}
-          >
+          <View style={styles.aiCardWrap}>
             <View style={[styles.aiCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
               <View style={styles.aiCardLeft}>
                 <Text style={styles.aiCardEmoji}>✨</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.aiCardTitle, { color: tc.text }]}>试试一句话记账</Text>
-                  <Text style={[styles.aiCardHint, { color: tc.textMuted }]}>昨天打车 35 · 今天吃火锅 120</Text>
+                  <Text style={[styles.aiCardTitle, { color: tc.text }]}>AI 助手</Text>
+                  <Text style={[styles.aiCardHint, { color: tc.textMuted }]}>一句话记账 · 问答分析</Text>
                 </View>
               </View>
-              <View style={[styles.aiCardBtn, { backgroundColor: tc.primary }]}>
-                <Ionicons name="sparkles" size={18} color={tc.primaryOn} />
-                <Text style={[styles.aiCardBtnText, { color: tc.primaryOn }]}>智能记账</Text>
+              <View style={styles.aiCardBtns}>
+                <TouchableOpacity
+                  style={[styles.aiCardBtn, { backgroundColor: tc.primary }]}
+                  onPress={() => setShowAiChat(true)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="sparkles" size={16} color={tc.primaryOn} />
+                  <Text style={[styles.aiCardBtnText, { color: tc.primaryOn }]}>记账</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.aiCardBtn, { backgroundColor: tc.accent }]}
+                  onPress={() => setShowAiQA(true)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="chatbubbles" size={16} color="#fff" />
+                  <Text style={[styles.aiCardBtnText, { color: '#fff' }]}>问问</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
         ) : null}
 
         {/* 近期交易 */}
@@ -346,6 +403,11 @@ export default function HomeScreen({ navigation }) {
         visible={showAiChat}
         onClose={() => setShowAiChat(false)}
         onSaved={() => { setShowAiChat(false); reload(); }}
+      />
+
+      <AiQAScreen
+        visible={showAiQA}
+        onClose={() => setShowAiQA(false)}
       />
 
       {/* 账本选择弹窗 */}
@@ -447,7 +509,8 @@ const styles = StyleSheet.create({
   aiCardEmoji: { fontSize: 32 },
   aiCardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: 2, letterSpacing: -0.2 },
   aiCardHint: { fontSize: fontSize.xs, lineHeight: 16 },
-  aiCardBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: borderRadius.full, gap: 4 },
+  aiCardBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: borderRadius.full, gap: 4 },
+  aiCardBtns: { flexDirection: 'row', gap: spacing.sm },
   aiCardBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 
   // 近期交易

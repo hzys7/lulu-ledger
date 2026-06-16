@@ -83,6 +83,14 @@ export {
   parseTransactionFromText,
 } from './aiParser';
 
+// --- AI 分类纠正
+export {
+  saveCorrection,
+  getCorrections,
+  clearCorrections,
+  buildCorrectionExamples,
+} from './aiCorrections';
+
 // --- AI 解析器工具函数（纯 JS，可用于 Node 测试）
 export {
   extractAllJsonObjects,
@@ -95,6 +103,21 @@ export {
   clearCachedReport,
   generateMonthlyReport,
 } from './aiReport';
+
+// --- AI 对话问答
+export {
+  askFinanceQuestion,
+  buildFinancialContext,
+} from './aiQA';
+
+// --- AI 异常消费检测
+export {
+  detectAnomalies,
+  generateAnomalyMessage,
+  getCachedAnomalies,
+  setCachedAnomalies,
+  clearAnomalyCache,
+} from './aiAnomaly';
 
 // --- 更新检查
 export {

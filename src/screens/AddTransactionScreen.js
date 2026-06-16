@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
+import { saveCorrection } from '../utils/aiCorrections';
 import {
   categories as categoryConfig,
   spacing,
@@ -155,6 +156,15 @@ export default function AddTransactionScreen({ navigation, route }) {
       currency: settings.currency, accountId, mood,
     };
     if (editTransaction) {
+      // 如果用户修改了分类，保存纠正记录（用于 AI 学习）
+      if (editTransaction.category && editTransaction.category !== formCategory) {
+        saveCorrection({
+          originalCategory: editTransaction.category,
+          correctedCategory: formCategory,
+          note: editTransaction.note || '',
+          type: editTransaction.type || type,
+        }).catch(() => {});
+      }
       await editTx(editTransaction.id, txData);
       Alert.alert('已更新', '交易记录已修改', [{ text: '好的', onPress: () => navigation.goBack() }]);
     } else {
