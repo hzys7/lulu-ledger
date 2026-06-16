@@ -20,6 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
 import { saveCorrection } from '../utils/aiCorrections';
+import { suggestCategories } from '../utils/aiCategorySuggest';
 import { MOOD_OPTIONS } from '../utils/aiMoodShared';
 import {
   categories as categoryConfig,
@@ -89,6 +90,17 @@ export default function AddTransactionScreen({ navigation, route }) {
   const defaultAccId = (accounts.find(a => a.isDefault) || accounts[0])?.id;
   const [accountId, setAccountId] = useState(defaultAccId);
   const [mood, setMood] = useState('');
+
+  // 智能分类建议
+  const [categorySuggestions, setCategorySuggestions] = useState([]);
+  useEffect(() => {
+    if (!note || note.trim().length < 2) {
+      setCategorySuggestions([]);
+      return;
+    }
+    const suggestions = suggestCategories(note, type);
+    setCategorySuggestions(suggestions.filter(s => s.category !== formCategory));
+  }, [note, type, formCategory]);
 
   // 光标闪烁动画
   const cursorOpacity = useRef(new Animated.Value(1)).current;
@@ -424,6 +436,24 @@ export default function AddTransactionScreen({ navigation, route }) {
               </View>
             </View>
 
+            {/* 智能分类建议 */}
+            {categorySuggestions.length > 0 && (
+              <View style={styles.suggestionRow}>
+                <Ionicons name="sparkles" size={12} color={tc.accent} />
+                <Text style={[styles.suggestionLabel, { color: tc.textMuted }]}>推荐：</Text>
+                {categorySuggestions.map((s) => (
+                  <TouchableOpacity
+                    key={s.category}
+                    style={[styles.suggestionChip, { backgroundColor: tc.accentSubtle }]}
+                    onPress={() => setFormCategory(s.category)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.suggestionText, { color: tc.accent }]}>{s.category}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -724,6 +754,28 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     letterSpacing: -0.1,
+  },
+
+  // 智能分类建议
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    gap: spacing.xs,
+  },
+  suggestionLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  suggestionChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  suggestionText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
   },
 
   // 操作按钮

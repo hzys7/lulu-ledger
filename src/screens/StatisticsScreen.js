@@ -29,6 +29,7 @@ import LineChartView from '../components/charts/LineChartView';
 import BarChartRow from '../components/charts/BarChartRow';
 import { MOOD_LABELS, MOOD_EMOJIS } from '../utils/aiMoodShared';
 import { analyzeMood, getCachedMoodAnalysis } from '../utils/aiMood';
+import { generatePrediction, getCachedPrediction } from '../utils/aiPrediction';
 import {
   MonthSummaryGrid,
   WeekSummaryGrid,
@@ -328,6 +329,11 @@ export default function StatisticsScreen({ navigation }) {
   const [moodAnalysisLoading, setMoodAnalysisLoading] = useState(false);
   const [moodAnalysisError, setMoodAnalysisError] = useState('');
 
+  // 消费预测状态
+  const [prediction, setPrediction] = useState(null);
+  const [predictionLoading, setPredictionLoading] = useState(false);
+  const [predictionData, setPredictionData] = useState(null);
+
   const [rankingExpanded, setRankingExpanded] = useState(false);
   const [selectedPieIndex, setSelectedPieIndex] = useState(null);
 
@@ -403,6 +409,63 @@ export default function StatisticsScreen({ navigation }) {
     })();
     return () => { alive = false; };
   }, [period, periodLabel]);
+
+  // 消费预测（仅月报显示）
+  useEffect(() => {
+    if (period !== 'month') {
+      setPrediction(null);
+      setPredictionData(null);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      // 构建近几个月的数据
+      const recentMonths = [];
+      for (let i = 5; i >= 0; i--) {
+        let m = selectedMonth - i;
+        let y = selectedYear;
+        if (m < 0) { y--; m += 12; }
+        const s = getMonthSummary(y, m);
+        if (s.expense > 0 || s.income > 0) {
+          recentMonths.push({
+            month: `${y}-${String(m + 1).padStart(2, '0')}`,
+            expense: s.expense,
+            income: s.income,
+            byCategory: s.byCategory,
+          });
+        }
+      }
+      if (recentMonths.length < 2) {
+        if (alive) {
+          setPrediction('📊 数据不足，至少需要 2 个月的记录才能进行预测。');
+          setPredictionData(null);
+        }
+        return;
+      }
+      // 先查缓存
+      const cached = await getCachedPrediction();
+      if (!alive) return;
+      if (cached?.content) {
+        setPrediction(cached.content);
+        setPredictionData(cached.data);
+        return;
+      }
+      // 调用 AI
+      setPredictionLoading(true);
+      const result = await generatePrediction({
+        recentMonths,
+        currentMonthTxs: filteredMonthTx,
+        currency: settings.currency,
+      });
+      if (!alive) return;
+      setPredictionLoading(false);
+      if (result.ok) {
+        setPrediction(result.content);
+        setPredictionData(result.data);
+      }
+    })();
+    return () => { alive = false; };
+  }, [period, selectedYear, selectedMonth, getMonthSummary, settings.currency, filteredMonthTx]);
 
   const yearTx = useMemo(() => {
     return yearAllTx.filter(t => t.type === dataType);
@@ -892,6 +955,32 @@ export default function StatisticsScreen({ navigation }) {
                       );
                     })}
                   </View>
+                )}
+              </View>
+            )}
+
+            {/* ── 消费预测（仅月报） ── */}
+            {period === 'month' && hasData && (
+              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+                <View style={styles.cardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <View style={[styles.aiIconWrap, { backgroundColor: tc.infoSubtle }]}>
+                      <Ionicons name="trending-up" size={14} color={tc.info} />
+                    </View>
+                    <Text style={[styles.cardTitle, { color: tc.text }]}>消费预测</Text>
+                  </View>
+                </View>
+                {predictionLoading ? (
+                  <View style={styles.moodLoadingWrap}>
+                    <Ionicons name="hourglass-outline" size={14} color={tc.textMuted} />
+                    <Text style={[styles.cardSubtitle, { color: tc.textMuted, marginLeft: spacing.xs }]}>AI 预测中…</Text>
+                  </View>
+                ) : prediction ? (
+                  <Text style={[styles.moodAnalysisText, { color: tc.text }]}>
+                    {prediction}
+                  </Text>
+                ) : (
+                  <Text style={[styles.moodPlaceholderText, { color: tc.textMuted }]}>AI 将基于历史数据预测下月支出</Text>
                 )}
               </View>
             )}

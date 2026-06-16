@@ -20,6 +20,7 @@ import UpdateSection from "./settings/UpdateSection";
 import RecurringSection from "./settings/RecurringSection";
 import DataSection from "./settings/DataSection";
 import AiSection from "./settings/AiSection";
+import GoalSection from "./settings/GoalSection";
 import AboutSection from "./settings/AboutSection";
 import {
   spacing,
@@ -202,6 +203,7 @@ export default function SettingsScreen({ navigation }) {
           onAdd={() => setShowRecurringModal(true)}
           onDelete={handleDeleteRecurring}
         />
+        <GoalSection navigation={navigation} />
         <DataSection
           onExportCSV={handleExportCSV}
           onExportJSON={handleExportJSON}
