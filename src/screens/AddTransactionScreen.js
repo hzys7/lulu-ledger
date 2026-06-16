@@ -102,19 +102,6 @@ export default function AddTransactionScreen({ navigation, route }) {
     setCategorySuggestions(suggestions.filter(s => s.category !== formCategory));
   }, [note, type, formCategory]);
 
-  // 光标闪烁动画
-  const cursorOpacity = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(cursorOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
-        Animated.timing(cursorOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]),
-    );
-    blink.start();
-    return () => blink.stop();
-  }, [cursorOpacity]);
-
   // 数字键盘按压动画值
   const keyAnimsRef = useRef(null);
   if (!keyAnimsRef.current) {
@@ -125,11 +112,10 @@ export default function AddTransactionScreen({ navigation, route }) {
   }
   const keyAnims = keyAnimsRef.current;
   const animateKey = (key, toValue) => {
-    Animated.spring(keyAnims[key], {
+    Animated.timing(keyAnims[key], {
       toValue,
+      duration: 80,
       useNativeDriver: true,
-      friction: 12,
-      tension: 150,
     }).start();
   };
 
@@ -332,7 +318,6 @@ export default function AddTransactionScreen({ navigation, route }) {
               <View style={styles.amountRow}>
                 <Text style={[styles.currencySign, { color: tc.text }]}>{currencySymbol}</Text>
                 <Text style={[styles.amountValue, { color: tc.text }]}>{displayAmount}</Text>
-                <Animated.View style={[styles.cursor, { backgroundColor: tc.text, opacity: cursorOpacity }]} />
               </View>
             </View>
 
@@ -660,13 +645,6 @@ const styles = StyleSheet.create({
     letterSpacing: -1.8,
     fontVariant: ['tabular-nums'],
     lineHeight: 48,
-  },
-  cursor: {
-    width: 2,
-    height: 32,
-    marginLeft: 4,
-    marginBottom: 8,
-    opacity: 0.6,
   },
 
   // 消费心情
