@@ -27,8 +27,7 @@ import ShareCard from '../components/ShareCard';
 import { shareCard } from '../utils/shareReport';
 import LineChartView from '../components/charts/LineChartView';
 import BarChartRow from '../components/charts/BarChartRow';
-import WeekBarChart from '../components/charts/WeekBarChart';
-import YearMonthBarChart from '../components/charts/YearMonthBarChart';
+
 import {
   MonthSummaryGrid,
   WeekSummaryGrid,
@@ -78,8 +77,7 @@ function calcBalance(txList) {
 }
 
 // ─── 颜色映射 ───────────────────────────────────────────
-const WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-const MONTH_LABELS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
 
 // ─── 心情映射表（模块级常量，避免 Hooks 中重复创建）
 const MOOD_LABELS = {
@@ -232,17 +230,6 @@ export default function StatisticsScreen({ navigation }) {
     return weekTx.reduce((s, t) => s + t.amount, 0);
   }, [weekTx]);
 
-  const weekDailyData = useMemo(() => {
-    const arr = [0, 0, 0, 0, 0, 0, 0];
-    weekTx.forEach(t => {
-      const d = new Date(t.date);
-      const dayOfWeek = d.getDay(); // 0=Sun
-      const idx = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0=Mon
-      arr[idx] += t.amount;
-    });
-    return arr.map((v, i) => ({ day: i, label: WEEKDAY_LABELS[i], value: v }));
-  }, [weekTx]);
-
   // 上周对照
   const lastWeekStart = useMemo(() => getMonday(new Date(), weekOffset - 1), [weekOffset]);
   const lastWeekEnd = useMemo(() => {
@@ -364,26 +351,6 @@ export default function StatisticsScreen({ navigation }) {
         percent: yearSummaryTotal > 0 ? Math.round((value / yearSummaryTotal) * 100) : 0,
       }));
   }, [yearAllTx, dataType, chartPalette, yearSummaryTotal]);
-
-  const yearMonthlyItems = useMemo(() => {
-    return MONTH_LABELS.map((label, idx) => {
-      const monthTx = yearTx.filter(t => new Date(t.date).getMonth() === idx);
-      const value = monthTx.reduce((s, t) => s + t.amount, 0);
-      return { month: idx + 1, year: reportYear, value, label };
-    });
-  }, [yearTx, reportYear]);
-
-  // 多年度对比（最近 5 年 + 本年）
-  const multiYearItems = useMemo(() => {
-    const items = [];
-    for (let i = 5; i >= 0; i--) {
-      const y = currentYear - i;
-      const yrTx = transactions.filter(t => new Date(t.date).getFullYear() === y && t.type === dataType);
-      const value = yrTx.reduce((s, t) => s + t.amount, 0);
-      items.push({ year: y, value, label: String(y) });
-    }
-    return items;
-  }, [transactions, dataType]);
 
   const topYearTx = useMemo(() => {
     return [...yearTx].sort((a, b) => b.amount - a.amount).slice(0, 10);
@@ -644,34 +611,7 @@ export default function StatisticsScreen({ navigation }) {
                   onSelectDay={setSelectedDay}
                 />
               </View>
-            ) : period === 'week' ? (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: tc.text }]}>
-                    本周{totalLabel}（每日）
-                  </Text>
-                  <Text style={[styles.cardUnit, { color: tc.textSubtle }]}>元</Text>
-                </View>
-                <WeekBarChart data={weekDailyData} accent={tc.primary} muted={tc.textMuted} />
-              </View>
-            ) : (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: tc.text }]}>
-                    {reportYear}年{totalLabel}（月度）
-                  </Text>
-                  <Text style={[styles.cardUnit, { color: tc.textSubtle }]}>元</Text>
-                </View>
-                <YearMonthBarChart
-                  items={yearMonthlyItems}
-                  accent={tc.primary}
-                  muted={tc.textMuted}
-                  textMuted={tc.textMuted}
-                  text={tc.text}
-                  divider={tc.divider}
-                />
-              </View>
-            )}
+            ) : null}
 
             {/* ── 分类构成 ── */}
             <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
@@ -728,24 +668,6 @@ export default function StatisticsScreen({ navigation }) {
                   text={tc.text}
                   selectedKey={selectedYear + '_' + (selectedMonth + 1)}
                   onSelect={(d) => { setSelectedYear(d.year); setSelectedMonth(d.month - 1); setSelectedDay(null); }}
-                />
-              </View>
-            ) : period === 'year' ? (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: tc.text }]}>年度{totalLabel}对比</Text>
-                </View>
-                <BarChartRow
-                  items={multiYearItems}
-                  accent={tc.primary}
-                  muted={tc.textSubtle}
-                  divider={tc.divider}
-                  textMuted={tc.textMuted}
-                  text={tc.text}
-                  selectedKey={String(reportYear)}
-                  onSelect={(d) => {
-                    setYearOffset(d.year - currentYear);
-                  }}
                 />
               </View>
             ) : null}
