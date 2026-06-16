@@ -1,16 +1,33 @@
-// Lulu Ledger update checker.
+﻿// Lulu Ledger update checker.
 // api.github.com works in most regions but times out (504) in mainland China.
 // We fall back to the public GitHub Atom feed which is reachable from CN.
 // The Atom feed has no asset URLs, so we CONSTRUCT the APK download URL
 // from the tag using a stable naming convention
 // (`lulu-ledger-${version}-arm64.apk`) -- the build-android.yml workflow
 // has been changed to use exactly that name.
+//
+// 1.2.81+ Source order (all return GitHub-release-shaped data; first to
+// succeed wins):
+//   1. r.jina.ai proxy             https://r.jina.ai/<api.github.com URL>
+//      (third-party AI proxy by Jina AI; reachable from mainland China
+//       via their global CDN; returns the full GitHub release JSON
+//       wrapped in a 'Markdown Content:' envelope -- see parser below)
+//   2. GitHub REST API              https://api.github.com/...
+//   3. GitHub Atom feed             https://github.com/.../releases.atom
+// All three return the same { tag, version, name, body, assets } shape
+// the caller (UpdatePrompt) already consumes.
 
 import Constants from 'expo-constants';
 
 const GITHUB_REPO = 'hzys7/lulu-ledger';
 const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const ATOM_URL = `https://github.com/${GITHUB_REPO}/releases.atom`;
+// r.jina.ai is a third-party AI proxy by Jina AI that re-serves any
+// HTTPS URL through their global CDN (reliable from mainland China).
+// We use it as a friendlier front for api.github.com when direct
+// access times out. See fetchLatestFromJina() below for the
+// 'Markdown Content:' wrapper handling.
+const JINA_PROXY_URL = 'https://r.jina.ai/';
 
 const apkAssetNameFor = (version) => `lulu-ledger-${version}-arm64.apk`;
 const apkAssetUrlFor = (version) =>
@@ -119,6 +136,49 @@ function parseAtomFeed(xml) {
   };
 }
 
+// Third-party source #1: r.jina.ai proxy of api.github.com.
+// r.jina.ai is a public AI proxy by Jina AI that re-serves any
+// HTTPS URL through their global CDN (reliable from mainland CN).
+// The response body is wrapped: a short header + 'Markdown Content:\n'
+// followed by the raw JSON of the target URL. We strip the wrapper
+// and parse the inner JSON. If the wrapper format ever changes we
+// fall through to the next source.
+async function fetchLatestFromJina() {
+  const url = JINA_PROXY_URL + API_URL;
+  const res = await fetchWithTimeout(
+    url,
+    { headers: { Accept: 'application/json' } },
+    8000
+  );
+  if (!res.ok) throw new Error('r.jina.ai ' + res.status);
+  const text = await res.text();
+  // Strip 'Markdown Content:\n' wrapper. Jina returns either the
+  // wrapped form (when Accept includes text/markdown) or the raw
+  // body. We accept both.
+  const sep = 'Markdown Content:\n';
+  const sepIdx = text.indexOf(sep);
+  const jsonText = sepIdx >= 0 ? text.slice(sepIdx + sep.length) : text;
+  let data;
+  try { data = JSON.parse(jsonText); }
+  catch (e) { throw new Error('r.jina.ai: bad json (' + (e.message || e) + ')'); }
+  if (!data.tag_name) throw new Error('r.jina.ai: missing tag_name');
+  const assets = (data.assets || []).map((a) => ({
+    name: a.name,
+    url: a.browser_download_url,
+    size: a.size,
+  }));
+  return {
+    tag: data.tag_name,
+    version: (data.tag_name || '').replace(/^v/, ''),
+    name: data.name || data.tag_name,
+    body: data.body || '',
+    publishedAt: data.published_at,
+    html_url: data.html_url,
+    assets,
+    source: 'jina',
+  };
+}
+
 async function fetchLatestFromApi() {
   const res = await fetchWithTimeout(
     API_URL,
@@ -161,6 +221,15 @@ async function fetchLatestFromAtom() {
 }
 
 export async function fetchLatestRelease() {
+  // 1. Third-party: r.jina.ai proxy (best CN reachability, full payload)
+  try {
+    const fromJina = await fetchLatestFromJina();
+    if (fromJina) return fromJina;
+  } catch (e) {
+    console.warn('[updateChecker] r.jina.ai failed:', e && e.message || e);
+  }
+
+  // 2. GitHub REST API direct (richest payload: release notes, real asset sizes)
   let apiErr = null;
   try {
     const fromApi = await fetchLatestFromApi();
@@ -170,6 +239,8 @@ export async function fetchLatestRelease() {
     console.warn('[updateChecker] api.github.com failed:', e && e.message || e);
   }
 
+  // 3. GitHub Atom feed (no asset sizes, no release notes, but reachable
+  //    from more networks than api.github.com)
   try {
     const fromAtom = await fetchLatestFromAtom();
     if (fromAtom) {
