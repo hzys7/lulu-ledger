@@ -296,7 +296,7 @@ export default function RecordsScreen({ navigation }) {
         renderItem={renderItem}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true },
+          { useNativeDriver: false },
         )}
         scrollEventThrottle={16}
         ListHeaderComponent={(
