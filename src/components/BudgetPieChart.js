@@ -1,15 +1,13 @@
-// 小璐记账 · 预算环形图组件（双模式）
-// 模式1：整体概览 —— 总预算/已用/剩余 的甜甜圈图 + 中心数值
-// 模式2：分类详情 —— 按分类展示各预算项，点击高亮
+// 小璐记账 · 预算环形图组件（美化版）
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import Svg, { Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, borderRadius, fontSize, fontWeight, shadows } from '../theme';
 import { formatMoney } from '../utils/currency';
 
-const CHART_SIZE = 180;
-const STROKE_WIDTH = 22;
+const CHART_SIZE = 140;
+const STROKE_WIDTH = 18;
 const RADIUS = (CHART_SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const CENTER = CHART_SIZE / 2;
@@ -27,24 +25,17 @@ export default function BudgetPieChart({
 }) {
   const [mode, setMode] = useState(MODE_OVERVIEW);
   const [selectedIndex, setSelectedIndex] = useState(null);
-  const [overviewSelected, setOverviewSelected] = useState(null); // 'used' | 'remaining' | null
+  const [overviewSelected, setOverviewSelected] = useState(null);
 
-  // ─── 预算数据计算 ──────────────────────────────────────────
   const chartData = useMemo(() => {
-    // 找到总预算项
     const totalBudgetItem = budgets.find(
       (b) => b.category === '__total__' && b.amount > 0
     );
-
-    // 分类预算（排除 __total__）
     const validBudgets = budgets.filter(
       (b) => b.category && b.category !== '__total__' && b.amount > 0
     );
-
-    // 计算所有分类已花总额
     const allSpent = Object.values(byCategory || {}).reduce((s, v) => s + v, 0);
 
-    // 场景1：有分类预算 —— 按分类展示
     if (validBudgets.length > 0) {
       const items = validBudgets.map((b) => {
         const spent = byCategory[b.category] || 0;
@@ -58,7 +49,6 @@ export default function BudgetPieChart({
           color,
         };
       });
-
       items.sort((a, b) => b.budget - a.budget);
 
       const totalBudget = items.reduce((s, i) => s + i.budget, 0);
@@ -71,7 +61,6 @@ export default function BudgetPieChart({
         const arcLength = proportion * CIRCUMFERENCE;
         const rotation = (accumulatedAngle / 360) * CIRCUMFERENCE;
         accumulatedAngle += proportion * 360;
-
         return {
           ...item,
           index,
@@ -84,27 +73,17 @@ export default function BudgetPieChart({
       });
 
       return {
-        segments,
-        items,
-        totalBudget,
-        totalSpent,
-        totalRemaining,
+        segments, items, totalBudget, totalSpent, totalRemaining,
         isOver: totalSpent > totalBudget,
       };
     }
 
-    // 场景2：只有总预算，无分类预算 —— 整体概览模式
     if (totalBudgetItem) {
       const totalBudget = totalBudgetItem.amount;
       const totalSpent = allSpent;
       const totalRemaining = totalBudget - totalSpent;
-
       return {
-        segments: [],
-        items: [],
-        totalBudget,
-        totalSpent,
-        totalRemaining,
+        segments: [], items: [], totalBudget, totalSpent, totalRemaining,
         isOver: totalSpent > totalBudget,
         isTotalOnly: true,
       };
@@ -113,7 +92,6 @@ export default function BudgetPieChart({
     return null;
   }, [budgets, byCategory, categoryColors, tc.primary]);
 
-  // ─── 整体概览的分段数据（已用 vs 剩余）──────────────────────
   const overviewSegments = useMemo(() => {
     if (!chartData) return null;
     const { totalBudget, totalSpent, totalRemaining, isOver } = chartData;
@@ -121,9 +99,14 @@ export default function BudgetPieChart({
 
     const usedPct = Math.min(totalSpent / totalBudget, 1);
     const remainPct = isOver ? 0 : Math.max(1 - usedPct, 0);
-
     const usedArc = usedPct * CIRCUMFERENCE;
     const remainArc = remainPct * CIRCUMFERENCE;
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+    const daysLeft = Math.max(daysInMonth - dayOfMonth, 1);
+    const dailyRemaining = daysLeft > 0 ? Math.abs(totalRemaining) / daysLeft : 0;
 
     return {
       used: {
@@ -138,14 +121,14 @@ export default function BudgetPieChart({
         color: tc.success,
         percent: Math.round(remainPct * 100),
       },
-      totalBudget,
-      totalSpent,
+      totalBudget, totalSpent,
       totalRemaining: Math.abs(totalRemaining),
       isOver,
+      daysLeft,
+      dailyRemaining,
     };
   }, [chartData, tc]);
 
-  // ─── 交互 ──────────────────────────────────────────────────
   const handleSegmentPress = useCallback((index) => {
     setSelectedIndex((prev) => (prev === index ? null : index));
   }, []);
@@ -161,7 +144,6 @@ export default function BudgetPieChart({
     setOverviewSelected(null);
   }, [chartData?.isTotalOnly]);
 
-  // ─── 空状态 ────────────────────────────────────────────────
   if (!chartData) {
     return (
       <View style={[styles.emptyCard, { backgroundColor: tc.surface, borderColor: tc.border, ...shadows.sm }]}>
@@ -188,7 +170,6 @@ export default function BudgetPieChart({
 
   return (
     <View style={styles.container}>
-      {/* 标题行 */}
       <View style={styles.headerRow}>
         <Text style={[styles.headerTitle, { color: tc.text }]}>预算概览</Text>
         {!chartData.isTotalOnly && (
@@ -200,225 +181,252 @@ export default function BudgetPieChart({
             <Ionicons
               name={mode === MODE_OVERVIEW ? 'layers-outline' : 'grid-outline'}
               size={14}
-            color={tc.textMuted}
-          />
-          <Text style={[styles.modeToggleText, { color: tc.textMuted }]}>
-            {mode === MODE_OVERVIEW ? '分类' : '概览'}
-          </Text>
-        </TouchableOpacity>
+              color={tc.textMuted}
+            />
+            <Text style={[styles.modeToggleText, { color: tc.textMuted }]}>
+              {mode === MODE_OVERVIEW ? '分类' : '概览'}
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
 
-      {/* 甜甜圈图 */}
-      <View style={[styles.chartWrap, { width: CHART_SIZE, height: CHART_SIZE }]}>
-        <Svg width={CHART_SIZE} height={CHART_SIZE}>
-          {/* 底色环 */}
-          <Circle
-            cx={CENTER}
-            cy={CENTER}
-            r={RADIUS}
-            fill="none"
-            stroke={tc.surfaceMuted}
-            strokeWidth={STROKE_WIDTH}
-          />
+      <View style={styles.mainRow}>
+        {/* 左侧：饼图 */}
+        <View style={[styles.chartWrap, { width: CHART_SIZE, height: CHART_SIZE }]}>
+          <Svg width={CHART_SIZE} height={CHART_SIZE}>
+            <Defs>
+              <LinearGradient id="usedGrad" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor={overviewSegments?.isOver ? tc.danger : tc.primary} />
+                <Stop offset="1" stopColor={overviewSegments?.isOver ? tc.danger : tc.primary} stopOpacity={0.7} />
+              </LinearGradient>
+            </Defs>
+            <Circle
+              cx={CENTER} cy={CENTER} r={RADIUS}
+              fill="none" stroke={tc.surfaceMuted} strokeWidth={STROKE_WIDTH}
+            />
 
-          {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
-            // ── 整体概览模式 ──
-            overviewSegments && (
+            {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
+              overviewSegments && (
+                <G rotation="-90" origin={`${CENTER}, ${CENTER}`}>
+                  {overviewSegments.used.arcLength > 0 && (
+                    <Circle
+                      cx={CENTER} cy={CENTER} r={RADIUS}
+                      fill="none"
+                      stroke={overviewSegments.used.color}
+                      strokeWidth={overviewSelected === 'used' ? STROKE_WIDTH + 3 : STROKE_WIDTH}
+                      strokeDasharray={`${overviewSegments.used.arcLength} ${CIRCUMFERENCE - overviewSegments.used.arcLength}`}
+                      strokeDashoffset={0}
+                      strokeLinecap="round"
+                      opacity={overviewSelected && overviewSelected !== 'used' ? 0.4 : 1}
+                      onPress={() => handleOverviewPress('used')}
+                    />
+                  )}
+                  {overviewSegments.remaining.arcLength > 0 && (
+                    <Circle
+                      cx={CENTER} cy={CENTER} r={RADIUS}
+                      fill="none"
+                      stroke={overviewSegments.remaining.color}
+                      strokeWidth={overviewSelected === 'remaining' ? STROKE_WIDTH + 3 : STROKE_WIDTH}
+                      strokeDasharray={`${overviewSegments.remaining.arcLength} ${CIRCUMFERENCE - overviewSegments.remaining.arcLength}`}
+                      strokeDashoffset={-overviewSegments.used.arcLength}
+                      strokeLinecap="round"
+                      opacity={overviewSelected && overviewSelected !== 'remaining' ? 0.4 : 1}
+                      onPress={() => handleOverviewPress('remaining')}
+                    />
+                  )}
+                </G>
+              )
+            ) : (
               <G rotation="-90" origin={`${CENTER}, ${CENTER}`}>
-                {/* 已用预算 */}
-                {overviewSegments.used.arcLength > 0 && (
-                  <Circle
-                    cx={CENTER}
-                    cy={CENTER}
-                    r={RADIUS}
-                    fill="none"
-                    stroke={overviewSegments.used.color}
-                    strokeWidth={overviewSelected === 'used' ? STROKE_WIDTH + 4 : STROKE_WIDTH}
-                    strokeDasharray={`${overviewSegments.used.arcLength} ${CIRCUMFERENCE - overviewSegments.used.arcLength}`}
-                    strokeDashoffset={0}
-                    strokeLinecap="butt"
-                    opacity={overviewSelected && overviewSelected !== 'used' ? 0.45 : 1}
-                    onPress={() => handleOverviewPress('used')}
-                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                  />
-                )}
-                {/* 剩余预算 */}
-                {overviewSegments.remaining.arcLength > 0 && (
-                  <Circle
-                    cx={CENTER}
-                    cy={CENTER}
-                    r={RADIUS}
-                    fill="none"
-                    stroke={overviewSegments.remaining.color}
-                    strokeWidth={overviewSelected === 'remaining' ? STROKE_WIDTH + 4 : STROKE_WIDTH}
-                    strokeDasharray={`${overviewSegments.remaining.arcLength} ${CIRCUMFERENCE - overviewSegments.remaining.arcLength}`}
-                    strokeDashoffset={-overviewSegments.used.arcLength}
-                    strokeLinecap="butt"
-                    opacity={overviewSelected && overviewSelected !== 'remaining' ? 0.45 : 1}
-                    onPress={() => handleOverviewPress('remaining')}
-                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                  />
-                )}
+                {chartData.segments.map((seg) => {
+                  const isSelected = selected && selected.index === seg.index;
+                  const sw = isSelected ? STROKE_WIDTH + 3 : STROKE_WIDTH;
+                  const gap = chartData.segments.length > 1 ? 2 : 0;
+                  const dashLen = Math.max(seg.arcLength - gap, 0);
+                  return (
+                    <Circle
+                      key={seg.category}
+                      cx={CENTER} cy={CENTER} r={RADIUS}
+                      fill="none" stroke={seg.color}
+                      strokeWidth={sw}
+                      strokeDasharray={`${dashLen} ${CIRCUMFERENCE - dashLen}`}
+                      strokeDashoffset={-seg.rotation}
+                      strokeLinecap="round"
+                      opacity={selected && !isSelected ? 0.4 : 1}
+                      onPress={() => handleSegmentPress(seg.index)}
+                    />
+                  );
+                })}
               </G>
-            )
-          ) : (
-            // ── 分类详情模式 ──
-            <G rotation="-90" origin={`${CENTER}, ${CENTER}`}>
-              {chartData.segments.map((seg) => {
-                const isSelected = selected && selected.index === seg.index;
-                const sw = isSelected ? STROKE_WIDTH + 4 : STROKE_WIDTH;
-                const gap = chartData.segments.length > 1 ? 2 : 0;
-                const dashLen = Math.max(seg.arcLength - gap, 0);
+            )}
+          </Svg>
 
-                return (
-                  <Circle
-                    key={seg.category}
-                    cx={CENTER}
-                    cy={CENTER}
-                    r={RADIUS}
-                    fill="none"
-                    stroke={seg.color}
-                    strokeWidth={sw}
-                    strokeDasharray={`${dashLen} ${CIRCUMFERENCE - dashLen}`}
-                    strokeDashoffset={-seg.rotation}
-                    strokeLinecap="butt"
-                    opacity={selected && !isSelected ? 0.45 : 1}
-                    onPress={() => handleSegmentPress(seg.index)}
-                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                  />
-                );
-              })}
-            </G>
-          )}
-        </Svg>
-
-        {/* 中心文字 */}
-        <View style={[styles.centerOverlay, { width: CHART_SIZE, height: CHART_SIZE }]} pointerEvents="none">
-          {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
-            // ── 整体概览中心 ──
-            overviewSelected === 'used' ? (
+          <View style={[styles.centerOverlay, { width: CHART_SIZE, height: CHART_SIZE }]} pointerEvents="none">
+            {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
+              overviewSelected === 'used' ? (
+                <View style={styles.centerContent}>
+                  <Text style={[styles.centerLabel, { color: overviewSegments.used.color }]}>已用</Text>
+                  <Text style={[styles.centerTotal, { color: tc.text }]} numberOfLines={1}>
+                    {formatMoney(overviewSegments.totalSpent, currency, 0)}
+                  </Text>
+                  <Text style={[styles.centerSub, { color: tc.textMuted }]}>
+                    {overviewSegments.used.percent}% 预算
+                  </Text>
+                </View>
+              ) : overviewSelected === 'remaining' ? (
+                <View style={styles.centerContent}>
+                  <Text style={[styles.centerLabel, { color: overviewSegments.remaining.color }]}>剩余</Text>
+                  <Text style={[styles.centerTotal, { color: overviewSegments.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
+                    {overviewSegments.isOver ? '-' : ''}{formatMoney(overviewSegments.totalRemaining, currency, 0)}
+                  </Text>
+                  <Text style={[styles.centerSub, { color: tc.textMuted }]}>
+                    {overviewSegments.isOver ? '已超支' : `${overviewSegments.remaining.percent}% 可用`}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.centerContent}>
+                  <Text style={[styles.centerLabel, { color: tc.textSubtle }]}>剩余</Text>
+                  <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
+                    {overviewSegments?.isOver ? '-' : ''}{formatMoney(overviewSegments?.totalRemaining || 0, currency, 0)}
+                  </Text>
+                </View>
+              )
+            ) : selected ? (
               <View style={styles.centerContent}>
-                <Text style={[styles.centerLabel, { color: overviewSegments.used.color }]}>已用</Text>
-                <Text style={[styles.centerTotal, { color: tc.text }]} numberOfLines={1}>
-                  {formatMoney(overviewSegments.totalSpent, currency, 0)}
+                <Text style={[styles.centerCategory, { color: selected.color }]} numberOfLines={1}>
+                  {selected.category}
                 </Text>
-                <Text style={[styles.centerSub, { color: tc.textMuted }]}>
-                  {overviewSegments.used.percent}% 预算
+                <Text style={[styles.centerSpent, { color: tc.text }]} numberOfLines={1}>
+                  {formatMoney(selected.spent, currency)}
                 </Text>
-              </View>
-            ) : overviewSelected === 'remaining' ? (
-              <View style={styles.centerContent}>
-                <Text style={[styles.centerLabel, { color: overviewSegments.remaining.color }]}>剩余预算</Text>
-                <Text style={[styles.centerTotal, { color: overviewSegments.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
-                  {overviewSegments.isOver ? '-' : ''}{formatMoney(overviewSegments.totalRemaining, currency, 0)}
-                </Text>
-                <Text style={[styles.centerSub, { color: tc.textMuted }]}>
-                  {overviewSegments.isOver ? '已超支' : `可用 ${overviewSegments.remaining.percent}%`}
+                <Text style={[styles.centerBudget, { color: tc.textSubtle }]} numberOfLines={1}>
+                  / {formatMoney(selected.budget, currency)}
                 </Text>
               </View>
             ) : (
               <View style={styles.centerContent}>
-                <Text style={[styles.centerLabel, { color: tc.textSubtle }]}>剩余预算</Text>
-                <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
-                  {overviewSegments?.isOver ? '-' : ''}{formatMoney(overviewSegments?.totalRemaining || 0, currency, 0)}
-                </Text>
-                <Text style={[styles.centerSub, { color: tc.textMuted }]}>
-                  {overviewSegments?.isOver ? '已超支' : `已用 ${overviewSegments?.used.percent || 0}%`}
+                <Text style={[styles.centerLabel, { color: tc.textSubtle }]}>已用</Text>
+                <Text style={[styles.centerTotal, { color: tc.text }]} numberOfLines={1}>
+                  {formatMoney(chartData.totalSpent, currency)}
                 </Text>
               </View>
-            )
+            )}
+          </View>
+        </View>
+
+        {/* 右侧：统计信息 */}
+        <View style={styles.statsCol}>
+          {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
+            <>
+              <TouchableOpacity
+                style={[styles.statCard, overviewSelected === 'used' && { backgroundColor: tc.primary + '10', borderColor: tc.primary + '30' }]}
+                onPress={() => handleOverviewPress('used')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.statDot, { backgroundColor: overviewSegments?.used.color || tc.primary }]} />
+                <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
+                <Text style={[styles.statValue, { color: tc.text }]}>
+                  {formatMoney(chartData.totalSpent, currency, 0)}
+                </Text>
+                <Text style={[styles.statPct, { color: overviewSegments?.used.color || tc.primary }]}>
+                  {overviewSegments?.used.percent || 0}%
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.statCard, overviewSelected === 'remaining' && { backgroundColor: tc.success + '10', borderColor: tc.success + '30' }]}
+                onPress={() => handleOverviewPress('remaining')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.statDot, { backgroundColor: overviewSegments?.remaining.color || tc.success }]} />
+                <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
+                <Text style={[styles.statValue, { color: chartData.isOver ? tc.danger : tc.text }]}>
+                  {chartData.isOver ? '-' : ''}{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
+                </Text>
+                <Text style={[styles.statPct, { color: overviewSegments?.remaining.color || tc.success }]}>
+                  {overviewSegments?.remaining.percent || 0}%
+                </Text>
+              </TouchableOpacity>
+
+              <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
+                <View style={[styles.statDot, { backgroundColor: tc.textSubtle }]} />
+                <Text style={[styles.statLabel, { color: tc.textMuted }]}>总预算</Text>
+                <Text style={[styles.statValue, { color: tc.text }]}>
+                  {formatMoney(chartData.totalBudget, currency, 0)}
+                </Text>
+              </View>
+
+              {overviewSegments && overviewSegments.daysLeft > 0 && (
+                <View style={[styles.statCard, { backgroundColor: tc.primary + '08' }]}>
+                  <Ionicons name="calendar-outline" size={12} color={tc.primary} />
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>日均可用</Text>
+                  <Text style={[styles.statValueSmall, { color: tc.primary }]}>
+                    {formatMoney(overviewSegments.dailyRemaining, currency, 0)}
+                  </Text>
+                  <Text style={[styles.statHint, { color: tc.textSubtle }]}>
+                    还剩{overviewSegments.daysLeft}天
+                  </Text>
+                </View>
+              )}
+            </>
           ) : selected ? (
-            // ── 分类选中态 ──
-            <View style={styles.centerContent}>
-              <Text style={[styles.centerCategory, { color: selected.color }]} numberOfLines={1}>
-                {selected.category}
-              </Text>
-              <Text style={[styles.centerSpent, { color: tc.text }]} numberOfLines={1}>
-                {formatMoney(selected.spent, currency)}
-              </Text>
-              <Text style={[styles.centerBudget, { color: tc.textMuted }]} numberOfLines={1}>
-                / {formatMoney(selected.budget, currency)}
+            <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
+              <View style={[styles.statDot, { backgroundColor: selected.color }]} />
+              <Text style={[styles.statLabel, { color: tc.textMuted }]}>预算</Text>
+              <Text style={[styles.statValue, { color: tc.text }]}>
+                {formatMoney(selected.budget, currency, 0)}
               </Text>
               {selected.isOver ? (
-                <View style={[styles.centerBadge, { backgroundColor: tc.dangerSubtle }]}>
-                  <Text style={[styles.centerBadgeText, { color: tc.danger }]}>
+                <View style={[styles.overBadge, { backgroundColor: tc.dangerSubtle }]}>
+                  <Text style={[styles.overBadgeText, { color: tc.danger }]}>
                     超支 {formatMoney(Math.abs(selected.remaining), currency)}
                   </Text>
                 </View>
               ) : (
-                <Text style={[styles.centerPercent, { color: tc.textSubtle }]}>
-                  {selected.percent}%
+                <Text style={[styles.statHint, { color: tc.textSubtle }]}>
+                  剩余 {formatMoney(selected.remaining, currency)}
                 </Text>
               )}
             </View>
           ) : (
-            // ── 分类默认中心 ──
-            <View style={styles.centerContent}>
-              <Text style={[styles.centerLabel, { color: tc.textSubtle }]}>预算</Text>
-              <Text style={[styles.centerTotal, { color: tc.text }]} numberOfLines={1}>
-                {formatMoney(chartData.totalSpent, currency)}
-              </Text>
-              <Text style={[styles.centerSub, { color: chartData.isOver ? tc.danger : tc.textMuted }]}>
-                {chartData.isOver
-                  ? `超支 ${formatMoney(Math.abs(chartData.totalRemaining), currency)}`
-                  : `剩余 ${formatMoney(chartData.totalRemaining, currency)}`}
-              </Text>
-            </View>
+            <>
+              <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
+                <View style={[styles.statDot, { backgroundColor: tc.primary }]} />
+                <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
+                <Text style={[styles.statValue, { color: tc.text }]}>
+                  {formatMoney(chartData.totalSpent, currency, 0)}
+                </Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
+                <View style={[styles.statDot, { backgroundColor: tc.success }]} />
+                <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
+                <Text style={[styles.statValue, { color: tc.text }]}>
+                  {formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
+                </Text>
+              </View>
+            </>
           )}
         </View>
       </View>
 
-      {/* 整体概览：已用/剩余/总预算 三项指标 */}
-      {(mode === MODE_OVERVIEW || chartData.isTotalOnly) && (
-        <View style={styles.overviewStats}>
-          <TouchableOpacity
-            style={styles.overviewStatItem}
-            onPress={() => handleOverviewPress('used')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.overviewDot, { backgroundColor: overviewSegments?.used.color || tc.primary }]} />
-            <View>
-              <Text style={[styles.overviewStatLabel, { color: tc.textMuted }]}>已用</Text>
-              <Text style={[styles.overviewStatValue, { color: overviewSelected === 'used' ? tc.primary : tc.text }]}>
-                {formatMoney(chartData.totalSpent, currency, 0)}
-              </Text>
-            </View>
-            <Text style={[styles.overviewStatPct, { color: tc.textMuted }]}>
-              {overviewSegments?.used.percent || 0}%
-            </Text>
-          </TouchableOpacity>
-          <View style={[styles.overviewStatDivider, { backgroundColor: tc.divider }]} />
-          <TouchableOpacity
-            style={styles.overviewStatItem}
-            onPress={() => handleOverviewPress('remaining')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.overviewDot, { backgroundColor: overviewSegments?.remaining.color || tc.success }]} />
-            <View>
-              <Text style={[styles.overviewStatLabel, { color: tc.textMuted }]}>剩余</Text>
-              <Text style={[styles.overviewStatValue, { color: chartData.isOver ? tc.danger : (overviewSelected === 'remaining' ? tc.success : tc.text) }]}>
-                {chartData.isOver ? '-' : ''}{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
-              </Text>
-            </View>
-            <Text style={[styles.overviewStatPct, { color: tc.textMuted }]}>
-              {overviewSegments?.remaining.percent || 0}%
-            </Text>
-          </TouchableOpacity>
-          <View style={[styles.overviewStatDivider, { backgroundColor: tc.divider }]} />
-          <View style={styles.overviewStatItem}>
-            <View style={[styles.overviewDot, { backgroundColor: tc.textSubtle }]} />
-            <View>
-              <Text style={[styles.overviewStatLabel, { color: tc.textMuted }]}>总预算</Text>
-              <Text style={[styles.overviewStatValue, { color: tc.text }]}>
-                {formatMoney(chartData.totalBudget, currency, 0)}
-              </Text>
-            </View>
+      {/* 进度条 */}
+      {(mode === MODE_OVERVIEW || chartData.isTotalOnly) && overviewSegments && (
+        <View style={styles.progressWrap}>
+          <View style={[styles.progressBg, { backgroundColor: tc.surfaceMuted }]}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${Math.min(overviewSegments.used.percent, 100)}%`,
+                  backgroundColor: overviewSegments.isOver ? tc.danger : tc.primary,
+                },
+              ]}
+            />
           </View>
         </View>
       )}
 
-      {/* 分类详情：图例列表 */}
+      {/* 分类详情列表 */}
       {mode === MODE_CATEGORY && (
         <View style={styles.legendList}>
           {chartData.segments.map((seg) => {
@@ -436,10 +444,7 @@ export default function BudgetPieChart({
               >
                 <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
                 <View style={styles.legendInfo}>
-                  <Text
-                    style={[styles.legendName, { color: isSelected ? tc.text : tc.textMuted }]}
-                    numberOfLines={1}
-                  >
+                  <Text style={[styles.legendName, { color: isSelected ? tc.text : tc.textMuted }]} numberOfLines={1}>
                     {seg.category}
                   </Text>
                   <View style={styles.legendBarBg}>
@@ -473,7 +478,6 @@ export default function BudgetPieChart({
         </View>
       )}
 
-      {/* 底部快捷操作 */}
       <View style={styles.footerRow}>
         <TouchableOpacity
           style={[styles.footerBtn, { backgroundColor: tc.surfaceMuted }]}
@@ -494,7 +498,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
 
-  // ── 标题行 ──
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -519,11 +522,15 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
 
-  // ── 图表 ──
+  mainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.base,
+  },
+
   chartWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
   },
   centerOverlay: {
     position: 'absolute',
@@ -533,104 +540,115 @@ const styles = StyleSheet.create({
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    maxWidth: RADIUS * 2 - STROKE_WIDTH + 10,
+    paddingHorizontal: spacing.xs,
   },
 
-  // ── 中心文字 ──
   centerLabel: {
-    fontSize: fontSize.xs,
-    letterSpacing: 0.5,
-    marginBottom: spacing.xxs,
+    fontSize: 10,
+    letterSpacing: 0.3,
+    marginBottom: 2,
   },
   centerTotal: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
     fontVariant: ['tabular-nums'],
   },
   centerSub: {
-    fontSize: fontSize.xs,
+    fontSize: 10,
     fontWeight: fontWeight.medium,
-    marginTop: spacing.xxs,
-    letterSpacing: -0.1,
-    fontVariant: ['tabular-nums'],
-  },
-  centerCategory: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    letterSpacing: -0.1,
-    marginBottom: spacing.xxs,
-  },
-  centerSpent: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    letterSpacing: -0.5,
-    fontVariant: ['tabular-nums'],
-  },
-  centerBudget: {
-    fontSize: fontSize.xs,
     marginTop: 1,
     fontVariant: ['tabular-nums'],
   },
-  centerPercent: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-    marginTop: spacing.xxs,
-  },
-  centerBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.xs,
-    marginTop: spacing.xxs,
-  },
-  centerBadgeText: {
+  centerCategory: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
+    letterSpacing: -0.1,
+    marginBottom: 2,
+  },
+  centerSpent: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    letterSpacing: -0.3,
+    fontVariant: ['tabular-nums'],
+  },
+  centerBudget: {
+    fontSize: 10,
+    marginTop: 1,
     fontVariant: ['tabular-nums'],
   },
 
-  // ── 整体概览：三项指标 ──
-  overviewStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.lg,
-    gap: 0,
-  },
-  overviewStatItem: {
+  statsCol: {
     flex: 1,
+    gap: 6,
+  },
+  statCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+    borderRadius: borderRadius.md,
     gap: spacing.xs,
-    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  overviewDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  statDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  overviewStatLabel: {
-    fontSize: fontSize.xs,
+  statLabel: {
+    fontSize: 11,
+    flex: 1,
   },
-  overviewStatValue: {
+  statValue: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
+  },
+  statValueSmall: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.2,
   },
-  overviewStatPct: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
+  statPct: {
+    fontSize: 11,
+    fontWeight: fontWeight.semibold,
+    fontVariant: ['tabular-nums'],
+    minWidth: 32,
+    textAlign: 'right',
+  },
+  statHint: {
+    fontSize: 10,
     fontVariant: ['tabular-nums'],
   },
-  overviewStatDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 28,
-    marginHorizontal: spacing.sm,
+  overBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
+  },
+  overBadgeText: {
+    fontSize: 10,
+    fontWeight: fontWeight.semibold,
+    fontVariant: ['tabular-nums'],
   },
 
-  // ── 分类图例列表 ──
+  progressWrap: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  progressBg: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+
   legendList: {
     marginTop: spacing.md,
     gap: 2,
@@ -691,7 +709,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
   },
 
-  // ── 底部操作 ──
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -710,7 +727,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
 
-  // ── 空状态卡片 ──
   emptyCard: {
     alignItems: 'center',
     paddingVertical: spacing.xxl,
