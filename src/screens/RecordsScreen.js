@@ -57,6 +57,7 @@ export default function RecordsScreen({ navigation }) {
   const [contentShort, setContentShort] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showHint, setShowHint] = useState(false);
   const debounceRef = useRef(null);
 
   useEffect(() => () => {
@@ -100,34 +101,41 @@ export default function RecordsScreen({ navigation }) {
       // Multi-dimensional search: support amount range, account name,
       // category, and note keywords.
       //
-      // Syntax examples:
-      //   >100       — amount greater than 100
-      //   <50        — amount less than 50
-      //   100-500    — amount between 100 and 500
-      //   微信        — matches account name, category, or note
-      //   >100 吃饭  — combination: amount > 100 AND (category/note has 吃饭)
+      // Supports both symbol syntax and Chinese natural language:
+      //   >100 / 大于100 / 超过100 / 100以上  — amount >= 100
+      //   <50  / 小于50  / 不到50  / 50以下   — amount <= 50
+      //   100-500 / 100到500 / 100~500        — amount between 100 and 500
+      //   微信                                 — matches account, category, or note
+      //   88                                   — amount contains 88
+      //   超过100 吃饭                          — combination
       const ql = q.toLowerCase();
       let minAmount = null;
       let maxAmount = null;
       const keywords = [];
 
-      // Parse amount range patterns from the query string
-      const gtMatch = ql.match(/>\s*(\d+(\.\d+)?)/);
+      // Parse amount range patterns — symbol syntax + Chinese natural language
+      const gtMatch = ql.match(/(?:>|大于|超过)\s*(\d+(?:\.\d+)?)/)
+                    || ql.match(/(\d+(?:\.\d+)?)\s*以上/);
       if (gtMatch) minAmount = parseFloat(gtMatch[1]);
-      const ltMatch = ql.match(/<\s*(\d+(\.\d+)?)/);
+
+      const ltMatch = ql.match(/(?:<|小于|不到|低于)\s*(\d+(?:\.\d+)?)/)
+                    || ql.match(/(\d+(?:\.\d+)?)\s*以下/);
       if (ltMatch) maxAmount = parseFloat(ltMatch[1]);
-      const rangeMatch = ql.match(/(\d+(\.\d+)?)\s*-\s*(\d+(\.\d+)?)/);
-      if (rangeMatch) {
+
+      const rangeMatch = ql.match(/(\d+(?:\.\d+)?)\s*(?:[-~到至])\s*(\d+(?:\.\d+)?)/);
+      if (rangeMatch && minAmount === null && maxAmount === null) {
         minAmount = parseFloat(rangeMatch[1]);
-        maxAmount = parseFloat(rangeMatch[3]);
+        maxAmount = parseFloat(rangeMatch[2]);
       }
 
       // The remaining text (after stripping parsed patterns) are keywords
       // matched against category, note, and account name.
       let remainder = ql
-        .replace(/>\s*\d+(\.\d+)?/g, '')
-        .replace(/<\s*\d+(\.\d+)?/g, '')
-        .replace(/\d+(\.\d+)?\s*-\s*\d+(\.\d+)?/g, '')
+        .replace(/(?:>|大于|超过)\s*\d+(?:\.\d+)?/g, '')
+        .replace(/\d+(?:\.\d+)?\s*以上/g, '')
+        .replace(/(?:<|小于|不到|低于)\s*\d+(?:\.\d+)?/g, '')
+        .replace(/\d+(?:\.\d+)?\s*以下/g, '')
+        .replace(/\d+(?:\.\d+)?\s*[-~到至]\s*\d+(?:\.\d+)?/g, '')
         .trim();
       if (remainder) {
         remainder.split(/\s+/).forEach((kw) => {
@@ -137,17 +145,26 @@ export default function RecordsScreen({ navigation }) {
       }
 
       list = list.filter((t) => {
-        // Amount filter
+        // Amount range filter (from >, <, range patterns)
         if (minAmount !== null && t.amount < minAmount) return false;
         if (maxAmount !== null && t.amount > maxAmount) return false;
-        // Keyword filter: match against category, note, AND account name
+        // Keyword filter: match against category, note, account name,
+        // AND amount (if the keyword is a number).
         if (keywords.length > 0) {
           const acctName = (t.account || '').toLowerCase();
           const catName = (t.category || '').toLowerCase();
           const noteText = (t.note || '').toLowerCase();
-          return keywords.some((kw) =>
-            catName.includes(kw) || noteText.includes(kw) || acctName.includes(kw),
-          );
+          const amountStr = String(t.amount);
+          return keywords.some((kw) => {
+            if (catName.includes(kw) || noteText.includes(kw) || acctName.includes(kw)) {
+              return true;
+            }
+            // Numeric keyword → also match against the amount value
+            if (/^\d+(\.\d+)?$/.test(kw)) {
+              return amountStr.includes(kw);
+            }
+            return false;
+          });
         }
         return true;
       });
@@ -284,7 +301,7 @@ export default function RecordsScreen({ navigation }) {
                 <Ionicons name="search" size={16} color={tc.textSubtle} />
                 <TextInput
                   style={[styles.searchInput, { color: tc.text }]}
-                  placeholder="搜金额 >100 · 关键词 · 账户"
+                  placeholder="搜金额(如 大于100)· 关键词 · 账户"
                   placeholderTextColor={tc.textSubtle}
                   value={inputValue}
                   onChangeText={onChangeSearch}
@@ -304,7 +321,52 @@ export default function RecordsScreen({ navigation }) {
               <Text style={[styles.countText, { color: tc.textMuted }]}>
                 {searchQuery ? `匹配到 ${displayTransactions.length} 笔` : `共 ${displayTransactions.length} 笔记录`}
               </Text>
+              {!searchQuery ? (
+                <TouchableOpacity
+                  onPress={() => setShowHint(!showHint)}
+                  activeOpacity={0.6}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Ionicons
+                    name={showHint ? 'help-circle' : 'help-circle-outline'}
+                    size={15}
+                    color={showHint ? tc.primary : tc.textSubtle}
+                  />
+                </TouchableOpacity>
+              ) : null}
             </View>
+            {(showHint && !searchQuery) ? (
+              <View style={[styles.hintBox, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+                <View style={styles.hintRow}>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>{'大于100'}</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额≥100</Text>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>{'小于50'}</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额≤50</Text>
+                </View>
+                <View style={styles.hintRow}>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>100到500</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额区间</Text>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>88</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额包含88</Text>
+                </View>
+                <View style={styles.hintRow}>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>吃饭</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>搜分类/备注</Text>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>{'超过100 吃饭'}</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>组合搜索</Text>
+                </View>
+                <Text style={[styles.hintTip, { color: tc.textSubtle }]}>
+                  也支持：超过、不到、以上、以下、~、至
+                </Text>
+              </View>
+            ) : null}
+            {(searchQuery && displayTransactions.length === 0) ? (
+              <View style={[styles.hintBox, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+                <Text style={[styles.hintTip, { color: tc.textMuted }]}>
+                  试试：大于100、小于50、100到500、直接输数字搜金额、或输入关键词
+                </Text>
+              </View>
+            ) : null}
           </View>
         )}
         ListEmptyComponent={
@@ -344,8 +406,21 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: spacing.md, height: 40, gap: spacing.sm,
   },
   searchInput: { flex: 1, fontSize: fontSize.md, paddingVertical: 0, letterSpacing: -0.1 },
-  countRow: { paddingHorizontal: spacing.base, paddingBottom: spacing.xs },
+  countRow: {
+    paddingHorizontal: spacing.base, paddingBottom: spacing.xs,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
   countText: { fontSize: fontSize.xs, letterSpacing: -0.1 },
+
+  hintBox: {
+    marginHorizontal: spacing.base, marginTop: spacing.xs, marginBottom: spacing.sm,
+    borderRadius: borderRadius.sm, borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: 4,
+  },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hintLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontFamily: 'monospace', minWidth: 52 },
+  hintDesc: { fontSize: fontSize.xs, flex: 1 },
+  hintTip: { fontSize: fontSize.xs, lineHeight: 17 },
 
   dateHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
