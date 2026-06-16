@@ -57,8 +57,9 @@ export async function openInstallSettings() {
 // ─── 安装方法 ──────────────────────────────────────────
 
 export async function installFromDownloadManager(downloadId) {
-  if (!LuluInstaller?.installDownloadedApk) {
+  const installer = getLuluApkInstaller();
+  if (!installer?.installDownloadedApk) {
     throw new Error('Native module not available');
   }
-  await LuluInstaller.installDownloadedApk(downloadId);
+  await installer.installDownloadedApk(downloadId);
 }
