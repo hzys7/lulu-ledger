@@ -5,6 +5,7 @@
 // recurring, loaded] or one of the CRUD callbacks changes.
 import React, { createContext, useState, useContext, useCallback, useMemo, useRef, useEffect } from 'react';
 import * as storage from '../utils/storage';
+import { toNumber } from '../utils/safeNumber';
 import {
   sanitizeTransactions,
   sanitizeBudgets,
@@ -89,7 +90,7 @@ export function DataProvider({ children }) {
       || (accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id)
       || null;
     if (targetAccountId) {
-      const delta = tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount);
+      const delta = tx.type === 'income' ? toNumber(tx.amount) : -toNumber(tx.amount);
       const updatedAccounts = await storage.adjustAccountBalance(targetAccountId, delta);
       setAccounts(sanitizeAccounts(updatedAccounts.filter(a => a.bookId === currentBookId)));
       tx.accountId = targetAccountId;
@@ -106,14 +107,14 @@ export function DataProvider({ children }) {
     if (old) {
       const oldAccountId = old.accountId
         || (accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id);
-      const oldDelta = old.type === 'income' ? -Number(old.amount) : Number(old.amount);
+      const oldDelta = old.type === 'income' ? -toNumber(old.amount) : toNumber(old.amount);
       let allAccounts = accounts;
       if (oldAccountId) {
         const r = await storage.adjustAccountBalance(oldAccountId, oldDelta);
         allAccounts = sanitizeAccounts(r.filter(a => a.bookId === currentBookId));
       }
       const newType = updates.type || old.type;
-      const newAmount = updates.amount !== undefined ? Number(updates.amount) : Number(old.amount);
+      const newAmount = updates.amount !== undefined ? toNumber(updates.amount) : toNumber(old.amount);
       const newAccountId = updates.accountId
         || old.accountId
         || (allAccounts.find(a => a.isDefault)?.id);
@@ -136,7 +137,7 @@ export function DataProvider({ children }) {
       accId = old.accountId
         || (accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id);
       if (accId) {
-        accDelta = old.type === 'income' ? -Number(old.amount) : Number(old.amount);
+        accDelta = old.type === 'income' ? -toNumber(old.amount) : toNumber(old.amount);
         const r = await storage.adjustAccountBalance(accId, accDelta);
         setAccounts(sanitizeAccounts(r.filter(a => a.bookId === currentBookId)));
       }
@@ -216,7 +217,7 @@ export function DataProvider({ children }) {
   }, [currentBookId]);
 
   const getNetWorth = useCallback(() => {
-    return accounts.reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
+    return accounts.reduce((sum, a) => sum + toNumber(a.balance), 0);
   }, [accounts]);
 
   // --------------- budgets ---------------

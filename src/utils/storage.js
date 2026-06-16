@@ -1,5 +1,6 @@
 // 数据存储层 - 兼容 Web 和 Native 的本地持久化
 import { Platform } from 'react-native';
+import { toNumber } from './safeNumber';
 
 // Web 端使用 localStorage，Native 端使用 AsyncStorage
 let AsyncStorage;
@@ -423,8 +424,8 @@ export async function adjustAccountBalance(id, delta) {
   const all = env.data.accounts || [];
   const index = all.findIndex(a => a && a.id === id);
   if (index !== -1) {
-    const cur = Number(all[index].balance) || 0;
-    all[index] = { ...all[index], balance: cur + Number(delta) };
+    const cur = toNumber(all[index].balance);
+    all[index] = { ...all[index], balance: cur + toNumber(delta) };
     await persist();
   }
   return all;

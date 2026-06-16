@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney } from '../utils/currency';
@@ -57,22 +58,18 @@ export default function HomeScreen({ navigation }) {
   // 异常消费提醒
   const [anomalyAlert, setAnomalyAlert] = useState(null); // { message, anomalies }
   const [anomalyDismissed, setAnomalyDismissed] = useState(false);
-  const focusCheckRef = useRef(false);
-  // Effect 1: AI 配置刷新（挂载 + 页面聚焦时检查）
-  useEffect(() => {
-    let alive = true;
-    const refreshAi = async () => {
-      const cfg = await loadAiConfig();
-      if (alive) setAiEnabled(!!(cfg.enabled && cfg.apiKey));
-    };
-    refreshAi();
-    if (!focusCheckRef.current) {
-      focusCheckRef.current = true;
-      const unsub = navigation.addListener('focus', refreshAi);
-      return () => { alive = false; unsub(); };
-    }
-    return () => { alive = false; };
-  }, [navigation]);
+  // Effect 1: AI 配置刷新（使用 useFocusEffect，每次聚焦 + 首次挂载时执行）
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      const refreshAi = async () => {
+        const cfg = await loadAiConfig();
+        if (alive) setAiEnabled(!!(cfg.enabled && cfg.apiKey));
+      };
+      refreshAi();
+      return () => { alive = false; };
+    }, []),
+  );
 
   // Effect 2: 异常消费检测（交易变化时检查，有 6 小时缓存）
   const anomalyTxCount = transactions.length;

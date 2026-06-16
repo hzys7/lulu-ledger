@@ -1,6 +1,7 @@
 // Data sanitizers: clean legacy/dirty records before they enter app state.
 // Each function takes a value that came from AsyncStorage (or a user-edited
 // object) and returns a clean, well-typed record.
+import { toNumber } from '../utils/safeNumber';
 
 export function sanitizeTransactions(list) {
   if (!Array.isArray(list)) return [];
@@ -9,7 +10,7 @@ export function sanitizeTransactions(list) {
     .map((t) => ({
       id: t.id || `tx_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
       type: t.type === 'income' ? 'income' : 'expense',
-      amount: Number(t.amount) > 0 ? Number(t.amount) : 0,
+      amount: toNumber(t.amount) > 0 ? toNumber(t.amount) : 0,
       category: t.category || '其他支出',
       note: t.note || '',
       mood: t.mood || '',
@@ -51,7 +52,7 @@ export function sanitizeBudgets(list) {
     .filter((b) => b && typeof b === 'object')
     .map((b) => ({
       ...b,
-      amount: Number(b.amount) > 0 ? Number(b.amount) : 0,
+      amount: toNumber(b.amount) > 0 ? toNumber(b.amount) : 0,
       month: b.month || '',
       category: b.category || '其他支出',
       bookId: b.bookId || 'default',
@@ -68,7 +69,7 @@ export function sanitizeAccounts(list) {
       bookId: a.bookId || 'default',
       name: a.name || '账户',
       type: ['wechat', 'alipay', 'bank', 'cash', 'other'].includes(a.type) ? a.type : 'other',
-      balance: Number(a.balance) || 0,
+      balance: toNumber(a.balance),
       color: a.color || '#6C63FF',
       icon: a.icon || 'wallet',
       isDefault: !!a.isDefault,
@@ -78,7 +79,7 @@ export function sanitizeAccounts(list) {
 
 export function sanitizeRecurring(list) {
   if (!Array.isArray(list)) return [];
-  return list.filter((r) => r && r.id && r.type && Number(r.amount) > 0);
+  return list.filter((r) => r && r.id && r.type && toNumber(r.amount) > 0);
 }
 
 export const DEFAULT_SETTINGS = {

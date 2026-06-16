@@ -1,4 +1,5 @@
 ﻿// 多币种支持
+
 export const currencies = {
   CNY: { symbol: '¥', name: '人民币', code: 'CNY', rate: 1 },
   USD: { symbol: '$', name: '美元', code: 'USD', rate: 0.14 },
@@ -14,6 +15,16 @@ export const currencies = {
   CHF: { symbol: 'CHF', name: '瑞士法郎', code: 'CHF', rate: 0.12 },
 };
 
+/** Parse a value into a number for display formatting.
+ *  Mimics Number() behavior: null→0, undefined→NaN, ''→NaN */
+function toDisplayNumber(value) {
+  if (value === null) return 0;
+  if (value === undefined) return NaN;
+  if (typeof value === 'number') return value;
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : NaN;
+}
+
 export function getCurrencySymbol(code) {
   return currencies[code]?.symbol || code;
 }
@@ -23,17 +34,17 @@ export function getCurrencyName(code) {
 }
 
 export function formatMoney(amount, currencyCode = 'CNY') {
-  const n = Number(amount);
+  const n = toDisplayNumber(amount);
   if (!Number.isFinite(n)) return '0.00';
   const currency = currencies[currencyCode];
   if (!currency) return `${n.toFixed(2)}`;
-  
-  const formatted = Math.abs(amount).toLocaleString('zh-CN', {
+
+  const formatted = Math.abs(n).toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  
-  return `${amount < 0 ? '-' : ''}${currency.symbol}${formatted}`;
+
+  return `${n < 0 ? '-' : ''}${currency.symbol}${formatted}`;
 }
 
 export function convertCurrency(amount, fromCode, toCode) {
@@ -41,8 +52,8 @@ export function convertCurrency(amount, fromCode, toCode) {
   const to = currencies[toCode];
   if (!from || !to) return amount;
   // 先转换为基准(CNY)，再转换为目标
-  const inBase = amount / from.rate;
-  return inBase * to.rate;
+  const inBase = toDisplayNumber(amount) / from.rate;
+  return Number.isFinite(inBase) ? inBase * to.rate : 0;
 }
 
 export function getCurrencyList() {

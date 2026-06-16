@@ -6,11 +6,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Polyline, Circle, Line, G, Rect } from 'react-native-svg';
 import { useFinance } from '../context/FinanceContext';
 import { EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
@@ -26,8 +25,15 @@ import ViewShot from 'react-native-view-shot';
 import PieRing from '../components/PieRing';
 import ShareCard from '../components/ShareCard';
 import { shareCard } from '../utils/shareReport';
-
-const screenWidth = Dimensions.get('window').width;
+import LineChartView from '../components/charts/LineChartView';
+import BarChartRow from '../components/charts/BarChartRow';
+import WeekBarChart from '../components/charts/WeekBarChart';
+import YearMonthBarChart from '../components/charts/YearMonthBarChart';
+import {
+  MonthSummaryGrid,
+  WeekSummaryGrid,
+  YearSummaryGrid,
+} from '../components/charts/SummaryGrids';
 
 // ─── 周次辅助 ───────────────────────────────────────────
 function getMonday(date, offset = 0) {
@@ -74,9 +80,18 @@ function calcBalance(txList) {
 // ─── 颜色映射 ───────────────────────────────────────────
 const WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 const MONTH_LABELS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-const WEEKDAY_COLORS = [
-  '#FF6B6B', '#FFA94D', '#FFD43B', '#69DB7C', '#4DABF7', '#9775FA', '#F06595',
-];
+
+// ─── 心情映射表（模块级常量，避免 Hooks 中重复创建）
+const MOOD_LABELS = {
+  '': '未标记', happy: '快乐', impulse: '手滑', regret: '踩坑',
+  necessary: '必要', reward: '犒劳', painful: '滴血',
+  satisfied: '真香', remorse: '后悔', neutral: '无感', worthit: '值了',
+};
+const MOOD_EMOJIS = {
+  '': '—', happy: '🥳', impulse: '🫣', regret: '💣',
+  necessary: '🤷', reward: '🍗', painful: '🩸',
+  satisfied: '✨', remorse: '🫠', neutral: '〰️', worthit: '💯',
+};
 
 // ============================================================
 //  主组件
@@ -273,16 +288,7 @@ export default function StatisticsScreen({ navigation }) {
   }, [weekTx]);
 
   // =============== 心情统计 ===============
-  const MOOD_LABELS = useMemo(() => ({
-    '': '未标记', happy: '快乐', impulse: '手滑', regret: '踩坑',
-    necessary: '必要', reward: '犒劳', painful: '滴血',
-    satisfied: '真香', remorse: '后悔', neutral: '无感', worthit: '值了',
-  }), []);
-  const MOOD_EMOJIS = useMemo(() => ({
-    '': '—', happy: '🥳', impulse: '🫣', regret: '💣',
-    necessary: '🤷', reward: '🍗', painful: '🩸',
-    satisfied: '✨', remorse: '🫠', neutral: '〰️', worthit: '💯',
-  }), []);
+  // MOOD_LABELS / MOOD_EMOJIS 已在模块级定义为常量
 
   // 当前周期内的心情分布（expense only）
   const moodStats = useMemo(() => {
@@ -324,8 +330,9 @@ export default function StatisticsScreen({ navigation }) {
 
   // =============== 年报数据 ===============
   const reportYear = currentYear + yearOffset;
-  const canGoPrevYear = true;
   const canGoNextYear = reportYear < currentYear;
+
+
 
   const yearTx = useMemo(() => {
     return transactions.filter(t => {
@@ -865,251 +872,7 @@ export default function StatisticsScreen({ navigation }) {
   );
 }
 
-// ============================================================
-//  子组件 - 汇总卡片
-// ============================================================
-function SummaryCell({ tc, label, amount, amountColor }) {
-  return (
-    <View style={[styles.summaryCell, { backgroundColor: tc.surface, borderColor: tc.border, ...shadows.sm }]}>
-      <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>{label}</Text>
-      <Text style={[styles.summaryAmount, { color: amountColor || tc.text }]} numberOfLines={1} adjustsFontSizeToFit>
-        {amount}
-      </Text>
-    </View>
-  );
-}
-
-function MonthSummaryGrid({ tc, selectedMonth, dataType, totalAmount, dailyAvg, diffVsLast, balance }) {
-  return (
-    <View style={styles.summaryGrid}>
-      <SummaryCell tc={tc} label={`${selectedMonth + 1}月${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={dataType === 'expense' ? totalAmount.toFixed(2) : totalAmount.toFixed(0)} />
-      <SummaryCell tc={tc} label={`日均${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={dataType === 'expense' ? dailyAvg.toFixed(2) : dailyAvg.toFixed(0)} />
-      <SummaryCell tc={tc} label={`比上月${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={`${diffVsLast >= 0 ? '+' : ''}${diffVsLast.toFixed(2)}`}
-        amountColor={diffVsLast > 0 ? tc.danger : tc.success} />
-      <SummaryCell tc={tc} label="收支结余(元)"
-        amount={balance.toFixed(2)}
-        amountColor={balance >= 0 ? tc.success : tc.danger} />
-    </View>
-  );
-}
-
-function WeekSummaryGrid({ tc, dataType, totalAmount, dailyAvg, diffVsLast, balance }) {
-  return (
-    <View style={styles.summaryGrid}>
-      <SummaryCell tc={tc} label={`本周${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={dataType === 'expense' ? totalAmount.toFixed(2) : totalAmount.toFixed(0)} />
-      <SummaryCell tc={tc} label={`日均${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={dataType === 'expense' ? dailyAvg.toFixed(2) : dailyAvg.toFixed(0)} />
-      <SummaryCell tc={tc} label={`比上周${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={`${diffVsLast >= 0 ? '+' : ''}${diffVsLast.toFixed(2)}`}
-        amountColor={diffVsLast > 0 ? tc.danger : tc.success} />
-      <SummaryCell tc={tc} label="收支结余(元)"
-        amount={balance.toFixed(2)}
-        amountColor={balance >= 0 ? tc.success : tc.danger} />
-    </View>
-  );
-}
-
-function YearSummaryGrid({ tc, dataType, reportYear, totalAmount, monthlyAvg, diffVsLast, balance }) {
-  return (
-    <View style={styles.summaryGrid}>
-      <SummaryCell tc={tc} label={`${reportYear}年${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={dataType === 'expense' ? totalAmount.toFixed(2) : totalAmount.toFixed(0)} />
-      <SummaryCell tc={tc} label={`月均${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={dataType === 'expense' ? monthlyAvg.toFixed(2) : monthlyAvg.toFixed(0)} />
-      <SummaryCell tc={tc} label={`比去年${dataType === 'expense' ? '支出' : '收入'}(元)`}
-        amount={`${diffVsLast >= 0 ? '+' : ''}${diffVsLast.toFixed(2)}`}
-        amountColor={diffVsLast > 0 ? tc.danger : tc.success} />
-      <SummaryCell tc={tc} label="收支结余(元)"
-        amount={balance.toFixed(2)}
-        amountColor={balance >= 0 ? tc.success : tc.danger} />
-    </View>
-  );
-}
-
-// ============================================================
-//  子组件 - 周内每日柱状图
-// ============================================================
-function WeekBarChart({ data, accent, muted }) {
-  const width = screenWidth - spacing.base * 4;
-  const height = 140;
-  const values = data.map(d => d.value);
-  const max = Math.max(...values, 1);
-  const barWidth = (width - data.length * 6) / data.length;
-  const labelY = height - 24;
-
-  return (
-    <View style={{ width, height, alignItems: 'center' }}>
-      <Svg width={width} height={labelY}>
-        {data.map((d, i) => {
-          const barH = max > 0 ? (d.value / max) * (labelY - 12) : 4;
-          const x = i * (barWidth + 6);
-          const y = labelY - 8 - barH;
-          return (
-            <G key={i}>
-              <Rect
-                x={x}
-                y={y}
-                width={barWidth}
-                height={Math.max(barH, 2)}
-                rx={3}
-                ry={3}
-                fill={d.value > 0 ? WEEKDAY_COLORS[i % 7] : accent}
-                opacity={d.value > 0 ? 0.85 : 0.2}
-              />
-            </G>
-          );
-        })}
-      </Svg>
-      {/* 标签渲染在 SVG 外部 */}
-      <View style={styles.weekBarLabels}>
-        {data.map((d, i) => (
-          <View key={i} style={{ width: barWidth, alignItems: 'center', marginHorizontal: 3 }}>
-            {d.value > 0 ? (
-              <Text style={[styles.weekBarValue, { color: muted }]}>
-                {d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}k` : Math.round(d.value)}
-              </Text>
-            ) : null}
-            <Text style={[styles.weekBarLabel, { color: muted }]}>{d.label}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-// ============================================================
-//  子组件 - 年度月度柱状图
-// ============================================================
-function YearMonthBarChart({ items, accent, muted, textMuted, text, divider }) {
-  const values = items.map(i => i.value);
-  const max = Math.max(...values, 1);
-  return (
-    <View style={styles.barChartRow}>
-      {items.map((d, i) => {
-        const heightPct = max > 0 ? (d.value / max) * 100 : 0;
-        return (
-          <View key={i} style={styles.barCol}>
-            <Text style={[styles.barValue, { color: textMuted }]}>
-              {d.value > 0 ? (d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}k` : Math.round(d.value)) : ''}
-            </Text>
-            {d.value > 0 ? (
-              <View
-                style={[styles.bar, { height: Math.max(heightPct * 0.8, 8), backgroundColor: accent, opacity: 0.6, borderRadius: 3 }]}
-              />
-            ) : (
-              <View style={[styles.barEmpty, { backgroundColor: divider || '#ddd' }]} />
-            )}
-            <Text style={[styles.barLabel, { color: textMuted }]}>{d.label}</Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-// ============================================================
-//  折线图组件（原有，不变）
-// ============================================================
-function LineChartView({ data, accent, muted, divider, selectedDay, onSelectDay }) {
-  const width = screenWidth - spacing.base * 2 - spacing.base * 2;
-  const height = 140;
-  const padding = { top: 16, right: 8, bottom: 22, left: 8 };
-  const innerW = width - padding.left - padding.right;
-  const innerH = height - padding.top - padding.bottom;
-
-  const values = data.map(d => d.value);
-  const max = Math.max(...values, 1);
-  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
-
-  const points = data.map((d, i) => {
-    const x = padding.left + i * stepX;
-    const y = padding.top + innerH - (d.value / max) * innerH;
-    return { x, y, v: d.value, day: d.day };
-  });
-
-  let maxIdx = 0;
-  values.forEach((v, i) => { if (v > values[maxIdx]) maxIdx = i; });
-
-  const polylinePoints = points.map(p => p.x + ',' + p.y).join(' ');
-
-  const labels = [];
-  if (data.length > 0) {
-    labels.push({ x: padding.left, label: '1' });
-    if (data.length > 2) labels.push({ x: padding.left + innerW / 2, label: String(Math.round(data.length / 2)) });
-    labels.push({ x: padding.left + innerW, label: String(data.length) });
-  }
-
-  const selIdx = selectedDay ? data.findIndex(d => d.day === selectedDay) : -1;
-  const selPoint = selIdx >= 0 ? points[selIdx] : null;
-
-  return (
-    <View>
-      <View
-        style={{ width, height }}
-        onStartShouldSetResponder={() => true}
-        onResponderRelease={(evt) => {
-          const x = evt.nativeEvent.locationX;
-          if (stepX <= 0) return;
-          const idx = Math.round((x - padding.left) / stepX);
-          const clamped = Math.max(0, Math.min(data.length - 1, idx));
-          onSelectDay && onSelectDay(data[clamped] ? data[clamped].day : null);
-        }}
-      >
-        <Svg width={width} height={height}>
-          {[0.25, 0.5, 0.75].map((p, i) => (
-            <Line key={'g' + i} x1={padding.left} y1={padding.top + innerH * p} x2={padding.left + innerW} y2={padding.top + innerH * p} stroke={divider} strokeWidth={1} strokeDasharray="2,4" />
-          ))}
-          <Polyline points={polylinePoints} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((p, i) => (values[i] > 0 ? <Circle key={'p' + i} cx={p.x} cy={p.y} r={2.5} fill={accent} /> : null))}
-          {values[maxIdx] > 0 && <Circle cx={points[maxIdx].x} cy={points[maxIdx].y} r={4} fill={accent} />}
-          {selPoint && values[selIdx] > 0 && (
-            <G>
-              <Line x1={selPoint.x} y1={padding.top} x2={selPoint.x} y2={padding.top + innerH} stroke={accent} strokeWidth={1} strokeDasharray="2,3" opacity={0.5} />
-              <Circle cx={selPoint.x} cy={selPoint.y} r={5} fill={accent} stroke="#FFFFFF" strokeWidth={2} />
-            </G>
-          )}
-        </Svg>
-      </View>
-      <View style={styles.lineLabels}>
-        {labels.map((l, i) => <Text key={i} style={[styles.lineLabel, { color: muted }]}>{l.label}</Text>)}
-      </View>
-    </View>
-  );
-}
-
-// ============================================================
-//  柱状图行（原有，不变）
-// ============================================================
-function BarChartRow({ items, accent, muted, divider, textMuted, text, selectedKey, onSelect }) {
-  const values = items.map(i => i.value);
-  const max = Math.max(...values, 1);
-  return (
-    <View style={styles.barChartRow}>
-      {items.map((d, i) => {
-        const key = d.year + '_' + (d.month || '');
-        const isSelected = selectedKey === key;
-        const heightPct = max > 0 ? (d.value / max) * 100 : 0;
-        return (
-          <TouchableOpacity key={key} activeOpacity={0.7} style={styles.barCol} onPress={() => onSelect && onSelect(d)}>
-            <Text style={[styles.barValue, { color: isSelected ? text : textMuted }]}>
-              {d.value > 0 ? (d.value >= 1000 ? (Math.round(d.value / 100) / 10 + 'k') : Math.round(d.value)) : ''}
-            </Text>
-            {d.value > 0 ? (
-              <View style={[styles.bar, { height: Math.max(heightPct * 0.8, 8), backgroundColor: accent, opacity: isSelected ? 1 : 0.35, borderRadius: isSelected ? 4 : 3 }]} />
-            ) : (
-              <View style={[styles.barEmpty, { backgroundColor: divider }]} />
-            )}
-            <Text style={[styles.barLabel, { color: isSelected ? text : muted, fontWeight: isSelected ? '600' : '400' }]}>{d.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
+// 所有子组件已拆分到 src/components/charts/
 
 // ============================================================
 //  Styles
@@ -1188,21 +951,12 @@ const styles = StyleSheet.create({
   aiTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
   aiSubtitle: { fontSize: fontSize.xs, marginTop: 2, letterSpacing: -0.1 },
 
-  // 汇总格
-  summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.sm, marginBottom: spacing.sm, gap: spacing.sm },
-  summaryCell: { width: (screenWidth - spacing.base * 2 - spacing.sm) / 2, padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth },
-  summaryLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
-  summaryAmount: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, marginTop: spacing.xs, letterSpacing: -0.6, fontVariant: ['tabular-nums'] },
-
   // 通用卡片
   card: { marginHorizontal: spacing.base, marginBottom: spacing.base, padding: spacing.base, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.base },
   cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
   cardUnit: { fontSize: fontSize.xs },
 
-  // 折线图
-  lineLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.xs, marginTop: 2 },
-  lineLabel: { fontSize: fontSize.xs, fontVariant: ['tabular-nums'] },
   dayHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xs, marginBottom: 4 },
   dayHintText: { fontSize: fontSize.xs, letterSpacing: -0.1, fontVariant: ['tabular-nums'] },
 
@@ -1231,38 +985,12 @@ const styles = StyleSheet.create({
   rankPercent: { fontSize: fontSize.xs, width: 35, textAlign: 'right' },
   rankAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, flex: 1, textAlign: 'right', fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
 
-  // 柱状图
-  barChartRow: { flexDirection: 'row', alignItems: 'flex-end', height: 140, paddingTop: spacing.md },
-  barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
-  bar: { width: '60%', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
-  barEmpty: { width: '60%', height: 2, borderRadius: 1, opacity: 0.3 },
-  barValue: { fontSize: 9, fontWeight: fontWeight.semibold, marginBottom: 4, fontVariant: ['tabular-nums'], letterSpacing: -0.1 },
-  barLabel: { fontSize: 10, marginTop: 4, fontVariant: ['tabular-nums'] },
-
   // 交易排行
   txRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm },
   txInfo: { flex: 1 },
   txCategory: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
   txNote: { fontSize: fontSize.xs, marginTop: 2, letterSpacing: -0.1 },
   txAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
-
-  // 周报柱状图标签
-  weekBarLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    paddingTop: 4,
-  },
-  weekBarValue: {
-    fontSize: 9,
-    fontWeight: fontWeight.semibold,
-    marginBottom: 2,
-    fontVariant: ['tabular-nums'],
-  },
-  weekBarLabel: {
-    fontSize: 9,
-    fontVariant: ['tabular-nums'],
-  },
 
   emptyWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.xl },
 });
