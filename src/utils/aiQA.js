@@ -31,12 +31,12 @@ export function buildFinancialContext({ transactions, summary, lastSummary, curr
 
   // 当月概览
   lines.push('【当月概览】');
-  lines.push('总支出：' + summary.expense.toFixed(2) + ' ' + currency);
-  lines.push('总收入：' + summary.income.toFixed(2) + ' ' + currency);
-  lines.push('结余：' + (summary.income - summary.expense).toFixed(2) + ' ' + currency);
+  lines.push('总支出：' + summary.expense.toFixed(2) + '元');
+  lines.push('总收入：' + summary.income.toFixed(2) + '元');
+  lines.push('结余：' + (summary.income - summary.expense).toFixed(2) + '元');
   lines.push('交易笔数：' + summary.transactionCount);
   const days = new Date().getDate();
-  lines.push('日均支出：' + (days > 0 ? (summary.expense / days).toFixed(2) : '0') + ' ' + currency);
+  lines.push('日均支出：' + (days > 0 ? (summary.expense / days).toFixed(2) : '0') + '元');
   lines.push('');
 
   // 支出分类
@@ -79,7 +79,7 @@ export function buildFinancialContext({ transactions, summary, lastSummary, curr
       const spent = summary.byCategory?.[b.category] || 0;
       const remain = b.amount - spent;
       const pct = b.amount > 0 ? ((spent / b.amount) * 100).toFixed(0) : '0';
-      lines.push('- ' + b.category + '：预算 ' + b.amount.toFixed(2) + '，已花 ' + spent.toFixed(2) + '（' + pct + '%），剩余 ' + remain.toFixed(2));
+      lines.push('- ' + b.category + '：预算 ' + b.amount.toFixed(2) + '元，已花 ' + spent.toFixed(2) + '元（' + pct + '%），剩余 ' + remain.toFixed(2) + '元');
     }
     lines.push('');
   }

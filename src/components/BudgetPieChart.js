@@ -30,58 +30,86 @@ export default function BudgetPieChart({
 
   // ─── 预算数据计算 ──────────────────────────────────────────
   const chartData = useMemo(() => {
+    // 找到总预算项
+    const totalBudgetItem = budgets.find(
+      (b) => b.category === '__total__' && b.amount > 0
+    );
+
+    // 分类预算（排除 __total__）
     const validBudgets = budgets.filter(
       (b) => b.category && b.category !== '__total__' && b.amount > 0
     );
 
-    if (validBudgets.length === 0) return null;
+    // 计算所有分类已花总额
+    const allSpent = Object.values(byCategory || {}).reduce((s, v) => s + v, 0);
 
-    const items = validBudgets.map((b) => {
-      const spent = byCategory[b.category] || 0;
-      const color = categoryColors[b.category] || tc.primary;
+    // 场景1：有分类预算 —— 按分类展示
+    if (validBudgets.length > 0) {
+      const items = validBudgets.map((b) => {
+        const spent = byCategory[b.category] || 0;
+        const color = categoryColors[b.category] || tc.primary;
+        return {
+          category: b.category,
+          budget: b.amount,
+          spent,
+          remaining: b.amount - spent,
+          isOver: spent > b.amount,
+          color,
+        };
+      });
+
+      items.sort((a, b) => b.budget - a.budget);
+
+      const totalBudget = items.reduce((s, i) => s + i.budget, 0);
+      const totalSpent = items.reduce((s, i) => s + i.spent, 0);
+      const totalRemaining = totalBudget - totalSpent;
+
+      let accumulatedAngle = 0;
+      const segments = items.map((item, index) => {
+        const proportion = totalBudget > 0 ? item.budget / totalBudget : 0;
+        const arcLength = proportion * CIRCUMFERENCE;
+        const rotation = (accumulatedAngle / 360) * CIRCUMFERENCE;
+        accumulatedAngle += proportion * 360;
+
+        return {
+          ...item,
+          index,
+          proportion,
+          arcLength,
+          rotation,
+          startAngle: rotation,
+          percent: Math.round(proportion * 100),
+        };
+      });
+
       return {
-        category: b.category,
-        budget: b.amount,
-        spent,
-        remaining: b.amount - spent,
-        isOver: spent > b.amount,
-        color,
+        segments,
+        items,
+        totalBudget,
+        totalSpent,
+        totalRemaining,
+        isOver: totalSpent > totalBudget,
       };
-    });
+    }
 
-    items.sort((a, b) => b.budget - a.budget);
-
-    const totalBudget = items.reduce((s, i) => s + i.budget, 0);
-    const totalSpent = items.reduce((s, i) => s + i.spent, 0);
-    const totalRemaining = totalBudget - totalSpent;
-
-    let accumulatedAngle = 0;
-    const segments = items.map((item, index) => {
-      const proportion = totalBudget > 0 ? item.budget / totalBudget : 0;
-      const arcLength = proportion * CIRCUMFERENCE;
-      const rotation = (accumulatedAngle / 360) * CIRCUMFERENCE;
-      const startAngle = accumulatedAngle;
-      accumulatedAngle += proportion * 360;
+    // 场景2：只有总预算，无分类预算 —— 整体概览模式
+    if (totalBudgetItem) {
+      const totalBudget = totalBudgetItem.amount;
+      const totalSpent = allSpent;
+      const totalRemaining = totalBudget - totalSpent;
 
       return {
-        ...item,
-        index,
-        proportion,
-        arcLength,
-        rotation,
-        startAngle,
-        percent: Math.round(proportion * 100),
+        segments: [],
+        items: [],
+        totalBudget,
+        totalSpent,
+        totalRemaining,
+        isOver: totalSpent > totalBudget,
+        isTotalOnly: true,
       };
-    });
+    }
 
-    return {
-      segments,
-      items,
-      totalBudget,
-      totalSpent,
-      totalRemaining,
-      isOver: totalSpent > totalBudget,
-    };
+    return null;
   }, [budgets, byCategory, categoryColors, tc.primary]);
 
   // ─── 整体概览的分段数据（已用 vs 剩余）──────────────────────
@@ -122,9 +150,10 @@ export default function BudgetPieChart({
   }, []);
 
   const toggleMode = useCallback(() => {
+    if (chartData?.isTotalOnly) return;
     setMode((prev) => prev === MODE_OVERVIEW ? MODE_CATEGORY : MODE_OVERVIEW);
     setSelectedIndex(null);
-  }, []);
+  }, [chartData?.isTotalOnly]);
 
   // ─── 空状态 ────────────────────────────────────────────────
   if (!chartData) {
@@ -156,20 +185,22 @@ export default function BudgetPieChart({
       {/* 标题行 */}
       <View style={styles.headerRow}>
         <Text style={[styles.headerTitle, { color: tc.text }]}>预算概览</Text>
-        <TouchableOpacity
-          style={[styles.modeToggle, { backgroundColor: tc.surfaceMuted }]}
-          onPress={toggleMode}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={mode === MODE_OVERVIEW ? 'layers-outline' : 'grid-outline'}
-            size={14}
+        {!chartData.isTotalOnly && (
+          <TouchableOpacity
+            style={[styles.modeToggle, { backgroundColor: tc.surfaceMuted }]}
+            onPress={toggleMode}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={mode === MODE_OVERVIEW ? 'layers-outline' : 'grid-outline'}
+              size={14}
             color={tc.textMuted}
           />
           <Text style={[styles.modeToggleText, { color: tc.textMuted }]}>
             {mode === MODE_OVERVIEW ? '分类' : '概览'}
           </Text>
         </TouchableOpacity>
+        )}
       </View>
 
       {/* 甜甜圈图 */}
@@ -185,7 +216,7 @@ export default function BudgetPieChart({
             strokeWidth={STROKE_WIDTH}
           />
 
-          {mode === MODE_OVERVIEW ? (
+          {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
             // ── 整体概览模式 ──
             overviewSegments && (
               <G rotation="-90" origin={`${CENTER}, ${CENTER}`}>
@@ -252,7 +283,7 @@ export default function BudgetPieChart({
 
         {/* 中心文字 */}
         <View style={[styles.centerOverlay, { width: CHART_SIZE, height: CHART_SIZE }]} pointerEvents="none">
-          {mode === MODE_OVERVIEW ? (
+          {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
             // ── 整体概览中心 ──
             <View style={styles.centerContent}>
               <Text style={[styles.centerLabel, { color: tc.textSubtle }]}>剩余预算</Text>
@@ -305,7 +336,7 @@ export default function BudgetPieChart({
       </View>
 
       {/* 整体概览：已用/剩余/总预算 三项指标 */}
-      {mode === MODE_OVERVIEW && (
+      {(mode === MODE_OVERVIEW || chartData.isTotalOnly) && (
         <View style={styles.overviewStats}>
           <View style={styles.overviewStatItem}>
             <View style={[styles.overviewDot, { backgroundColor: tc.primary }]} />

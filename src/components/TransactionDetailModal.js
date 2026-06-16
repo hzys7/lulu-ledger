@@ -172,6 +172,15 @@ export default function TransactionDetailModal({
               {transaction.category}
             </Text>
 
+            {/* 心情标签 —— 放在金额上方，确保一眼可见 */}
+            {transaction.mood ? (
+              <View style={[styles.moodTag, { backgroundColor: withAlpha(catColor, 0.08) }]}>
+                <Text style={[styles.moodTagText, { color: catColor }]}>
+                  {moodText}
+                </Text>
+              </View>
+            ) : null}
+
             {/* 大金额 */}
             <Text style={[styles.amountText, { color: amountColor }]}>
               {amountPrefix}
@@ -181,15 +190,6 @@ export default function TransactionDetailModal({
                 maximumFractionDigits: 2,
               })}
             </Text>
-
-            {/* 心情标签（如果有） */}
-            {transaction.mood ? (
-              <View style={[styles.moodTag, { backgroundColor: tc.surfaceMuted }]}>
-                <Text style={[styles.moodTagText, { color: tc.textMuted }]}>
-                  {moodText}
-                </Text>
-              </View>
-            ) : null}
           </View>
 
           {/* ── 详情卡片 ── */}
@@ -327,10 +327,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
     borderRadius: borderRadius.full,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   moodTagText: {
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
     letterSpacing: -0.1,
   },
 
