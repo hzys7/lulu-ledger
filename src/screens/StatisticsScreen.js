@@ -30,6 +30,7 @@ import BarChartRow from '../components/charts/BarChartRow';
 import { MOOD_LABELS, MOOD_EMOJIS } from '../utils/aiMoodShared';
 import { analyzeMood, getCachedMoodAnalysis } from '../utils/aiMood';
 import { generatePrediction, getCachedPrediction } from '../utils/aiPrediction';
+import { analyzeMindset, getCachedMindsetAnalysis } from '../utils/aiMindset';
 import {
   MonthSummaryGrid,
   WeekSummaryGrid,
@@ -334,6 +335,11 @@ export default function StatisticsScreen({ navigation }) {
   const [predictionLoading, setPredictionLoading] = useState(false);
   const [predictionData, setPredictionData] = useState(null);
 
+  // 消费心理分析状态
+  const [mindsetAnalysis, setMindsetAnalysis] = useState(null);
+  const [mindsetLoading, setMindsetLoading] = useState(false);
+  const [mindsetError, setMindsetError] = useState('');
+
   const [rankingExpanded, setRankingExpanded] = useState(false);
   const [selectedPieIndex, setSelectedPieIndex] = useState(null);
 
@@ -466,6 +472,53 @@ export default function StatisticsScreen({ navigation }) {
     })();
     return () => { alive = false; };
   }, [period, selectedYear, selectedMonth, getMonthSummary, settings.currency, filteredMonthTx]);
+
+  // 消费心理深度分析
+  useEffect(() => {
+    if (moodStats.items.length === 0 || moodStats.total === 0) {
+      setMindsetAnalysis(null);
+      setMindsetLoading(false);
+      setMindsetError('');
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const cached = await getCachedMindsetAnalysis(period, periodLabel);
+      if (!alive) return;
+      if (cached?.content) {
+        setMindsetAnalysis(cached.content);
+        return;
+      }
+      setMindsetLoading(true);
+      setMindsetError('');
+      const result = await analyzeMindset({
+        period,
+        periodLabel,
+        transactions: period === 'week'
+          ? transactions.filter(t => {
+              const d = new Date(t.date);
+              return d >= weekStart && d <= weekEnd;
+            })
+          : period === 'month'
+          ? transactions.filter(t => {
+              const d = new Date(t.date);
+              return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
+            })
+          : transactions.filter(t => new Date(t.date).getFullYear() === reportYear),
+        moodDistribution: Object.fromEntries(moodStats.items.map(i => [i.key, i.count])),
+        topExpenses: moodTopExpenses,
+        currency: settings.currency,
+      });
+      if (!alive) return;
+      setMindsetLoading(false);
+      if (result.ok) {
+        setMindsetAnalysis(result.content);
+      } else {
+        setMindsetError(result.error || '分析失败');
+      }
+    })();
+    return () => { alive = false; };
+  }, [period, periodLabel, moodStats, transactions, weekStart, weekEnd, selectedYear, selectedMonth, reportYear, moodTopExpenses, settings.currency]);
 
   const yearTx = useMemo(() => {
     return yearAllTx.filter(t => t.type === dataType);
@@ -904,6 +957,43 @@ export default function StatisticsScreen({ navigation }) {
                   </View>
                 ) : (
                   <Text style={[styles.moodPlaceholderText, { color: tc.textMuted }]}>点击刷新按钮生成分析</Text>
+                )}
+              </View>
+            )}
+
+            {/* ── 消费心理深度分析 ── */}
+            {moodStats.items.length > 0 && (
+              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+                <View style={styles.cardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <View style={[styles.aiIconWrap, { backgroundColor: tc.warningSubtle }]}>
+                      <Ionicons name="brain" size={14} color={tc.warning} />
+                    </View>
+                    <Text style={[styles.cardTitle, { color: tc.text }]}>消费心理</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>深度洞察</Text>
+                  </View>
+                </View>
+
+                {mindsetLoading ? (
+                  <View style={styles.moodLoadingWrap}>
+                    <Ionicons name="hourglass-outline" size={14} color={tc.textMuted} />
+                    <Text style={[styles.cardSubtitle, { color: tc.textMuted, marginLeft: spacing.xs }]}>AI 分析中…</Text>
+                  </View>
+                ) : mindsetAnalysis ? (
+                  <Text style={[styles.moodAnalysisText, { color: tc.text }]}>
+                    {mindsetAnalysis}
+                  </Text>
+                ) : mindsetError ? (
+                  <View style={styles.moodErrorWrap}>
+                    <Ionicons name="alert-circle-outline" size={14} color={tc.danger} />
+                    <Text style={[styles.cardSubtitle, { color: tc.danger, flex: 1 }]}>{mindsetError}</Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.moodPlaceholderText, { color: tc.textMuted }]}>
+                    AI 将分析你的消费心理模式和行为习惯
+                  </Text>
                 )}
               </View>
             )}
