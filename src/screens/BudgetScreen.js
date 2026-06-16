@@ -80,7 +80,7 @@ export default function BudgetScreen({ route }) {
       .filter((b) => b.month === currentMonth && b.category !== '__total__')
       .map((b) => {
         const spent = monthExpenseByCategory[b.category] || 0;
-        const percent = b.amount > 0 ? Math.min((spent / b.amount) * 100, 100) : 0;
+        const percent = b.amount > 0 ? (spent / b.amount) * 100 : 0;
         const remaining = b.amount - spent;
         return {
           ...b,
@@ -98,7 +98,7 @@ export default function BudgetScreen({ route }) {
     ? totalBudgetItem.amount
     : budgetItems.reduce((sum, b) => sum + b.amount, 0);
   const totalSpent = budgetItems.reduce((sum, b) => sum + b.spent, 0);
-  const totalPercent = totalBudgetAmount > 0 ? Math.min((totalSpent / totalBudgetAmount) * 100, 100) : 0;
+  const totalPercent = totalBudgetAmount > 0 ? (totalSpent / totalBudgetAmount) * 100 : 0;
   const totalIsOver = totalSpent > totalBudgetAmount;
 
   const openAddModal = (categoryName = '') => {
@@ -228,15 +228,26 @@ export default function BudgetScreen({ route }) {
               </Text>
             </View>
             <View style={[styles.progress, { backgroundColor: tc.surfaceMuted }]}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: totalPercent + '%',
-                    backgroundColor: totalIsOver ? tc.danger : tc.text,
-                  },
-                ]}
-              />
+              <View style={{ flexDirection: 'row', height: '100%' }}>
+                <View style={{
+                  width: `${Math.min(totalPercent, 100)}%`,
+                  backgroundColor: totalIsOver ? tc.danger : tc.text,
+                  height: '100%',
+                  borderTopLeftRadius: 3,
+                  borderBottomLeftRadius: 3,
+                  borderTopRightRadius: totalIsOver ? 0 : 3,
+                  borderBottomRightRadius: totalIsOver ? 0 : 3,
+                }} />
+                {totalIsOver && (
+                  <View style={{
+                    width: `${Math.min(totalPercent - 100, 100)}%`,
+                    backgroundColor: tc.danger,
+                    height: '100%',
+                    borderTopRightRadius: 3,
+                    borderBottomRightRadius: 3,
+                  }} />
+                )}
+              </View>
             </View>
             <Text style={[styles.percentText, { color: tc.textSecondary }]}>
               {totalPercent.toFixed(0)}%
@@ -301,9 +312,26 @@ export default function BudgetScreen({ route }) {
                     </View>
                   </View>
                   <View style={[styles.progress, { backgroundColor: tc.surfaceMuted }]}>
-                    <View
-                      style={[styles.progressFill, { width: item.percent + '%', backgroundColor: tint }]}
-                    />
+                    <View style={{ flexDirection: 'row', height: '100%' }}>
+                      <View style={{
+                        width: `${Math.min(item.percent, 100)}%`,
+                        backgroundColor: tint,
+                        height: '100%',
+                        borderTopLeftRadius: 3,
+                        borderBottomLeftRadius: 3,
+                        borderTopRightRadius: item.isOver ? 0 : 3,
+                        borderBottomRightRadius: item.isOver ? 0 : 3,
+                      }} />
+                      {item.isOver && (
+                        <View style={{
+                          width: `${Math.min(item.percent - 100, 100)}%`,
+                          backgroundColor: tc.danger,
+                          height: '100%',
+                          borderTopRightRadius: 3,
+                          borderBottomRightRadius: 3,
+                        }} />
+                      )}
+                    </View>
                   </View>
                   {item.remaining < 0 ? (
                     <Text style={[styles.overText, { color: tc.danger }]}>
@@ -351,29 +379,29 @@ export default function BudgetScreen({ route }) {
             {editingCategory !== '__total__' && !editingCategory ? (
               <View style={styles.categorySelect}>
                 <Text style={[styles.modalLabel, { color: tc.textMuted }]}>选择分类</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.chips}>
+                <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
+                  <View style={styles.categoryGrid}>
                     {categoryConfig.expense.map((cat) => {
-                      const tint = tc.categories[cat.name] || tc.primary;
+                      const color = tc.categories[cat.name] || tc.primary;
                       const active = editingCategory === cat.name;
                       return (
                         <TouchableOpacity
                           key={cat.name}
-                          style={[
-                            styles.chip,
-                            { backgroundColor: tc.surfaceMuted, borderColor: 'transparent' },
-                            active && { backgroundColor: tint, borderColor: tint },
-                          ]}
+                          style={styles.gridItem}
                           onPress={() => setEditingCategory(cat.name)}
-                          activeOpacity={0.7}
+                          activeOpacity={0.6}
                         >
-                          <Text
-                            style={[
-                              styles.chipText,
-                              { color: tc.textSecondary },
-                              active && { color: tc.primaryOn, fontWeight: fontWeight.semibold },
-                            ]}
-                          >
+                          <View style={[styles.gridIcon, {
+                            backgroundColor: active ? color : color + '22',
+                            borderWidth: active ? 2 : 0,
+                            borderColor: active ? color : 'transparent',
+                          }]}>
+                            <Ionicons name={cat.icon} size={20} color={active ? '#fff' : color} />
+                          </View>
+                          <Text style={[styles.gridName, {
+                            color: active ? color : tc.text,
+                            fontWeight: active ? fontWeight.semibold : fontWeight.medium,
+                          }]} numberOfLines={1}>
                             {cat.name}
                           </Text>
                         </TouchableOpacity>
@@ -466,8 +494,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
 
-  progress: { height: 6, borderRadius: 3, overflow: 'hidden', marginTop: spacing.sm },
-  progressFill: { height: '100%', borderRadius: 3 },
+  progress: { height: 6, borderRadius: 3, marginTop: spacing.sm },
 
   alertsWrap: { paddingHorizontal: spacing.base, marginBottom: spacing.base },
   alertItem: {
@@ -531,9 +558,27 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
   modalLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, marginBottom: spacing.sm, letterSpacing: -0.1 },
   categorySelect: { marginBottom: spacing.base },
-  chips: { flexDirection: 'row', gap: spacing.sm, paddingRight: spacing.base },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full, borderWidth: 1 },
-  chipText: { fontSize: fontSize.sm, letterSpacing: -0.1 },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  gridItem: {
+    width: '25%',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+  },
+  gridIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  gridName: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    letterSpacing: -0.1,
+    textAlign: 'center',
+  },
   amountSection: { marginBottom: spacing.base },
   amountRow: {
     flexDirection: 'row',
