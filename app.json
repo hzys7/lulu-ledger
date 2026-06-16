@@ -2,7 +2,7 @@
   "expo": {
     "name": "璐璐记账",
     "slug": "lulu-ledger",
-    "version": "1.3.3",
+    "version": "1.4.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
@@ -24,9 +24,9 @@
       "package": "com.lululedger.app"
     },
     "web": {
-      "name": "璐璐记账",
-      "shortName": "璐璐记账",
-      "description": "璐璐记账",
+"name": "小璐记账",
+      "shortName": "小璐记账",
+      "description": "小璐记账",
       "lang": "zh-CN",
       "output": "single",
       "favicon": "./assets/favicon.png"
