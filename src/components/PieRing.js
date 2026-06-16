@@ -1,9 +1,9 @@
 // 手画环形图
 // props: data = [{ value, color }], size, thickness, center (React node)
 //         selectedIndex, onSegmentPress (支持点击高亮)
-import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, G, Circle } from 'react-native-svg';
+import React, { memo, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import Svg, { Path, G, Circle, Defs, ClipPath } from 'react-native-svg';
 import { fontSize } from '../theme';
 
 function polarToCartesian(cx, cy, r, angleDeg) {
@@ -29,6 +29,8 @@ function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
   ].join(' ');
 }
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 const PieRing = memo(function PieRing({
   data,
   size = 180,
@@ -38,6 +40,36 @@ const PieRing = memo(function PieRing({
   onSegmentPress,
 }) {
   const total = data.reduce((s, d) => s + d.value, 0);
+
+  // ── 入场动画 ────────────────────────────────────────────
+  // Ref 初始值固定为 0（隐藏），避免空→有数据时闪现全图
+  const revealR = useRef(new Animated.Value(0)).current;
+  const centerOpacity = useRef(new Animated.Value(0)).current;
+  // 唯一 clip id，避免多个 PieRing 冲突
+  const clipId = useRef(
+    `pie-reveal-${Math.random().toString(36).slice(2, 9)}`
+  ).current;
+
+  useEffect(() => {
+    if (total === 0) return;
+    // 首次有数据或有数据时触发一次绽放
+    revealR.setValue(0);
+    centerOpacity.setValue(0);
+
+    Animated.timing(revealR, {
+      toValue: size * 0.75,
+      duration: 600,
+      useNativeDriver: false,
+    }).start();
+
+    Animated.timing(centerOpacity, {
+      toValue: 1,
+      duration: 350,
+      delay: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [total > 0]);
+
   if (total === 0) {
     return (
       <View style={[styles.empty, { width: size, height: size }]}>
@@ -69,25 +101,31 @@ const PieRing = memo(function PieRing({
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <Svg width={size} height={size}>
-        {/* 背景轨道环 — 增加视觉层次感 */}
-        {hasMultiple && (
-          <Circle
-            cx={cx}
-            cy={cy}
-            r={trackR}
-            fill="none"
-            stroke="rgba(128,128,128,0.07)"
-            strokeWidth={thickness + 2}
-          />
-        )}
-        <G>
+        <Defs>
+          <ClipPath id={clipId}>
+            {/* 径向绽放的裁剪圆 */}
+            <AnimatedCircle cx={cx} cy={cy} r={revealR} />
+          </ClipPath>
+        </Defs>
+
+        {/* 背景轨道 + 色块统一被裁剪，实现从中心绽放 */}
+        <G clipPath={`url(#${clipId})`}>
+          {hasMultiple && (
+            <Circle
+              cx={cx}
+              cy={cy}
+              r={trackR}
+              fill="none"
+              stroke="rgba(128,128,128,0.07)"
+              strokeWidth={thickness + 2}
+            />
+          )}
           {arcs.map(({ d, startAngle, endAngle, key, index }) => {
             if (endAngle - startAngle <= 0) return null;
 
             const isSelected = selectedIndex === index;
             const isDimmed = selectedIndex !== null && !isSelected;
 
-            // 选中段向外微微扩展（发光效果）
             const glowAmt = isSelected ? Math.min(thickness * 0.12, 3) : 0;
             const rOuterAdj = rOuter + glowAmt;
             const rInnerAdj = rInner - glowAmt;
@@ -96,7 +134,6 @@ const PieRing = memo(function PieRing({
 
             return (
               <G key={key}>
-                {/* 选中段发光外层 */}
                 {isSelected && (
                   <Path
                     d={arcPath(cx, cy, rOuter + 3, rInner - 3, startAngle, endAngle)}
@@ -105,7 +142,6 @@ const PieRing = memo(function PieRing({
                     stroke="none"
                   />
                 )}
-                {/* 色块本体 */}
                 <Path
                   d={path}
                   fill={d.color}
@@ -119,10 +155,18 @@ const PieRing = memo(function PieRing({
           })}
         </G>
       </Svg>
+
+      {/* 中心文字淡入 */}
       {center ? (
-        <View style={[styles.center, { width: size, height: size }]} pointerEvents="none">
+        <Animated.View
+          style={[
+            styles.center,
+            { width: size, height: size, opacity: centerOpacity },
+          ]}
+          pointerEvents="none"
+        >
           {center}
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
