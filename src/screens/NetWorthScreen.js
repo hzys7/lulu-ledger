@@ -141,6 +141,8 @@ export default function NetWorthScreen() {
       >
         {/* 顶部净资产大卡 */}
         <View style={[styles.heroCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+          {/* 装饰性背景元素 */}
+          <View style={[styles.heroDeco, { backgroundColor: totalNetWorth >= 0 ? tc.primary + '08' : tc.danger + '08' }]} />
           <Text style={[styles.heroLabel, { color: tc.textMuted }]}>净资产</Text>
           <Text style={[styles.heroAmount, { color: totalNetWorth >= 0 ? tc.text : tc.danger }]}>
             {formatMoney(totalNetWorth, settings.currency)}
@@ -205,34 +207,20 @@ export default function NetWorthScreen() {
                     </Text>
                     <View style={styles.accountActions}>
                       <TouchableOpacity
-                        onPress={() => openAdjust(acc)}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                        style={styles.actionBtn}
-                      >
-                        <Ionicons name="swap-vertical" size={16} color={tc.textMuted} />
-                      </TouchableOpacity>
-                      {!acc.isDefault ? (
-                        <TouchableOpacity
-                          onPress={() => setDefaultAccount(acc.id)}
-                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                          style={styles.actionBtn}
-                        >
-                          <Ionicons name="star-outline" size={16} color={tc.textMuted} />
-                        </TouchableOpacity>
-                      ) : null}
-                      <TouchableOpacity
                         onPress={() => openEdit(acc)}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                        style={styles.actionBtn}
+                        style={[styles.cardActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                        activeOpacity={0.7}
                       >
-                        <Ionicons name="create-outline" size={16} color={tc.textMuted} />
+                        <Ionicons name="create-outline" size={12} color={tc.textMuted} />
+                        <Text style={[styles.cardActionText, { color: tc.textMuted }]}>编辑</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleDelete(acc)}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                        style={styles.actionBtn}
+                        style={[styles.cardActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                        activeOpacity={0.7}
                       >
-                        <Ionicons name="trash-outline" size={16} color={tc.danger} />
+                        <Ionicons name="trash-outline" size={12} color={tc.danger} />
+                        <Text style={[styles.cardActionText, { color: tc.danger }]}>删除</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -316,6 +304,29 @@ export default function NetWorthScreen() {
             >
               <Text style={[styles.saveBtnText, { color: tc.primaryOn }]}>保存</Text>
             </TouchableOpacity>
+
+            {editing ? (
+              <View style={styles.editActionRow}>
+                <TouchableOpacity
+                  style={[styles.editActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                  onPress={() => { closeModal(); openAdjust(editing); }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="swap-vertical" size={15} color={tc.text} />
+                  <Text style={[styles.editActionText, { color: tc.text }]}>调整余额</Text>
+                </TouchableOpacity>
+                {!editing.isDefault ? (
+                  <TouchableOpacity
+                    style={[styles.editActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                    onPress={() => { setDefaultAccount(editing.id); closeModal(); }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="star-outline" size={15} color={tc.text} />
+                    <Text style={[styles.editActionText, { color: tc.text }]}>设为默认</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
           </Pressable>
         </Pressable>
       </Modal>
@@ -387,6 +398,14 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   heroSub: { fontSize: fontSize.xs, marginTop: spacing.xs, letterSpacing: -0.1 },
+  heroDeco: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    top: -40,
+    right: -30,
+  },
 
   listHeader: {
     flexDirection: 'row',
@@ -443,8 +462,19 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
-  accountActions: { flexDirection: 'row', marginTop: 4 },
-  actionBtn: { paddingHorizontal: 4, paddingVertical: 2 },
+  accountActions: { flexDirection: 'row', marginTop: 6, gap: 6 },
+  cardActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+  },
+  cardActionText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
 
   tip: {
     fontSize: fontSize.xs,
@@ -522,6 +552,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
+  editActionRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  editActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: borderRadius.md,
+  },
+  editActionText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
   adjustHint: { fontSize: fontSize.sm, textAlign: 'center', marginBottom: 4 },
   adjustBtnRow: { flexDirection: 'row', marginTop: spacing.base },
   adjustBtn: { flex: 1, height: 44, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
