@@ -1,6 +1,6 @@
 // 璐璐记账 · 记一笔（重构：分类页 + 底部抽屉）
 // 流程：点 tab 栏记一笔 -> 分类页 -> 点分类 -> 弹底部抽屉填金额保存
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
   Platform,
   Keyboard,
   Modal,
-  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,27 +101,15 @@ export default function AddTransactionScreen({ navigation, route }) {
     setCategorySuggestions(suggestions.filter(s => s.category !== formCategory));
   }, [note, type, formCategory]);
 
-  // 数字键盘按压动画值
-  const keyAnimsRef = useRef(null);
-  if (!keyAnimsRef.current) {
-    keyAnimsRef.current = {};
-    KEYS.flat().forEach((k) => {
-      keyAnimsRef.current[k] = new Animated.Value(1);
-    });
-  }
-  const keyAnims = keyAnimsRef.current;
-  const animateKey = (key, toValue) => {
-    Animated.timing(keyAnims[key], {
-      toValue,
-      duration: 80,
-      useNativeDriver: true,
-    }).start();
-  };
+  // 使用 ref 缓存金额，减少 re-render
+  const amountRef = useRef('');
+  const [displayAmount, setDisplayAmount] = useState('0');
 
   // 打开抽屉：新建（从分类页来）
   function openFormForCategory(catName) {
     setFormCategory(catName);
-    setAmount('');
+    amountRef.current = '';
+    setDisplayAmount('0');
     setNote('');
     setDate(new Date().toISOString());
     setAccountId(defaultAccId);
@@ -135,7 +122,8 @@ export default function AddTransactionScreen({ navigation, route }) {
     if (editTransaction) {
       setType(editTransaction.type);
       setFormCategory(editTransaction.category);
-      setAmount(String(editTransaction.amount));
+      amountRef.current = String(editTransaction.amount);
+      setDisplayAmount(amountRef.current || '0');
       setNote(editTransaction.note || '');
       setDate(editTransaction.date);
       setAccountId(editTransaction.accountId || defaultAccId);
@@ -152,16 +140,24 @@ export default function AddTransactionScreen({ navigation, route }) {
     }
   }
 
-  // 数字键盘
-  const handleNumberInput = (key) => {
-    if (key === '.' && amount.includes('.')) return;
-    if (amount.includes('.') && amount.split('.')[1].length >= 2) return;
-    setAmount(p => p + key);
-  };
-  const handleDelete = () => setAmount(p => p.slice(0, -1));
+  // 数字键盘 - 使用 ref 减少 re-render
+  const handleNumberInput = useCallback((key) => {
+    let val = amountRef.current;
+    if (key === '.' && val.includes('.')) return;
+    if (val.includes('.') && val.split('.')[1].length >= 2) return;
+    val += key;
+    amountRef.current = val;
+    setDisplayAmount(val);
+  }, []);
+
+  const handleDelete = useCallback(() => {
+    const val = amountRef.current.slice(0, -1);
+    amountRef.current = val;
+    setDisplayAmount(val || '0');
+  }, []);
 
   const handleSave = async () => {
-    const numAmount = parseFloat(amount);
+    const numAmount = parseFloat(amountRef.current);
     if (!numAmount || numAmount <= 0) {
       Alert.alert('提示', '请输入有效金额');
       return;
@@ -189,7 +185,8 @@ export default function AddTransactionScreen({ navigation, route }) {
     } else {
       await addTx(txData);
       // 连续记账：清空金额，留在分类页
-      setAmount('');
+      amountRef.current = '';
+      setDisplayAmount('0');
       setNote('');
       setFormOpen(false);
     }
@@ -210,9 +207,8 @@ export default function AddTransactionScreen({ navigation, route }) {
     ]);
   };
 
-  const displayAmount = amount || '0';
   const currencySymbol = getCurrencySymbol(settings.currency);
-  const canSave = amount && parseFloat(amount) > 0;
+  const canSave = amountRef.current && parseFloat(amountRef.current) > 0;
   const categoryList = type === 'expense' ? categoryConfig.expense : categoryConfig.income;
   const currentCat = categoryList.find(c => c.name === formCategory);
   const catColor = currentCat ? (tc.categories[formCategory] || tc.textMuted) : tc.textMuted;
@@ -365,19 +361,17 @@ export default function AddTransactionScreen({ navigation, route }) {
                     const isDel = k === 'del';
                     const isLast = ki === row.length - 1;
                     return (
-                      <Animated.View
+                      <View
                         key={k}
                         style={[
                           styles.keypadKey,
                           !isLast && styles.keypadKeyGap,
-                          { backgroundColor: tc.surfaceMuted, transform: [{ scale: keyAnims[k] }] },
+                          { backgroundColor: tc.surfaceMuted },
                         ]}
                       >
                         <TouchableOpacity
                           style={styles.keypadKeyInner}
                           onPress={() => (isDel ? handleDelete() : handleNumberInput(k))}
-                          onPressIn={() => animateKey(k, 0.92)}
-                          onPressOut={() => animateKey(k, 1)}
                           activeOpacity={0.6}
                         >
                           {isDel ? (
@@ -386,7 +380,7 @@ export default function AddTransactionScreen({ navigation, route }) {
                             <Text style={[styles.keypadKeyText, { color: tc.text }]}>{k}</Text>
                           )}
                         </TouchableOpacity>
-                      </Animated.View>
+                      </View>
                     );
                   })}
                 </View>

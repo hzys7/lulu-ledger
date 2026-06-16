@@ -42,7 +42,13 @@
           }
         }
       ],
-      "./withInstallPermission"
+      "./withInstallPermission",
+      [
+        "expo-modules-core",
+        {
+          "modules": ["./modules/lulu-apk-installer"]
+        }
+      ]
     ]
   }
 }

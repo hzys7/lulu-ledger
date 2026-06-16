@@ -1,0 +1,9 @@
+{
+  "name": "lulu-apk-installer",
+  "version": "1.0.0",
+  "description": "APK installer module for Lulu Ledger",
+  "main": "src/index.ts",
+  "android": {
+    "sourceDir": "android"
+  }
+}
