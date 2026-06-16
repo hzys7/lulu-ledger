@@ -12,7 +12,7 @@ function getInstaller() {
     _lazyInstaller = null;
     if (Platform.OS === 'android') {
       try {
-        _lazyInstaller = require('../../modules/lulu-apk-installer/src/index');
+        _lazyInstaller = require('lulu-apk-installer');
       } catch {
         // Module not available
       }

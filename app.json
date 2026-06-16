@@ -42,8 +42,7 @@
           }
         }
       ],
-      "./withInstallPermission",
-      "./modules/lulu-apk-installer"
+      "./withInstallPermission"
     ]
   }
 }
