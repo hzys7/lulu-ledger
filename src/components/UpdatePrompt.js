@@ -12,9 +12,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  AppState,
   Linking,
-  Platform,
   DeviceEventEmitter,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +21,6 @@ import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
 import { formatBytes } from '../utils/updateDownloader';
 import {
   LuluApkInstaller,
-  checkInstallPermission,
   openInstallSettings,
   installFromDownloadManager,
 } from '../utils/updateInstaller';
@@ -63,7 +60,13 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   }, [settings?.autoCheckUpdate]);
 
   useEffect(() => {
-    return () => { if (_ref) _ref = null; };
+    return () => {
+      if (autoInstallTimerRef.current) {
+        clearTimeout(autoInstallTimerRef.current);
+        autoInstallTimerRef.current = null;
+      }
+      if (_ref) _ref = null;
+    };
   }, []);
 
   function resetUpdateFlow() {
@@ -156,95 +159,76 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       return;
     }
 
-    // --- 检查安装权限 ---
-    if (Platform.OS === 'android') {
-      const hasPermission = await checkInstallPermission();
-      if (!hasPermission) {
-        let directGranted = false;
-        if (LuluApkInstaller && typeof LuluApkInstaller.requestInstallPermission === 'function') {
-          try {
-            let resolved = false;
-            const result = await Promise.race([
-              LuluApkInstaller.requestInstallPermission().then(r => { resolved = true; return r; }),
-              new Promise((resolve) => {
-                const sub = AppState.addEventListener('change', async (state) => {
-                  if (state === 'active' && !resolved) {
-                    resolved = true; sub.remove();
-                    await new Promise(r => setTimeout(r, 300));
-                    resolve(await checkInstallPermission());
-                  }
-                });
-                setTimeout(async () => {
-                  if (!resolved) { resolved = true; sub.remove(); resolve(await checkInstallPermission()); }
-                }, 15000);
-              }),
-            ]);
-            directGranted = !!result;
-          } catch (e) {
-            console.warn('[UpdatePrompt] direct permission request failed:', e?.message || e);
-          }
-        }
-        if (!directGranted) {
-          Alert.alert(
-            '需要安装权限',
-            '下载前需要先授权「璐璐记账」安装APK。\n\n请点击「去设置」，然后在「安装未知应用」页面中打开「允许来自此来源」开关。',
-            [{ text: '取消', style: 'cancel' }, { text: '去设置', onPress: openInstallSettings }]
-          );
-          return;
-        }
-      }
-    }
-
     try {
       flowActiveRef.current = true;
-      setStatus('downloading');
-      setProgress(0);
-      setReceived(0);
-      setTotal(0);
-      setErrorMsg('');
-      setInstallError('');
-      setDownloadId(null);
-
-      const ac = new AbortController();
-      abortRef.current = ac;
       const apkName = updateInfo.apk.name;
-      const primaryUrl = updateInfo.apk.url;
+      // 候选下载地址：主 URL + 镜像（国内用户无法直连 GitHub 时自动 fallback）
+      const candidates = [updateInfo.apk.url, ...(updateInfo.apk.mirrors || [])];
+      let lastError = '';
 
-      // DownloadManager 下载到公共 Downloads/ 目录
-      if (!LuluApkInstaller?.downloadApk) throw new Error('原生模块不可用');
-      const dmId = await LuluApkInstaller.downloadApk(primaryUrl, apkName);
-      setDownloadId(dmId);
+      // 遍历候选地址，逐个尝试直至成功
+      for (let urlIdx = 0; urlIdx < candidates.length; urlIdx++) {
+        // 用户可能在上一地址失败后、循环进入下一地址前点击了取消
+        if (!flowActiveRef.current) return;
 
-      // 轮询进度（最多 2 分钟）
-      for (let attempts = 0; attempts < 240; attempts++) {
-        if (ac.signal.aborted) {
-          setStatus('idle'); setErrorMsg(''); abortRef.current = null; flowActiveRef.current = false;
-          return;
-        }
-        await new Promise(r => setTimeout(r, 500));
-        const prog = await LuluApkInstaller.getDownloadProgress(dmId);
+        const url = candidates[urlIdx];
 
-        if (prog.status === 'SUCCESS') {
-          setProgress(100);
-          setReceived(prog.bytesDownloaded);
-          setTotal(prog.totalBytes);
-          setStatus('done');
-          setErrorMsg('');
-          abortRef.current = null;
-          autoInstallTimerRef.current = setTimeout(() => {
-            autoInstallTimerRef.current = null;
-            handleInstall(dmId);
-          }, 800);
-          return;
-        } else if (prog.status === 'FAILED') {
-          throw new Error(prog.reason || '下载失败');
-        } else {
-          setProgress(Math.round(prog.progressPercent));
-          setReceived(prog.bytesDownloaded);
-          setTotal(prog.totalBytes > 0 ? prog.totalBytes : total);
+        setStatus('downloading');
+        setProgress(0);
+        setReceived(0);
+        setTotal(0);
+        setErrorMsg('');
+        setInstallError('');
+        setDownloadId(null);
+
+        const ac = new AbortController();
+        abortRef.current = ac;
+
+        // DownloadManager 下载到公共 Downloads/ 目录
+        if (!LuluApkInstaller?.downloadApk) throw new Error('原生模块不可用');
+        const dmId = await LuluApkInstaller.downloadApk(url, apkName);
+        setDownloadId(dmId);
+
+        // 轮询进度（最多 10 分钟/URL）
+        for (let attempts = 0; attempts < 1200; attempts++) {
+          if (ac.signal.aborted) {
+            setStatus('idle'); setErrorMsg(''); abortRef.current = null; flowActiveRef.current = false;
+            return;
+          }
+          await new Promise(r => setTimeout(r, 500));
+          const prog = await LuluApkInstaller.getDownloadProgress(dmId);
+
+          if (prog.status === 'SUCCESS') {
+            setProgress(100);
+            setReceived(prog.bytesDownloaded);
+            setTotal(prog.totalBytes);
+            setStatus('done');
+            setErrorMsg('');
+            abortRef.current = null;
+            autoInstallTimerRef.current = setTimeout(() => {
+              autoInstallTimerRef.current = null;
+              if (!flowActiveRef.current) return;
+              handleInstall(dmId);
+            }, 800);
+            return; // ✓ 下载成功
+          } else if (prog.status === 'FAILED') {
+            lastError = prog.reason || '下载失败';
+            if (urlIdx < candidates.length - 1) {
+              // 还有镜像地址没试，换下一个
+              break; // 退出内层循环 → 外层 URL_LOOP 继续
+            } else {
+              throw new Error(lastError);
+            }
+          } else {
+            setProgress(Math.round(prog.progressPercent));
+            setReceived(prog.bytesDownloaded);
+            setTotal(prog.totalBytes > 0 ? prog.totalBytes : total);
+          }
         }
       }
-      throw new Error('下载超时');
+
+      // 所有地址都试过了（含超时）
+      throw new Error(lastError || '下载超时');
     } catch (e) {
       if (e?.name === 'AbortError') {
         setStatus('idle'); setErrorMsg(''); abortRef.current = null; flowActiveRef.current = false;
@@ -271,7 +255,12 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       installingRef.current = false;
       flowActiveRef.current = false;
       setStatus('done');
-      setInstallError('安装失败：' + (e?.message || '未知错误') + '。请到系统下载文件夹中手动点击 APK 安装。');
+      const errMsg = (e?.message || '未知错误').toLowerCase();
+      if (errMsg.includes('permission') || errMsg.includes('权限')) {
+        setInstallError('PERMISSION_DENIED');
+      } else {
+        setInstallError('安装失败：' + (e?.message || '未知错误') + '。请到系统下载文件夹中手动点击 APK 安装。');
+      }
     }
   }
 
@@ -370,10 +359,45 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
 
           {status === 'done' && installError ? (
             <View style={[styles.installErrorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
-                <Ionicons name="alert-circle" size={14} color={tc.danger} />
-                <Text style={[styles.installErrorText, { color: tc.danger }]}>{installError}</Text>
-              </View>
+              {installError === 'PERMISSION_DENIED' ? (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+                    <Ionicons name="alert-circle" size={14} color={tc.danger} />
+                    <Text style={[styles.installErrorText, { color: tc.danger }]}>安装需要授权</Text>
+                  </View>
+                  <Text style={[styles.installErrorHint, { color: tc.textMuted }]}>
+                    请在系统设置中开启「安装未知应用」权限，然后重试。
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: 4 }}>
+                    <TouchableOpacity
+                      style={[styles.retryBtn, { borderColor: tc.border }]}
+                      onPress={() => { setInstallError(''); setStatus('done'); handleInstall(downloadId); }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.retryBtnText, { color: tc.textSecondary }]}>重试安装</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.retryBtn, { borderColor: tc.border }]}
+                      onPress={openInstallSettings}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.retryBtnText, { color: tc.primary }]}>去设置</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.retryBtn, { borderColor: tc.border }]}
+                      onPress={() => { setVisible(false); resetUpdateFlow(); }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.retryBtnText, { color: tc.textMuted }]}>关闭</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+                  <Ionicons name="alert-circle" size={14} color={tc.danger} />
+                  <Text style={[styles.installErrorText, { color: tc.danger }]}>{installError}</Text>
+                </View>
+              )}
             </View>
           ) : null}
 
@@ -393,7 +417,12 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
             ) : null}
             {status === 'downloading' ? (
               <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border, flex: 1 }]} onPress={() => {
+                if (autoInstallTimerRef.current) {
+                  clearTimeout(autoInstallTimerRef.current);
+                  autoInstallTimerRef.current = null;
+                }
                 try { abortRef.current?.abort?.(); } catch {}
+                flowActiveRef.current = false;
                 setStatus('idle');
               }} activeOpacity={0.7}>
                 <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>取消下载</Text>
@@ -475,6 +504,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth, marginBottom: spacing.base, gap: 6,
   },
   installErrorText: { fontSize: fontSize.xs, flex: 1, lineHeight: 17 },
+  installErrorHint: { fontSize: fontSize.xs, lineHeight: 17, marginTop: 2 },
+  retryBtn: { flex: 1, height: 34, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: spacing.sm },
+  retryBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
   btnRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   btn: { flex: 1, height: 44, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: {},

@@ -18,19 +18,6 @@ export { LuluInstaller as LuluApkInstaller };
 
 // ─── 安装权限 ──────────────────────────────────────────
 
-export async function checkInstallPermission() {
-  if (Platform.OS !== 'android') return true;
-  try {
-    if (LuluInstaller && typeof LuluInstaller.isInstallPermissionGranted === 'function') {
-      const granted = await LuluInstaller.isInstallPermissionGranted();
-      return granted !== false;
-    }
-  } catch (e) {
-    console.warn('[updateInstaller] permission check failed:', e?.message || e);
-  }
-  return false;
-}
-
 export async function openInstallSettings() {
   try {
     let IntentLauncher;

@@ -10,19 +10,3 @@ export function formatBytes(n) {
   return (n / 1024 / 1024).toFixed(2) + ' MB';
 }
 
-/**
- * 构建候选下载 URL 列表（按偏好排序）
- */
-export function buildCandidateUrls(updateInfo, useProxy) {
-  const list = [];
-  const mirrors = updateInfo?.apk?.mirrors || [];
-  const direct = updateInfo?.apk?.url;
-  if (useProxy) {
-    if (direct) list.push(direct);
-    for (const m of mirrors) list.push(m);
-  } else {
-    for (const m of mirrors) list.push(m);
-    if (direct) list.push(direct);
-  }
-  return list;
-}
