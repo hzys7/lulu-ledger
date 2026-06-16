@@ -26,8 +26,10 @@ import {
   LuluApkInstaller,
   checkInstallPermission,
   openInstallSettings,
+  openFileManager,
   fileUriToContentUri,
   verifyApkIntegrity,
+  installApkWithIntentLauncher,
 } from '../utils/updateInstaller';
 
 const DISMISSED_KEY = 'lulu_update_dismissed';
@@ -322,6 +324,8 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       if (!check.ok) {
         throw new Error('APK 验证失败：' + check.reason + '。请重新下载。');
       }
+
+      // Convert file:// to content:// URI (required for all install methods on Android 7+)
       let contentUri = uri;
       if (uri.startsWith('file://')) {
         const mapped = fileUriToContentUri(uri);
@@ -330,7 +334,8 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         }
         contentUri = mapped;
       }
-      // Method 1: Custom native module
+
+      // Method 1: Custom native module (fastest path)
       if (LuluApkInstaller && typeof LuluApkInstaller.installApk === 'function') {
         try {
           await LuluApkInstaller.installApk(contentUri);
@@ -342,7 +347,19 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           console.warn('[UpdatePrompt] native module install failed:', e1?.message || e1);
         }
       }
-      // Method 2: expo-sharing (fallback)
+
+      // Method 2: IntentLauncher (more compatible, works on Android 14+)
+      try {
+        await installApkWithIntentLauncher(contentUri);
+        flowActiveRef.current = false;
+        installingRef.current = false;
+        setStatus('installing');
+        return;
+      } catch (e2) {
+        console.warn('[UpdatePrompt] IntentLauncher install failed:', e2?.message || e2);
+      }
+
+      // Method 3: expo-sharing (share sheet → system package installer)
       try {
         const { shareAsync } = await import('expo-sharing');
         await shareAsync(contentUri, {
@@ -353,20 +370,22 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         installingRef.current = false;
         setStatus('installing');
         return;
-      } catch (e2) {
-        console.warn('[UpdatePrompt] expo-sharing failed:', e2?.message || e2);
+      } catch (e3) {
+        console.warn('[UpdatePrompt] expo-sharing failed:', e3?.message || e3);
       }
-      // Method 3: Linking.openURL (last resort)
+
+      // Method 4: Linking.openURL (last resort)
       try {
         await Linking.openURL(contentUri);
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
-      } catch (e3) {
-        console.warn('[UpdatePrompt] Linking.openURL failed:', e3?.message || e3);
+      } catch (e4) {
+        console.warn('[UpdatePrompt] Linking.openURL failed:', e4?.message || e4);
       }
-      throw new Error('系统无法自动安装 APK。\n\n请尝试用文件管理器打开：' + filePath);
+
+      throw new Error('系统无法自动安装 APK。\n\n请点击下方「用文件管理器打开」手动安装。');
     } catch (e) {
       const msg = e?.message || String(e);
       console.warn('[UpdatePrompt] install failed:', msg);
@@ -486,14 +505,34 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
                       安装失败：{installError || '未知错误'}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.settingsLinkBtn, { backgroundColor: tc.danger }]}
-                    onPress={openInstallSettings}
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons name="settings-outline" size={13} color="#fff" />
-                    <Text style={styles.settingsLinkText}>去设置</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+                    <TouchableOpacity
+                      style={[styles.settingsLinkBtn, { backgroundColor: tc.primary }]}
+                      onPress={() => handleInstall(localFile?.uri || localFile?.path)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="refresh" size={13} color="#fff" />
+                      <Text style={styles.settingsLinkText}>重试</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.settingsLinkBtn, { backgroundColor: tc.danger }]}
+                      onPress={openInstallSettings}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="settings-outline" size={13} color="#fff" />
+                      <Text style={styles.settingsLinkText}>去设置</Text>
+                    </TouchableOpacity>
+                    {localFile ? (
+                      <TouchableOpacity
+                        style={[styles.settingsLinkBtn, { backgroundColor: tc.textSecondary }]}
+                        onPress={() => openFileManager({ uri: localFile.uri || localFile.path })}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="folder-open-outline" size={13} color="#fff" />
+                        <Text style={styles.settingsLinkText}>手动安装</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
                 </View>
               ) : null}
             </View>

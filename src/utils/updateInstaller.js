@@ -1,7 +1,7 @@
 // 璐璐记账 · 更新安装工具函数
 // 纯函数封装安装相关逻辑 — 不依赖 React 组件状态
 
-import { Platform, Linking } from 'react-native';
+import { Platform, Linking, Alert } from 'react-native';
 import * as Application from 'expo-application';
 
 // 原生模块 — 绕过 expo-intent-launcher，直接在 Kotlin 构造 Intent
@@ -64,9 +64,10 @@ export async function openInstallSettings() {
 }
 
 /**
- * 用文件管理器打开 APK 文件
+ * 用文件管理器打开 APK 文件（作为安装失败后的兜底方案）
  * @param {object} localFile - { uri, path } 等
- */async function openFileManager(localFile) {
+ */
+export async function openFileManager(localFile) {
   if (!localFile) return;
   const path = localFile.uri || localFile.path;
   const target = (Platform.OS === 'android' && path && path.startsWith('file://'))
@@ -94,6 +95,28 @@ export function fileUriToContentUri(fileUri) {
   }
   const pkg = (Application && Application.applicationId) || 'com.lululedger.app';
   return 'content://' + pkg + '.FileSystemFileProvider/cached_expo_files/' + encodeURIComponent(base);
+}
+
+/**
+ * 使用 IntentLauncher 启动 APK 安装（比自定义原生模块更兼容）
+ * 在 Android 14+ 和部分国产 ROM 上，ACTION_VIEW 可能被拦截，
+ * 这个方法作为 native module installApk 之后、shareAsync 之前的中间选项
+ * @param {string} contentUri - content:// URI
+ * @returns {Promise<void>}
+ */
+export async function installApkWithIntentLauncher(contentUri) {
+  let IntentLauncher;
+  try { IntentLauncher = require('expo-intent-launcher'); } catch { /* not available */ }
+  if (!IntentLauncher?.startActivityAsync) {
+    throw new Error('expo-intent-launcher not available');
+  }
+  await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+    data: contentUri,
+    type: 'application/vnd.android.package-archive',
+    extra: {
+      'android.intent.extra.REFERRER': null,
+    },
+  });
 }
 
 /**

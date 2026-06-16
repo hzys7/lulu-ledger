@@ -1,6 +1,6 @@
 {
   "name": "lulu-ledger",
-  "version": "1.2.85",
+  "version": "1.2.86",
   "description": "璐璐记账 - 现代化极简的记账APP",
   "main": "index.js",
   "scripts": {

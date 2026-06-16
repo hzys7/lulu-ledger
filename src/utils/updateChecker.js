@@ -148,7 +148,7 @@ async function fetchLatestFromJina() {
   const res = await fetchWithTimeout(
     url,
     { headers: { Accept: 'application/json' } },
-    8000
+    12000
   );
   if (!res.ok) throw new Error('r.jina.ai ' + res.status);
   const text = await res.text();
@@ -183,7 +183,7 @@ async function fetchLatestFromApi() {
   const res = await fetchWithTimeout(
     API_URL,
     { headers: { Accept: 'application/vnd.github+json' } },
-    8000
+    12000
   );
   if (!res.ok) {
     if (res.status === 404) return null;
@@ -211,7 +211,7 @@ async function fetchLatestFromAtom() {
   const res = await fetchWithTimeout(
     ATOM_URL,
     { headers: { Accept: 'application/atom+xml' } },
-    10000
+    15000
   );
   if (!res.ok) throw new Error('GitHub Atom ' + res.status);
   const xml = await res.text();
@@ -221,12 +221,15 @@ async function fetchLatestFromAtom() {
 }
 
 export async function fetchLatestRelease() {
+  _sourceErrors.length = 0;
   // 1. Third-party: r.jina.ai proxy (best CN reachability, full payload)
   try {
     const fromJina = await fetchLatestFromJina();
     if (fromJina) return fromJina;
   } catch (e) {
-    console.warn('[updateChecker] r.jina.ai failed:', e && e.message || e);
+    const msg = (e && e.message) || String(e);
+    console.warn('[updateChecker] r.jina.ai failed:', msg);
+    _sourceErrors.push('r.jina.ai: ' + msg);
   }
 
   // 2. GitHub REST API direct (richest payload: release notes, real asset sizes)
@@ -236,7 +239,9 @@ export async function fetchLatestRelease() {
     if (fromApi) return fromApi;
   } catch (e) {
     apiErr = e;
-    console.warn('[updateChecker] api.github.com failed:', e && e.message || e);
+    const msg = (e && e.message) || String(e);
+    console.warn('[updateChecker] api.github.com failed:', msg);
+    _sourceErrors.push('api.github.com: ' + msg);
   }
 
   // 3. GitHub Atom feed (no asset sizes, no release notes, but reachable
@@ -258,16 +263,24 @@ export async function fetchLatestRelease() {
       };
     }
   } catch (e) {
-    console.warn('[updateChecker] releases.atom failed:', e && e.message || e);
+    const msg = (e && e.message) || String(e);
+    console.warn('[updateChecker] releases.atom failed:', msg);
+    _sourceErrors.push('releases.atom: ' + msg);
   }
 
   return null;
 }
 
+// Track which sources were attempted and their errors (for diagnostics)
+const _sourceErrors = [];
+export function getLastSourceErrors() {
+  return _sourceErrors.slice();
+}
+
 export async function checkForUpdate() {
   const local = getLocalVersion();
   const remote = await fetchLatestRelease();
-  if (!remote) return { hasUpdate: false, local, remote: null, apk: null };
+  if (!remote) return { hasUpdate: false, local, remote: null, apk: null, errors: _sourceErrors.slice() };
   const cmp = compareVersion(remote.version, local);
   const rawApk = remote.assets.find((a) => a.name.endsWith('.apk')) || null;
   const apk = rawApk
