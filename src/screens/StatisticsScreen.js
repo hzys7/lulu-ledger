@@ -28,7 +28,7 @@ import { shareCard } from '../utils/shareReport';
 import LineChartView from '../components/charts/LineChartView';
 import BarChartRow from '../components/charts/BarChartRow';
 import { MOOD_LABELS, MOOD_EMOJIS } from '../utils/aiMoodShared';
-import { analyzeMood } from '../utils/aiMood';
+import { analyzeMood, getCachedMoodAnalysis } from '../utils/aiMood';
 import {
   MonthSummaryGrid,
   WeekSummaryGrid,
@@ -356,11 +356,27 @@ export default function StatisticsScreen({ navigation }) {
     }
   }, [period, periodLabel, moodStats, moodPeriodTotal, moodTopExpenses, settings.currency, moodAnalysisLoading]);
 
-  // 当周期切换或心情数据变化时，自动触发 AI 分析
+  // 周期切换时自动加载心情分析。优先从缓存读取（无 loading 闪），缓存未命中才调 AI。
+  // 不依赖 moodStats 对象引用，避免交易变动时重复触发。
   useEffect(() => {
-    if (moodStats.items.length === 0 || moodStats.total === 0) return;
+    if (moodStats.items.length === 0 || moodStats.total === 0) {
+      setMoodAnalysis(null);
+      setMoodAnalysisLoading(false);
+      setMoodAnalysisError('');
+      return;
+    }
     let alive = true;
     (async () => {
+      // 先查缓存，有就直接展示
+      const cached = await getCachedMoodAnalysis(period, periodLabel);
+      if (!alive) return;
+      if (cached?.content) {
+        setMoodAnalysis(cached.content);
+        setMoodAnalysisError('');
+        setMoodAnalysisLoading(false);
+        return;
+      }
+      // 无缓存 → 调 AI
       setMoodAnalysisLoading(true);
       setMoodAnalysisError('');
       setMoodAnalysis(null);
@@ -381,7 +397,7 @@ export default function StatisticsScreen({ navigation }) {
       }
     })();
     return () => { alive = false; };
-  }, [period, periodLabel, moodStats]);
+  }, [period, periodLabel]);
 
   const yearTx = useMemo(() => {
     return yearAllTx.filter(t => t.type === dataType);
