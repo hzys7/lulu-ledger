@@ -1,4 +1,4 @@
-// 璐璐记账 · 入口
+// 小璐记账 · 入口
 import React from 'react';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import UpdatePrompt, { triggerUpdateCheck } from './src/components/UpdatePrompt';

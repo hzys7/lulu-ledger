@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 消费目标追踪
+// 小璐记账 · AI 消费目标追踪
 // 存储用户设定的消费目标，AI 分析进度并给出建议
 import { callAiApi } from './aiClient';
 import { getCache, setCache } from './aiCache';

@@ -1,4 +1,4 @@
-// 璐璐记账 · 柱状图对比行组件
+// 小璐记账 · 柱状图对比行组件
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { spacing, fontSize, fontWeight } from '../../theme';

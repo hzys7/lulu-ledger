@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 配置弹窗
+// 小璐记账 · AI 配置弹窗
 // 风格：仿截图样式（机器人图标 + 表单 + 底部三按钮）
 import React, { useState, useEffect } from 'react';
 import {

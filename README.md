@@ -1,4 +1,4 @@
-# 璐璐记账 (Lulu Ledger)
+# 小璐记账 (Lulu Ledger)
 
 > 一款现代化的极简记账 APP，基于 Expo + React Native。
 

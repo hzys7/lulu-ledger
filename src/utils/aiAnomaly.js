@@ -1,4 +1,4 @@
-// 璐璐记账 · 异常消费检测
+// 小璐记账 · 异常消费检测
 // 本地统计分析 + AI 生成友好提醒文案
 import { callAiApi } from './aiClient';
 import { getCache, setCache, removeCache } from './aiCache';

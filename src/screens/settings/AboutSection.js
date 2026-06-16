@@ -22,7 +22,7 @@ function AboutSection() {
           <Ionicons name="sparkles" size={18} color={tc.accent} />
         </View>
         <View style={styles.listContent}>
-          <Text style={[styles.listTitle, { color: tc.text }]}>璐璐记账</Text>
+          <Text style={[styles.listTitle, { color: tc.text }]}>小璐记账</Text>
         </View>
         <Text style={[styles.rightText, { color: tc.textMuted }]}>{version}</Text>
       </View>

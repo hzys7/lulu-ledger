@@ -167,8 +167,8 @@ export function generateMonthlyReportHtml({
 <body>
 <div class="report">
   <div class="header">
-    <h1>璐璐记账 · 月报</h1>
-    <div class="app-name">璐璐记账</div>
+    <h1>小璐记账 · 月报</h1>
+    <div class="app-name">小璐记账</div>
     <div class="period">${year} 年 ${month + 1} 月 · 共 ${transactionCount || 0} 笔记录</div>
   </div>
 
@@ -236,7 +236,7 @@ export function generateMonthlyReportHtml({
   </div>` : ''}
 
   <div class="footer">
-    <p>由 璐璐记账 自动生成</p>
+    <p>由 小璐记账 自动生成</p>
     <p>${now.toLocaleDateString('zh-CN')}</p>
   </div>
 </div>
@@ -278,8 +278,8 @@ export function generateYearlyReportHtml({
 <body>
 <div class="report">
   <div class="header">
-    <h1>璐璐记账 · 年报</h1>
-    <div class="app-name">璐璐记账</div>
+    <h1>小璐记账 · 年报</h1>
+    <div class="app-name">小璐记账</div>
     <div class="period">${year} 年度 · 共 ${transactionCount || 0} 笔记录</div>
   </div>
 
@@ -308,7 +308,7 @@ export function generateYearlyReportHtml({
   </div>
 
   <div class="footer">
-    <p>由 璐璐记账 自动生成</p>
+    <p>由 小璐记账 自动生成</p>
     <p>${now.toLocaleDateString('zh-CN')}</p>
   </div>
 </div>

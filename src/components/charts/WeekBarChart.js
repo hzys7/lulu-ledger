@@ -1,4 +1,4 @@
-// 璐璐记账 · 周内每日柱状图组件
+// 小璐记账 · 周内每日柱状图组件
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Rect, G } from 'react-native-svg';

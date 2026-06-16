@@ -1,4 +1,4 @@
-﻿// 璐璐记账 · AI 智能记账（全屏弹窗）
+﻿// 小璐记账 · AI 智能记账（全屏弹窗）
 // 流程：用户输入自然语言 → 调 AI 解析 → 预览结果 → 保存
 import React, { useState, useRef, useEffect } from 'react';
 import {

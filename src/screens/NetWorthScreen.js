@@ -1,4 +1,4 @@
-// 璐璐记账 · 净资产
+// 小璐记账 · 净资产
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,

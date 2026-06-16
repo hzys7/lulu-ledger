@@ -1,4 +1,4 @@
-// 璐璐记账 · 更新安装工具函数
+// 小璐记账 · 更新安装工具函数
 // 只保留 DownloadManager 安装 + 权限检查
 
 import { Platform, Linking } from 'react-native';

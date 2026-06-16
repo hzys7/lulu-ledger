@@ -1,4 +1,4 @@
-// 璐璐记账 · 预算
+// 小璐记账 · 预算
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,

@@ -8,7 +8,7 @@
 2. 填写：
    - **Owner**：你的 GitHub 用户名
    - **Repository name**：`lulu-ledger`（推荐）或 `记账APP`
-   - **Description**：`璐璐记账 - 现代化极简记账 APP`
+   - **Description**：`小璐记账 - 现代化极简记账 APP`
    - **Visibility**：Private（推荐）/ Public
 3. **不要**勾选 "Add a README file"、".gitignore"、"license"（我们本地已经有了）
 4. 点击 "Create repository"

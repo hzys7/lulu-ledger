@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 消费预测
+// 小璐记账 · AI 消费预测
 // 基于历史数据预测下月支出和分类分布
 import { callAiApi } from './aiClient';
 import { getCache, setCache } from './aiCache';

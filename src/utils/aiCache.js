@@ -1,4 +1,4 @@
-// 璐璐记账 · 统一 AI 缓存层
+// 小璐记账 · 统一 AI 缓存层
 // 所有 AI 模块的缓存读写统一走这里，避免各文件重复 AsyncStorage 逻辑。
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

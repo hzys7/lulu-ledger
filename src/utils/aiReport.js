@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 月度复盘
+// 小璐记账 · AI 月度复盘
 // 读取某月的全部账目，调用 DeepSeek 生成中文 markdown 复盘报告。
 import { callAiApi } from './aiClient';
 import { getCache, setCache, removeCache } from './aiCache';

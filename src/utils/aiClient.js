@@ -1,4 +1,4 @@
-// 璐璐记账 · 统一 AI API 客户端
+// 小璐记账 · 统一 AI API 客户端
 // 封装 OpenAI 兼容的 chat/completions 调用、配置校验、错误处理。
 // 所有 AI 模块统一走这里，消除 6 个文件中的重复 fetch 代码。
 import { loadAiConfig, AI_PROVIDERS } from './aiConfig';

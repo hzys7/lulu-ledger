@@ -1,4 +1,4 @@
-// 璐璐记账 · 异常消费提醒卡片
+// 小璐记账 · 异常消费提醒卡片
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

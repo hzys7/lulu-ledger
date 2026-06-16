@@ -1,4 +1,4 @@
-// 璐璐记账 · 消费心情共享数据
+// 小璐记账 · 消费心情共享数据
 // 单一数据源，避免 MOOD_LABELS / MOOD_EMOJIS / MOOD_OPTIONS 在 3 个文件中重复。
 // 使用方式：
 //   import { MOOD_OPTIONS, MOOD_LABELS, MOOD_EMOJIS } from '../utils/aiMoodShared';

@@ -1,4 +1,4 @@
-// 璐璐记账 · 智能分类纠正记录
+// 小璐记账 · 智能分类纠正记录
 // 用户修改 AI 解析分类时保存纠正记录，下次解析时作为 few-shot 示例注入 prompt。
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

@@ -1,4 +1,4 @@
-// 璐璐记账 · 首页（仪表盘）
+// 小璐记账 · 首页（仪表盘）
 // 设计：净资产 + 资金账户 + AI 入口
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {

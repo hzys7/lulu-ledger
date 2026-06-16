@@ -1,4 +1,4 @@
-﻿// 璐璐记账 · AI 解析（自然语言 → 账目 JSON）
+﻿// 小璐记账 · AI 解析（自然语言 → 账目 JSON）
 import { callAiApi } from './aiClient';
 import { buildCorrectionExamples } from './aiCorrections';
 import { extractAllJsonObjects, validateParsed } from './aiParserUtils';

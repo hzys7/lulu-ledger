@@ -5,7 +5,7 @@
 //   import { shareCard } from '../utils/shareReport';
 //   const cardRef = useRef(null);
 //   // ... render <ViewShot ref={cardRef}><ShareCard ... /></ViewShot>
-//   await shareCard(cardRef, '璐璐记账月报_202603');
+//   await shareCard(cardRef, '小璐记账月报_202603');
 
 import * as Sharing from 'expo-sharing';
 

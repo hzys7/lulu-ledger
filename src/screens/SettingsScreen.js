@@ -1,4 +1,4 @@
-// 璐璐记账 · 设置
+// 小璐记账 · 设置
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,

@@ -1,4 +1,4 @@
-// 璐璐记账 · 记一笔（重构：分类页 + 底部抽屉）
+// 小璐记账 · 记一笔（重构：分类页 + 底部抽屉）
 // 流程：点 tab 栏记一笔 -> 分类页 -> 点分类 -> 弹底部抽屉填金额保存
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {

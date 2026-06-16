@@ -1,4 +1,4 @@
-// 璐璐记账 · 年度月度柱状图组件
+// 小璐记账 · 年度月度柱状图组件
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { spacing, fontSize, fontWeight } from '../../theme';

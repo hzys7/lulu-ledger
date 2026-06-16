@@ -1,4 +1,4 @@
-// 璐璐记账 · 分享卡片
+// 小璐记账 · 分享卡片
 // 一个精美的紧凑型报告摘要 View，用 react-native-view-shot 截图后分享为图片
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -28,7 +28,7 @@ export default function ShareCard({
     <View style={styles.card}>
       {/* 头部 */}
       <View style={styles.header}>
-        <Text style={styles.appName}>璐璐记账</Text>
+        <Text style={styles.appName}>小璐记账</Text>
         <Text style={styles.periodText}>{periodLabel}</Text>
       </View>
 
@@ -79,7 +79,7 @@ export default function ShareCard({
 
       {/* 底部 */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>由 璐璐记账 生成</Text>
+        <Text style={styles.footerText}>由 小璐记账 生成</Text>
       </View>
     </View>
   );

@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 财务问答（全屏聊天界面）
+// 小璐记账 · AI 财务问答（全屏聊天界面）
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,

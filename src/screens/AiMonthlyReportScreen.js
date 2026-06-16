@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 月度复盘结果页
+// 小璐记账 · AI 月度复盘结果页
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
@@ -243,7 +243,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
     if (!content) return;
     Share.share({
       title: year + '年' + MONTH_NAMES[month] + '月度复盘',
-      message: '【璐璐记账 · ' + year + '年' + MONTH_NAMES[month] + '月度复盘】\n\n' + content,
+      message: '【小璐记账 · ' + year + '年' + MONTH_NAMES[month] + '月度复盘】\n\n' + content,
     }).catch(() => {});
   }
 

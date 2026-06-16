@@ -1,4 +1,4 @@
-// 璐璐记账 · 汇总卡片组件（周/月/年报共用）
+// 小璐记账 · 汇总卡片组件（周/月/年报共用）
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { spacing, borderRadius, fontSize, fontWeight, shadows } from '../../theme';

@@ -1,4 +1,4 @@
-// 璐璐记账 · 自动更新提示
+// 小璐记账 · 自动更新提示
 // 下载：Android DownloadManager 系统服务
 // 安装：系统 content:// URI
 

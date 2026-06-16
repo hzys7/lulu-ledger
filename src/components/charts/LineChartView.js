@@ -1,4 +1,4 @@
-// 璐璐记账 · 折线图组件
+// 小璐记账 · 折线图组件
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Polyline, Circle, Line, G } from 'react-native-svg';

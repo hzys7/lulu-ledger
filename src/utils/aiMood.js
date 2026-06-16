@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 消费心情分析
+// 小璐记账 · AI 消费心情分析
 // 分析用户某周期的消费心情数据，生成洞察报告
 import { callAiApi } from './aiClient';
 import { getCache, setCache } from './aiCache';

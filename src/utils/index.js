@@ -1,4 +1,4 @@
-// 璐璐记账 · 工具函数统一导出入口
+// 小璐记账 · 工具函数统一导出入口
 // 使用时：import { formatMoney, loadAiConfig, getLocalVersion } from '../utils';
 // 或：import * as Utils from '../utils';
 

@@ -1,4 +1,4 @@
-// 璐璐记账 · 消费目标管理
+// 小璐记账 · 消费目标管理
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,

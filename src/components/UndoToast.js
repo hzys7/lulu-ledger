@@ -1,4 +1,4 @@
-// 璐璐记账 · 撤销删除 Toast
+// 小璐记账 · 撤销删除 Toast
 // 浮动在屏幕底部，显示「已删除」+「撤销」按钮，5 秒后自动消失
 import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';

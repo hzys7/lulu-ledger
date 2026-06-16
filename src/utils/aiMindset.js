@@ -1,4 +1,4 @@
-// 璐璐记账 · AI 消费心理深度分析
+// 小璐记账 · AI 消费心理深度分析
 // 结合心情数据和消费行为，分析消费动机和情绪模式
 import { callAiApi } from './aiClient';
 import { getCache, setCache } from './aiCache';

@@ -1,4 +1,4 @@
-﻿// 璐璐记账 · AI 配置管理
+﻿// 小璐记账 · AI 配置管理
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'lulu_ai_config';
