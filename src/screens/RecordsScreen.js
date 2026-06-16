@@ -12,7 +12,6 @@ import {
   Animated,
   Modal,
   Pressable,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,7 +57,6 @@ export default function RecordsScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [monthFilter, setMonthFilter] = useState(null);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
-  const [contentShort, setContentShort] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showHint, setShowHint] = useState(false);
@@ -184,7 +182,16 @@ export default function RecordsScreen({ navigation }) {
     : '全部月份';
   const flatData = useMemo(() => buildFlatData(groupByDate(displayTransactions)), [displayTransactions]);
 
-  const stickyTrans = useRef(new Animated.Value(-200)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const HEADER_HEIGHT = 260;
+  const stickyTranslateY = useMemo(() =>
+    scrollY.interpolate({
+      inputRange: [0, monthFilter ? 0 : HEADER_HEIGHT],
+      outputRange: [monthFilter ? 0 : -90, 0],
+      extrapolate: 'clamp',
+    }),
+    [scrollY, monthFilter],
+  );
 
   const renderItem = useCallback(({ item, index }) => {
     if (item.type === 'header') {
@@ -219,7 +226,7 @@ export default function RecordsScreen({ navigation }) {
         pointerEvents="box-none"
         style={{
           position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-          transform: [{ translateY: stickyTrans }],
+          transform: [{ translateY: stickyTranslateY }],
         }}
       >
         <View style={[styles.stickyBar, { backgroundColor: tc.background, borderBottomColor: tc.divider, paddingTop: insets.top }]}>
@@ -287,18 +294,10 @@ export default function RecordsScreen({ navigation }) {
         data={flatData}
         keyExtractor={(item) => (item.type === 'header' ? `h_${item.date}` : `t_${item.data.id}`)}
         renderItem={renderItem}
-        onScroll={(e) => {
-          const y = e.nativeEvent.contentOffset.y;
-          if (monthFilter || contentShort) {
-            stickyTrans.setValue(0);
-          } else {
-            stickyTrans.setValue(y > 200 ? 0 : -200);
-          }
-        }}
-        onContentSizeChange={(_w, h) => {
-          const avail = Dimensions.get('window').height - 320;
-          setContentShort(h < avail);
-        }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true },
+        )}
         scrollEventThrottle={16}
         ListHeaderComponent={(
           <View style={{ paddingTop: insets.top + spacing.sm }}>
