@@ -31,12 +31,9 @@ export default function LineChartView({ data, accent, muted, divider, selectedDa
 
   const labels = [];
   if (data.length > 0) {
-    labels.push({ x: PADDING.left, label: data[0].label || '1' });
-    if (data.length > 2) {
-      const midIdx = Math.floor(data.length / 2);
-      labels.push({ x: PADDING.left + INNER_W / 2, label: data[midIdx].label || String(midIdx + 1) });
-    }
-    labels.push({ x: PADDING.left + INNER_W, label: data[data.length - 1].label || String(data.length) });
+    labels.push({ x: PADDING.left, label: '1' });
+    if (data.length > 2) labels.push({ x: PADDING.left + INNER_W / 2, label: String(Math.round(data.length / 2)) });
+    labels.push({ x: PADDING.left + INNER_W, label: String(data.length) });
   }
 
   const selIdx = selectedDay ? data.findIndex(d => d.day === selectedDay) : -1;
