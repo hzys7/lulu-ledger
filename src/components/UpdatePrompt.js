@@ -1,15 +1,18 @@
 // 璐璐记账 · 自动更新提示
-// App 启动时检查 GitHub Releases，发现新版本弹窗让用户点下载
+// 下载：Android DownloadManager（首选）→ expo-file-system（回退）
+// 安装：系统 content:// URI → 多种方法回退
+// 兜底：手动粘贴 GitHub URL
+
 import { useSettings } from '../context/SettingsContext';
 import { useThemeColors } from '../hooks/useThemeColors';
-import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 import {
   View,
   Text,
   Modal,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
+  TextInput,
   Alert,
   AppState,
   Linking,
@@ -18,19 +21,23 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { File, Paths } from 'expo-file-system';
 import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
-import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
-import { formatBytes, buildCandidateUrls, tryDownloadOne, rankBySpeed } from '../utils/updateDownloader';
+import { checkForUpdate, getLocalVersion, getLastSourceErrors, compareVersion } from '../utils/updateChecker';
+import { formatBytes, buildCandidateUrls, isDownloadManagerAvailable } from '../utils/updateDownloader';
 import {
   LuluApkInstaller,
+  getDownloadManagerUri,
   checkInstallPermission,
   openInstallSettings,
-  openFileManager,
+  openApkInFileManager,
+  installFromDownloadManager,
+  installFromFileProvider,
+  installWithIntentLauncher,
+  installWithShareAsync,
   fileUriToContentUri,
   verifyApkIntegrity,
-  installApkWithIntentLauncher,
 } from '../utils/updateInstaller';
+import { downloadApk as dmDownloadApk, getDownloadProgress as dmGetProgress } from '../../modules/lulu-apk-installer/src/index';
 
 const DISMISSED_KEY = 'lulu_update_dismissed';
 
@@ -43,6 +50,18 @@ export function triggerUpdateCheck(force = true) {
   try { _ref?.checkNow(force); } catch (e) { console.warn('[UpdatePrompt] trigger failed:', e?.message || e); }
 }
 
+// ─── 从 GitHub Release URL 手动解析版本号 ──────────────
+function parseGitHubUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  // 匹配 https://github.com/hzys7/lulu-ledger/releases/tag/v1.2.86
+  const m = url.match(/\/releases\/tag\/v?(\d+\.\d+\.\d+)/i);
+  if (m) return m[1];
+  // 匹配 release 页面中的版本文本
+  const m2 = url.match(/v?(\d+\.\d+\.\d+)/);
+  if (m2) return m2[1];
+  return null;
+}
+
 const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   const { settings } = useSettings();
   const tc = useThemeColors();
@@ -50,24 +69,22 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
 
   const [visible, setVisible] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
-  const [status, setStatus] = useState('idle'); // idle | downloading | done | error
+  const [status, setStatus] = useState('idle'); // idle | downloading | done | error | install-fail
   const [progress, setProgress] = useState(0);
-  const [speed, setSpeed] = useState(0);
   const [received, setReceived] = useState(0);
   const [total, setTotal] = useState(0);
-  const [startTime, setStartTime] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
-  const [localFile, setLocalFile] = useState(null);
+  const [downloadId, setDownloadId] = useState(null);       // DownloadManager ID
+  const [localFile, setLocalFile] = useState(null);         // expo-file-system File object
   const [installError, setInstallError] = useState('');
   const [showInstallError, setShowInstallError] = useState(false);
-  const downloadTaskRef = useRef(null);
-  const abortRef = useRef(null);
-  const installingRef = useRef(false);
-  const lastProgressAtRef = useRef(0);
-  const lastBytesRef = useRef(0);
-  const currentSourceRef = useRef('');
-  const autoInstallTimerRef = useRef(null);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualUrl, setManualUrl] = useState('');
+
   const flowActiveRef = useRef(false);
+  const installingRef = useRef(false);
+  const abortRef = useRef(null);
+  const autoInstallTimerRef = useRef(null);
 
   useImperativeHandle(ref, () => {
     const api = {
@@ -91,23 +108,24 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     installingRef.current = false;
     setStatus('idle');
     setProgress(0);
-    setSpeed(0);
     setReceived(0);
     setTotal(0);
-    setStartTime(0);
-    lastBytesRef.current = 0;
     setErrorMsg('');
     setInstallError('');
     setShowInstallError(false);
+    setDownloadId(null);
     setLocalFile(null);
     setUpdateInfo(null);
     setVisible(false);
+    setShowManualInput(false);
+    setManualUrl('');
   }
+
+  // ─── 版本检查 ───────────────────────────────────────
 
   async function runCheck({ force } = {}) {
     if (flowActiveRef.current) {
       if (!force) return;
-      console.warn('[UpdatePrompt] force-checking while a previous flow is in flight; clearing flowActiveRef');
       flowActiveRef.current = false;
     }
     if (!force && settings?.autoCheckUpdate === false) {
@@ -120,8 +138,15 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     try {
       const result = await checkForUpdate();
       if (!result || !result.remote) {
-        _lastCheck = { at: Date.now(), status: 'error', current: getLocalVersion(), latest: '', error: '网络请求失败' };
-        DeviceEventEmitter.emit('lulu:update-check-result', { status: 'error', error: '网络请求失败', current: getLocalVersion() });
+        const errors = result?.errors || getLastSourceErrors();
+        const detail = errors.length > 0 ? errors.join('; ') : '网络请求失败';
+        _lastCheck = { at: Date.now(), status: 'error', current: getLocalVersion(), latest: '', error: detail };
+        DeviceEventEmitter.emit('lulu:update-check-result', { status: 'error', error: detail, current: getLocalVersion() });
+        // 显示手动输入 URL 兜底
+        resetUpdateFlow();
+        setUpdateInfo({ _manual: true, local: getLocalVersion() });
+        setShowManualInput(true);
+        setVisible(true);
         return;
       }
       if (!result.hasUpdate) {
@@ -153,21 +178,34 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     runCheck({ force: true });
   }, []);
 
-  async function getDismissedInfo() {
-    try {
-      const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
-      const raw = await AsyncStorage.getItem(DISMISSED_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch { return null; }
+  // ─── 手动 URL 输入 ──────────────────────────────────
+
+  async function handleManualSubmit() {
+    const version = parseGitHubUrl(manualUrl);
+    if (!version) {
+      Alert.alert('无法识别', '请输入正确的 GitHub Release 页面链接\n例如：\nhttps://github.com/hzys7/lulu-ledger/releases/tag/v1.2.86');
+      return;
+    }
+    const local = getLocalVersion();
+    const cmp = compareVersion(version, local);
+    if (cmp <= 0) {
+      Alert.alert('无需更新', `当前版本 v${local}，手动输入的版本 v${version} 并不更新。`);
+      return;
+    }
+    // 构造 APK URL
+    const apkName = `lulu-ledger-${version}-arm64.apk`;
+    const apkUrl = `https://github.com/hzys7/lulu-ledger/releases/download/v${version}/${apkName}`;
+    setUpdateInfo({
+      hasUpdate: true,
+      local,
+      remote: { version, name: 'v' + version },
+      apk: { name: apkName, url: apkUrl, size: 0, mirrors: [] },
+    });
+    setShowManualInput(false);
+    setErrorMsg('');
   }
 
-  async function setDismissedInfo(v) {
-    try {
-      const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
-      await AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify({ version: v, at: Date.now() }));
-    } catch {}
-  }
+  // ─── 下载 ────────────────────────────────────────────
 
   async function handleDownload() {
     if (!updateInfo?.apk) {
@@ -178,7 +216,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       return;
     }
 
-    // --- Step 0: Check install permission BEFORE downloading ---
+    // --- 检查安装权限 ---
     if (Platform.OS === 'android') {
       const hasPermission = await checkInstallPermission();
       if (!hasPermission) {
@@ -234,79 +272,102 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       flowActiveRef.current = true;
       setStatus('downloading');
       setProgress(0);
-      setInstallError('');
-      setShowInstallError(false);
-      setSpeed(0);
       setReceived(0);
       setTotal(0);
-      setStartTime(0);
-      lastBytesRef.current = 0;
       setErrorMsg('');
+      setInstallError('');
+      setShowInstallError(false);
+      setDownloadId(null);
+      setLocalFile(null);
+
       const ac = new AbortController();
       abortRef.current = ac;
-      const apkName = `update-${updateInfo.apk.name}`;
-      const dest = new File(Paths.cache, apkName);
-      const candidates = await rankBySpeed(
-        buildCandidateUrls(updateInfo, settings?.useProxy),
-        ac.signal,
-        (msg) => setErrorMsg(msg)
-      );
-      let lastErr = null;
+      const apkName = updateInfo.apk.name;
+      const candidates = buildCandidateUrls(updateInfo, settings?.useProxy);
+      const primaryUrl = candidates[0] || updateInfo.apk.url;
 
-      for (let i = 0; i < candidates.length; i++) {
-        const url = candidates[i];
-        if (candidates.length > 1) {
-          let host = '源';
-          try { host = new URL(url).hostname; } catch {}
-          currentSourceRef.current = host;
-          setErrorMsg(`正在尝试第 ${i + 1} / ${candidates.length} 个下载源（${host}）…`);
-        }
+      // Method 1 (首选): DownloadManager — 下载到公共 Downloads/
+      if (Platform.OS === 'android' && isDownloadManagerAvailable()) {
         try {
-          const file = await tryDownloadOne(url, dest, ac.signal, {
-            onProgress: ({ bytesWritten, totalBytes, progress: pct }) => {
-              lastProgressAtRef.current = Date.now();
-              setReceived(bytesWritten);
-              if (totalBytes > 0) {
-                setTotal(totalBytes);
-                setProgress(pct);
-              } else if (bytesWritten > 0) {
-                setProgress((prev) => (prev < 0 ? prev : -1));
-              }
-            },
-            onSpeed: (kbps) => setSpeed(kbps),
-          });
-          setLocalFile(file);
-          setStatus('done');
-          setErrorMsg('');
-          abortRef.current = null;
-          autoInstallTimerRef.current = setTimeout(() => {
-            autoInstallTimerRef.current = null;
-            handleInstall(file.uri || file.path);
-          }, 500);
-          return;
-        } catch (e) {
-          if (e?.name === 'AbortError') {
+          const dmId = await dmDownloadApk(primaryUrl, apkName);
+          setDownloadId(dmId);
+
+          // 轮询进度
+          let lastErr = null;
+          for (let attempts = 0; attempts < 300; attempts++) {
+            if (ac.signal.aborted) {
+              setStatus('idle');
+              setErrorMsg('');
+              abortRef.current = null;
+              flowActiveRef.current = false;
+              return;
+            }
+            await new Promise(r => setTimeout(r, 500));
+            const prog = await dmGetProgress(dmId);
+
+            if (prog.status === 'SUCCESS') {
+              setProgress(100);
+              setReceived(prog.bytesDownloaded);
+              setTotal(prog.totalBytes);
+              setStatus('done');
+              setErrorMsg('');
+              abortRef.current = null;
+              autoInstallTimerRef.current = setTimeout(() => {
+                autoInstallTimerRef.current = null;
+                handleInstallFromDM(dmId);
+              }, 800);
+              return;
+            } else if (prog.status === 'FAILED') {
+              lastErr = new Error(prog.reason || 'DownloadManager 下载失败');
+              break;
+            } else {
+              setProgress(Math.round(prog.progressPercent));
+              setReceived(prog.bytesDownloaded);
+              setTotal(prog.totalBytes > 0 ? prog.totalBytes : total);
+            }
+          }
+          if (lastErr) throw lastErr;
+        } catch (dmErr) {
+          if (dmErr?.name === 'AbortError') {
             setStatus('idle');
             setErrorMsg('');
-            setProgress(0);
             abortRef.current = null;
+            flowActiveRef.current = false;
             return;
           }
-          lastErr = e;
-          let host = '未知';
-          try { host = new URL(url).hostname; } catch {}
-          console.warn(`[UpdatePrompt] source ${host} failed:`, e?.message || e);
-          const elapsed = lastProgressAtRef.current ? Date.now() - lastProgressAtRef.current : 0;
-          setErrorMsg(elapsed >= 30000
-            ? `${host} 太慢（${Math.round(elapsed / 1000)}s 无响应），跳过…`
-            : `${host} 失败：${e?.message || '未知错误'}`
-          );
-          try { await dest.delete(); } catch {}
+          console.warn('[UpdatePrompt] DownloadManager failed, using expo-file-system fallback:', dmErr?.message || dmErr);
         }
       }
-      throw lastErr || new Error('所有下载源均失败');
+
+      // Method 2 (回退): expo-file-system 下载到缓存目录
+      setErrorMsg('正在通过备用方式下载…');
+      const { File: FSFile, Paths: FSPaths } = require('expo-file-system');
+      const dest = new FSFile(FSPaths.cache, apkName);
+      const { tryDownloadOne } = require('../utils/updateDownloader');
+      const file = await tryDownloadOne(primaryUrl, dest, ac.signal, {
+        onProgress: ({ bytesWritten, totalBytes: tb, progress: pct }) => {
+          setReceived(bytesWritten);
+          if (tb > 0) { setTotal(tb); setProgress(pct); }
+        },
+        onSpeed: () => {},
+      });
+      setLocalFile(file);
+      setStatus('done');
+      setErrorMsg('');
+      abortRef.current = null;
+      autoInstallTimerRef.current = setTimeout(() => {
+        autoInstallTimerRef.current = null;
+        handleInstallFromFS(file.uri || file.path);
+      }, 800);
     } catch (e) {
-      console.warn('[UpdatePrompt] download failed (outer):', e?.message || e);
+      if (e?.name === 'AbortError') {
+        setStatus('idle');
+        setErrorMsg('');
+        abortRef.current = null;
+        flowActiveRef.current = false;
+        return;
+      }
+      console.warn('[UpdatePrompt] download failed:', e?.message || e);
       setErrorMsg('下载失败：' + (e?.message || String(e)) + '。可稍后重试，或前往 GitHub 手动下载。');
       setStatus('error');
       abortRef.current = null;
@@ -314,88 +375,130 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     }
   }
 
-  async function handleInstall(uri) {
-    if (!uri) return;
+  // ─── 从 DownloadManager 安装 ─────────────────────────
+
+  async function handleInstallFromDM(downloadId) {
     if (installingRef.current) return;
     installingRef.current = true;
     try {
-      const filePath = uri.replace(/^file:\/\//, '');
+      // Method 1: DownloadManager content:// URI（系统级，最可靠）
+      await installFromDownloadManager(downloadId);
+      flowActiveRef.current = false;
+      installingRef.current = false;
+      setStatus('installing');
+      return;
+    } catch (e1) {
+      console.warn('[UpdatePrompt] DownloadManager install failed:', e1?.message || e1);
+    }
+
+    // Method 2: 获取 content:// URI → IntentLauncher
+    try {
+      const uri = await getDownloadManagerUri(downloadId);
+      await installWithIntentLauncher(uri);
+      flowActiveRef.current = false;
+      installingRef.current = false;
+      setStatus('installing');
+      return;
+    } catch (e2) {
+      console.warn('[UpdatePrompt] IntentLauncher install failed:', e2?.message || e2);
+    }
+
+    // Method 3: expo-sharing
+    try {
+      const uri = await getDownloadManagerUri(downloadId);
+      await installWithShareAsync(uri);
+      flowActiveRef.current = false;
+      installingRef.current = false;
+      setStatus('installing');
+      return;
+    } catch (e3) {
+      console.warn('[UpdatePrompt] expo-sharing install failed:', e3?.message || e3);
+    }
+
+    // Method 4: 直接打开 URI
+    try {
+      const uri = await getDownloadManagerUri(downloadId);
+      await Linking.openURL(uri);
+      flowActiveRef.current = false;
+      installingRef.current = false;
+      setStatus('installing');
+      return;
+    } catch (e4) {
+      console.warn('[UpdatePrompt] Linking.openURL failed:', e4?.message || e4);
+    }
+
+    installFailed('DownloadManager 安装失败');
+  }
+
+  // ─── 从 expo-file-system 文件安装 ───────────────────
+
+  async function handleInstallFromFS(fileUri) {
+    if (!fileUri) return installFailed('文件路径为空');
+    if (installingRef.current) return;
+    installingRef.current = true;
+    try {
+      const filePath = fileUri.replace(/^file:\/\//, '');
       const check = await verifyApkIntegrity(filePath);
       if (!check.ok) {
-        throw new Error('APK 验证失败：' + check.reason + '。请重新下载。');
+        throw new Error('APK 验证失败：' + check.reason);
       }
-
-      // Convert file:// to content:// URI (required for all install methods on Android 7+)
-      let contentUri = uri;
-      if (uri.startsWith('file://')) {
-        const mapped = fileUriToContentUri(uri);
-        if (!mapped) {
-          throw new Error('无法生成文件访问 URI（不在缓存目录中）');
-        }
+      let contentUri = fileUri;
+      if (fileUri.startsWith('file://')) {
+        const mapped = fileUriToContentUri(fileUri);
+        if (!mapped) throw new Error('无法生成文件访问 URI');
         contentUri = mapped;
       }
-
-      // Method 1: Custom native module (fastest path)
+      // Method 1: 原生模块
       if (LuluApkInstaller && typeof LuluApkInstaller.installApk === 'function') {
         try {
-          await LuluApkInstaller.installApk(contentUri);
+          await installFromFileProvider(contentUri);
           flowActiveRef.current = false;
           installingRef.current = false;
           setStatus('installing');
           return;
-        } catch (e1) {
-          console.warn('[UpdatePrompt] native module install failed:', e1?.message || e1);
-        }
+        } catch (e1) { console.warn('[UpdatePrompt] native install failed:', e1?.message || e1); }
       }
-
-      // Method 2: IntentLauncher (more compatible, works on Android 14+)
+      // Method 2: IntentLauncher
       try {
-        await installApkWithIntentLauncher(contentUri);
+        await installWithIntentLauncher(contentUri);
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
-      } catch (e2) {
-        console.warn('[UpdatePrompt] IntentLauncher install failed:', e2?.message || e2);
-      }
-
-      // Method 3: expo-sharing (share sheet → system package installer)
+      } catch (e2) { console.warn('[UpdatePrompt] IntentLauncher failed:', e2?.message || e2); }
+      // Method 3: expo-sharing
       try {
-        const { shareAsync } = await import('expo-sharing');
-        await shareAsync(contentUri, {
-          mimeType: 'application/vnd.android.package-archive',
-          dialogTitle: '安装璐璐记账更新',
-        });
+        await installWithShareAsync(contentUri);
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
-      } catch (e3) {
-        console.warn('[UpdatePrompt] expo-sharing failed:', e3?.message || e3);
-      }
-
-      // Method 4: Linking.openURL (last resort)
+      } catch (e3) { console.warn('[UpdatePrompt] shareAsync failed:', e3?.message || e3); }
+      // Method 4: Linking
       try {
         await Linking.openURL(contentUri);
         flowActiveRef.current = false;
         installingRef.current = false;
         setStatus('installing');
         return;
-      } catch (e4) {
-        console.warn('[UpdatePrompt] Linking.openURL failed:', e4?.message || e4);
-      }
+      } catch (e4) { console.warn('[UpdatePrompt] Linking failed:', e4?.message || e4); }
 
-      throw new Error('系统无法自动安装 APK。\n\n请点击下方「用文件管理器打开」手动安装。');
+      throw new Error('所有安装方法均失败');
     } catch (e) {
-      const msg = e?.message || String(e);
-      console.warn('[UpdatePrompt] install failed:', msg);
-      installingRef.current = false;
-      flowActiveRef.current = false;
-      setStatus('done');
-      setInstallError(msg);
-      setShowInstallError(true);
+      installFailed(e?.message || String(e), fileUri);
     }
   }
+
+  function installFailed(msg, filePath) {
+    console.warn('[UpdatePrompt] install failed:', msg);
+    installingRef.current = false;
+    flowActiveRef.current = false;
+    setStatus('done');
+    setInstallError(msg);
+    setShowInstallError(true);
+  }
+
+  // ─── 其他操作 ────────────────────────────────────────
 
   function handleLater() {
     setVisible(false);
@@ -410,15 +513,32 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     resetUpdateFlow();
   }
 
+  async function getDismissedInfo() {
+    try {
+      const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
+      const raw = await AsyncStorage.getItem(DISMISSED_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  async function setDismissedInfo(v) {
+    try {
+      const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
+      await AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify({ version: v, at: Date.now() }));
+    } catch {}
+  }
+
+  // ─── UI ──────────────────────────────────────────────
+
   if (!updateInfo) return null;
 
+  const isManualMode = updateInfo._manual;
   const localVer = getLocalVersion();
-  const remoteVer = updateInfo.remote?.version;
+  const remoteVer = updateInfo.remote?.version || '???';
   const fileSizeMB = (() => {
     if (!updateInfo.apk) return '?';
     const s = updateInfo.apk.size;
-    if (!s || s <= 0) return '未知';
-    return (s / 1024 / 1024).toFixed(1);
+    return (!s || s <= 0) ? '未知' : (s / 1024 / 1024).toFixed(1);
   })();
 
   return (
@@ -430,148 +550,204 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     >
       <View style={styles.overlay}>
         <View style={[styles.card, { backgroundColor: tc.surface }]}>
-          <View style={[styles.iconWrap, { backgroundColor: tc.primarySubtle }]}>
-            <Ionicons name="arrow-up-circle" size={28} color={tc.primary} />
-          </View>
-          <Text style={[styles.title, { color: tc.text }]}>发现新版本</Text>
-          <View style={styles.versionRow}>
-            <Text style={[styles.versionOld, { color: tc.textMuted }]}>v{localVer}</Text>
-            <Ionicons name="arrow-forward" size={14} color={tc.textMuted} />
-            <Text style={[styles.versionNew, { color: tc.primary }]}>v{remoteVer}</Text>
-          </View>
-          <Text style={[styles.meta, { color: tc.textMuted }]}>约 {fileSizeMB} MB</Text>
 
-          {updateInfo.remote?.body ? (
+          {/* ── 手动输入模式 ── */}
+          {isManualMode ? (
             <>
-              <View style={[styles.notesBox, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
-                <Text style={[styles.notesTitle, { color: tc.text }]}>更新内容</Text>
-                <Text style={[styles.notesBody, { color: tc.textSecondary }]} numberOfLines={6}>
-                  {updateInfo.remote.body}
-                </Text>
+              <View style={[styles.iconWrap, { backgroundColor: tc.warningSubtle || '#FFF3CD' }]}>
+                <Ionicons name="link" size={28} color={tc.warning || '#F59E0B'} />
               </View>
-              <TouchableOpacity
-                style={styles.githubLink}
-                onPress={() => Linking.openURL(updateInfo?.remote?.html_url || 'https://github.com/hzys7/lulu-ledger/releases')}
-                activeOpacity={0.7}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              >
-                <Ionicons name="open-outline" size={13} color={tc.primary} />
-                <Text style={[styles.githubLinkText, { color: tc.primary }]}>打不开？去 GitHub 手动下载</Text>
-              </TouchableOpacity>
+              <Text style={[styles.title, { color: tc.text }]}>自动检测失败</Text>
+              <Text style={[styles.manualHint, { color: tc.textSecondary }]}>
+                所有网络源均无法连接到 GitHub。{'\n'}
+                请复制 GitHub Releases 页面链接粘贴到下方：
+              </Text>
+              <TextInput
+                style={[styles.urlInput, { backgroundColor: tc.surfaceMuted, borderColor: tc.border, color: tc.text }]}
+                placeholder="https://github.com/hzys7/lulu-ledger/releases/tag/v1.2.XX"
+                placeholderTextColor={tc.textMuted}
+                value={manualUrl}
+                onChangeText={setManualUrl}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <View style={styles.btnRow}>
+                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleLater} activeOpacity={0.7}>
+                  <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>取消</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1.5 }]} onPress={handleManualSubmit} activeOpacity={0.85}>
+                  <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>确认</Text>
+                </TouchableOpacity>
+              </View>
             </>
-          ) : null}
-
-          {status === 'downloading' ? (
-            <View style={styles.progressBlock}>
-              <View style={[styles.progressBg, { backgroundColor: tc.surfaceMuted }]}>
-                <View style={[styles.progressFill, { backgroundColor: tc.primary, width: progress >= 0 ? `${progress}%` : '30%' }]} />
-              </View>
-              <View style={styles.progressInfoRow}>
-                <Text style={[styles.progressText, { color: tc.textMuted }]}>
-                  {progress >= 0 ? `${progress}%` : '下载中…'}
-                </Text>
-                <Text style={[styles.progressMeta, { color: tc.textMuted }]}>
-                  {formatBytes(received)}{total > 0 ? ` / ${formatBytes(total)}` : ''}{speed > 0 ? ` · ${speed} KB/s` : ''}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          {status === 'error' ? (
+          ) : (
             <>
-              <Text style={[styles.errorText, { color: tc.danger }]}>{errorMsg}</Text>
-              <TouchableOpacity
-                style={[styles.githubLink, styles.githubLinkProminent]}
-                onPress={() => Linking.openURL(updateInfo?.remote?.html_url || 'https://github.com/hzys7/lulu-ledger/releases')}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="open-outline" size={14} color={tc.primary} />
-                <Text style={[styles.githubLinkText, { color: tc.primary, fontWeight: fontWeight.semibold }]}>
-                  打开 GitHub 页面手动下载
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : null}
+              {/* ── 更新信息 ── */}
+              <View style={[styles.iconWrap, { backgroundColor: tc.primarySubtle }]}>
+                <Ionicons name="arrow-up-circle" size={28} color={tc.primary} />
+              </View>
+              <Text style={[styles.title, { color: tc.text }]}>发现新版本</Text>
+              <View style={styles.versionRow}>
+                <Text style={[styles.versionOld, { color: tc.textMuted }]}>v{localVer}</Text>
+                <Ionicons name="arrow-forward" size={14} color={tc.textMuted} />
+                <Text style={[styles.versionNew, { color: tc.primary }]}>v{remoteVer}</Text>
+              </View>
+              <Text style={[styles.meta, { color: tc.textMuted }]}>约 {fileSizeMB} MB</Text>
 
-          {status === 'done' ? (
-            <View style={styles.doneBlock}>
-              <Text style={[styles.doneText, { color: tc.success }]}>✅ 下载完成</Text>
-              <Text style={[styles.doneSubText, { color: tc.textMuted }]}>正在启动安装…</Text>
-              {(installError || showInstallError) ? (
-                <View style={[styles.installErrorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
-                    <Ionicons name="alert-circle" size={14} color={tc.danger} />
-                    <Text style={[styles.installErrorText, { color: tc.danger }]}>
-                      安装失败：{installError || '未知错误'}
+              {updateInfo.remote?.body ? (
+                <>
+                  <View style={[styles.notesBox, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+                    <Text style={[styles.notesTitle, { color: tc.text }]}>更新内容</Text>
+                    <Text style={[styles.notesBody, { color: tc.textSecondary }]} numberOfLines={6}>
+                      {updateInfo.remote.body}
                     </Text>
                   </View>
-                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                    <TouchableOpacity
-                      style={[styles.settingsLinkBtn, { backgroundColor: tc.primary }]}
-                      onPress={() => handleInstall(localFile?.uri || localFile?.path)}
-                      activeOpacity={0.85}
-                    >
-                      <Ionicons name="refresh" size={13} color="#fff" />
-                      <Text style={styles.settingsLinkText}>重试</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.settingsLinkBtn, { backgroundColor: tc.danger }]}
-                      onPress={openInstallSettings}
-                      activeOpacity={0.85}
-                    >
-                      <Ionicons name="settings-outline" size={13} color="#fff" />
-                      <Text style={styles.settingsLinkText}>去设置</Text>
-                    </TouchableOpacity>
-                    {localFile ? (
-                      <TouchableOpacity
-                        style={[styles.settingsLinkBtn, { backgroundColor: tc.textSecondary }]}
-                        onPress={() => openFileManager({ uri: localFile.uri || localFile.path })}
-                        activeOpacity={0.85}
-                      >
-                        <Ionicons name="folder-open-outline" size={13} color="#fff" />
-                        <Text style={styles.settingsLinkText}>手动安装</Text>
-                      </TouchableOpacity>
-                    ) : null}
+                  <TouchableOpacity
+                    style={styles.githubLink}
+                    onPress={() => Linking.openURL(updateInfo?.remote?.html_url || 'https://github.com/hzys7/lulu-ledger/releases')}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Ionicons name="open-outline" size={13} color={tc.primary} />
+                    <Text style={[styles.githubLinkText, { color: tc.primary }]}>打不开？去 GitHub 手动下载</Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
+
+              {/* ── 下载进度 ── */}
+              {status === 'downloading' ? (
+                <View style={styles.progressBlock}>
+                  <View style={[styles.progressBg, { backgroundColor: tc.surfaceMuted }]}>
+                    <View style={[styles.progressFill, { backgroundColor: tc.primary, width: progress >= 0 ? `${Math.min(progress, 100)}%` : '30%' }]} />
+                  </View>
+                  <View style={styles.progressInfoRow}>
+                    <Text style={[styles.progressText, { color: tc.textMuted }]}>
+                      {progress >= 0 ? `${Math.round(progress)}%` : '下载中…'}
+                    </Text>
+                    <Text style={[styles.progressMeta, { color: tc.textMuted }]}>
+                      {formatBytes(received)}{total > 0 ? ` / ${formatBytes(total)}` : ''}
+                    </Text>
                   </View>
                 </View>
               ) : null}
-            </View>
-          ) : null}
 
-          <View style={styles.btnRow}>
-            {status === 'idle' || status === 'error' ? (
-              <>
-                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleLater} activeOpacity={0.7}>
-                  <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>稍后</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleSkip} activeOpacity={0.7}>
-                  <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>忽略此版</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1.4 }]} onPress={handleDownload} activeOpacity={0.85}>
-                  <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>立即更新</Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-            {status === 'downloading' ? (
-              <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border, flex: 1 }]} onPress={() => {
-                try { abortRef.current?.abort?.(); } catch {}
-                try { downloadTaskRef.current?.cancel?.(); } catch {}
-                setStatus('idle');
-              }} activeOpacity={0.7}>
-                <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>取消下载</Text>
-              </TouchableOpacity>
-            ) : null}
-            {status === 'done' && localFile ? (
-              <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1 }]} onPress={() => handleInstall(localFile.uri || localFile.path)} activeOpacity={0.85}>
-                <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>点击安装</Text>
-              </TouchableOpacity>
-            ) : null}
-            {status === 'installing' ? (
-              <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1 }]} onPress={handleLater} activeOpacity={0.85}>
-                <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>完成</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
+              {/* ── 错误 ── */}
+              {status === 'error' ? (
+                <>
+                  <Text style={[styles.errorText, { color: tc.danger }]}>{errorMsg}</Text>
+                  <TouchableOpacity
+                    style={[styles.githubLink, styles.githubLinkProminent]}
+                    onPress={() => Linking.openURL(updateInfo?.remote?.html_url || 'https://github.com/hzys7/lulu-ledger/releases')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="open-outline" size={14} color={tc.primary} />
+                    <Text style={[styles.githubLinkText, { color: tc.primary, fontWeight: fontWeight.semibold }]}>
+                      打开 GitHub 页面手动下载
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
+
+              {/* ── 下载完成 → 安装 ── */}
+              {status === 'done' ? (
+                <View style={styles.doneBlock}>
+                  <Text style={[styles.doneText, { color: tc.success }]}>✅ 下载完成</Text>
+                  <Text style={[styles.doneSubText, { color: tc.textMuted }]}>正在启动安装…</Text>
+                  {(installError || showInstallError) ? (
+                    <View style={[styles.installErrorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+                        <Ionicons name="alert-circle" size={14} color={tc.danger} />
+                        <Text style={[styles.installErrorText, { color: tc.danger }]}>
+                          安装失败：{installError || '未知错误'}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                        <TouchableOpacity
+                          style={[styles.settingsLinkBtn, { backgroundColor: tc.primary }]}
+                          onPress={() => {
+                            if (downloadId != null) handleInstallFromDM(downloadId);
+                            else if (localFile) handleInstallFromFS(localFile.uri || localFile.path);
+                          }}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="refresh" size={13} color="#fff" />
+                          <Text style={styles.settingsLinkText}>重试</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.settingsLinkBtn, { backgroundColor: tc.danger }]}
+                          onPress={openInstallSettings}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="settings-outline" size={13} color="#fff" />
+                          <Text style={styles.settingsLinkText}>去设置</Text>
+                        </TouchableOpacity>
+                        {localFile ? (
+                          <TouchableOpacity
+                            style={[styles.settingsLinkBtn, { backgroundColor: tc.textSecondary }]}
+                            onPress={() => openApkInFileManager(localFile.uri || localFile.path)}
+                            activeOpacity={0.85}
+                          >
+                            <Ionicons name="folder-open-outline" size={13} color="#fff" />
+                            <Text style={styles.settingsLinkText}>手动安装</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            style={[styles.settingsLinkBtn, { backgroundColor: tc.textSecondary }]}
+                            onPress={() => {
+                              Linking.openURL('https://github.com/hzys7/lulu-ledger/releases');
+                            }}
+                            activeOpacity={0.85}
+                          >
+                            <Ionicons name="open-outline" size={13} color="#fff" />
+                            <Text style={styles.settingsLinkText}>前往 GitHub</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {/* ── 按钮行 ── */}
+              <View style={styles.btnRow}>
+                {status === 'idle' || status === 'error' ? (
+                  <>
+                    <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleLater} activeOpacity={0.7}>
+                      <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>稍后</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleSkip} activeOpacity={0.7}>
+                      <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>忽略此版</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1.4 }]} onPress={handleDownload} activeOpacity={0.85}>
+                      <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>立即更新</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+                {status === 'downloading' ? (
+                  <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border, flex: 1 }]} onPress={() => {
+                    try { abortRef.current?.abort?.(); } catch {}
+                    setStatus('idle');
+                  }} activeOpacity={0.7}>
+                    <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>取消下载</Text>
+                  </TouchableOpacity>
+                ) : null}
+                {status === 'done' && !showInstallError ? (
+                  <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1 }]} onPress={() => {
+                    if (downloadId != null) handleInstallFromDM(downloadId);
+                    else if (localFile) handleInstallFromFS(localFile.uri || localFile.path);
+                  }} activeOpacity={0.85}>
+                    <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>点击安装</Text>
+                  </TouchableOpacity>
+                ) : null}
+                {status === 'installing' ? (
+                  <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1 }]} onPress={handleLater} activeOpacity={0.85}>
+                    <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>完成</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </>
+          )}
+
         </View>
       </View>
     </Modal>
@@ -610,6 +786,20 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     textAlign: 'center',
     marginBottom: spacing.sm,
+  },
+  manualHint: {
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: spacing.base,
+  },
+  urlInput: {
+    height: 44,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md,
+    fontSize: fontSize.sm,
+    marginBottom: spacing.base,
   },
   versionRow: {
     flexDirection: 'row',
