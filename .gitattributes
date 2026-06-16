@@ -1,4 +1,7 @@
 * text=auto eol=lf
+# Force JSON files to LF line endings WITHOUT a UTF-8 BOM so that
+# strict JSON parsers (e.g. @expo/json-file) can read them.
+*.json text eol=lf
 *.png binary
 *.jpg binary
 *.jpeg binary
