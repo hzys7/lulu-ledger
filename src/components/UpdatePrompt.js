@@ -413,15 +413,33 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     if (Platform.OS === 'android') {
       const hasPermission = await checkInstallPermission();
       if (!hasPermission) {
-        Alert.alert(
-          '需要安装权限',
-          '下载前需要先授权「璐璐记账」安装APK。\n\n请点击「去设置」，然后在「安装未知应用」页面中打开「允许来自此来源」开关。',
-          [
-            { text: '取消', style: 'cancel' },
-            { text: '去设置', onPress: openInstallSettings },
-          ]
-        );
-        return;
+        // 首先尝试通过原生模块直接弹出系统权限确认弹窗
+        // 使用 ACTION_MANAGE_UNKNOWN_APP_SOURCES intent，这是修复
+        // "开关灰色不可点击"问题的关键：系统会弹出确认对话框，
+        // 用户点"允许"后权限即刻生效，无需手动去设置页操作。
+        let directGranted = false;
+        if (LuluApkInstaller && typeof LuluApkInstaller.requestInstallPermission === 'function') {
+          try {
+            directGranted = await LuluApkInstaller.requestInstallPermission();
+          } catch (e) {
+            console.warn('[UpdatePrompt] direct permission request failed:', e?.message || e);
+          }
+        }
+
+        if (directGranted) {
+          // 权限已获取，继续下载
+        } else {
+          // 原生请求失败，引导用户手动去设置页
+          Alert.alert(
+            '需要安装权限',
+            '下载前需要先授权「璐璐记账」安装APK。\n\n请点击「去设置」，然后在「安装未知应用」页面中打开「允许来自此来源」开关。',
+            [
+              { text: '取消', style: 'cancel' },
+              { text: '去设置', onPress: openInstallSettings },
+            ]
+          );
+          return;
+        }
       }
     }
 
@@ -563,12 +581,29 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       try { IntentLauncher = require('expo-intent-launcher'); } catch {}
       if (IntentLauncher?.startActivityAsync) {
         const pkg = (Application && Application.applicationId) || 'com.lululedger.app';
-        await IntentLauncher.startActivityAsync('android.settings.MANAGE_UNKNOWN_APP_SOURCES', {
-          data: 'package:' + pkg,
-        });
-      } else {
-        Linking.openSettings();
+        // 优先使用 ACTION_MANAGE_UNKNOWN_APP_SOURCES（权限请求弹窗）
+        // 而不是 android.settings.MANAGE_UNKNOWN_APP_SOURCES（设置页面）
+        // 前者会触发系统权限确认弹窗，后者仅展示设置页（开关可能灰色不可点）
+        try {
+          await IntentLauncher.startActivityAsync(
+            'android.intent.action.MANAGE_UNKNOWN_APP_SOURCES',
+            { data: 'package:' + pkg }
+          );
+          return;
+        } catch {
+          // 如果 ACTION 不可用，回退到设置页面
+        }
+        try {
+          await IntentLauncher.startActivityAsync(
+            'android.settings.MANAGE_UNKNOWN_APP_SOURCES',
+            { data: 'package:' + pkg }
+          );
+          return;
+        } catch {
+          // 最终回退
+        }
       }
+      Linking.openSettings();
     } catch {
       Linking.openSettings();
     }
