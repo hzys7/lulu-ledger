@@ -11,6 +11,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  AppState,
   Linking,
   Platform,
   DeviceEventEmitter,
@@ -413,14 +414,42 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
     if (Platform.OS === 'android') {
       const hasPermission = await checkInstallPermission();
       if (!hasPermission) {
-        // 首先尝试通过原生模块直接弹出系统权限确认弹窗
-        // 使用 ACTION_MANAGE_UNKNOWN_APP_SOURCES intent，这是修复
-        // "开关灰色不可点击"问题的关键：系统会弹出确认对话框，
-        // 用户点"允许"后权限即刻生效，无需手动去设置页操作。
+        // 通过原生模块弹出系统权限确认弹窗。
+        // OnActivityResult 在某些设备（如 vivo OriginOS）上可能不触发，
+        // 所以用 AppState 监听作为兜底：权限对话框关闭 → APP 回到前台时
+        // 重新检查 canRequestPackageInstalls()，谁先返回用谁的结果。
         let directGranted = false;
         if (LuluApkInstaller && typeof LuluApkInstaller.requestInstallPermission === 'function') {
           try {
-            directGranted = await LuluApkInstaller.requestInstallPermission();
+            let resolved = false;
+            const result = await Promise.race([
+              LuluApkInstaller.requestInstallPermission().then(r => {
+                resolved = true;
+                return r;
+              }),
+              new Promise((resolve) => {
+                const sub = AppState.addEventListener('change', async (state) => {
+                  if (state === 'active' && !resolved) {
+                    resolved = true;
+                    sub.remove();
+                    // 短暂延迟让系统完成权限写入
+                    await new Promise(r => setTimeout(r, 300));
+                    const granted = await checkInstallPermission();
+                    resolve(granted);
+                  }
+                });
+                // 安全网：15 秒后强制检查一次，防止 AppState 事件不触发
+                setTimeout(async () => {
+                  if (!resolved) {
+                    resolved = true;
+                    sub.remove();
+                    const granted = await checkInstallPermission();
+                    resolve(granted);
+                  }
+                }, 15000);
+              }),
+            ]);
+            directGranted = !!result;
           } catch (e) {
             console.warn('[UpdatePrompt] direct permission request failed:', e?.message || e);
           }
@@ -429,7 +458,6 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         if (directGranted) {
           // 权限已获取，继续下载
         } else {
-          // 原生请求失败，引导用户手动去设置页
           Alert.alert(
             '需要安装权限',
             '下载前需要先授权「璐璐记账」安装APK。\n\n请点击「去设置」，然后在「安装未知应用」页面中打开「允许来自此来源」开关。',
