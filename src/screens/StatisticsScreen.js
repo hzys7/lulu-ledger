@@ -332,6 +332,8 @@ export default function StatisticsScreen({ navigation }) {
   const [moodAnalysisLoading, setMoodAnalysisLoading] = useState(false);
   const [moodAnalysisError, setMoodAnalysisError] = useState('');
 
+  const [rankingExpanded, setRankingExpanded] = useState(false);
+
   const moodPeriodTotal = period === 'week' ? weekSummaryTotal : period === 'month' ? monthTotalAmount : yearSummaryTotal;
 
   const handleRefreshMoodAnalysis = useCallback(async () => {
@@ -791,10 +793,14 @@ export default function StatisticsScreen({ navigation }) {
               </View>
             )}
 
-            {/* ── 排行 ── */}
+            {/* ── 排行（默认折叠） ── */}
             {(period === 'week' ? topWeekTx : period === 'month' ? topMonthTx : topYearTx).length > 0 && (
               <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-                <View style={styles.cardHeader}>
+                <TouchableOpacity
+                  style={styles.cardHeader}
+                  onPress={() => setRankingExpanded(v => !v)}
+                  activeOpacity={0.6}
+                >
                   <Text style={[styles.cardTitle, { color: tc.text }]}>
                     {period === 'week'
                       ? getWeekLabel(weekStart)
@@ -803,26 +809,33 @@ export default function StatisticsScreen({ navigation }) {
                       : `${reportYear}年`}
                     {totalLabel}排行
                   </Text>
-                </View>
-                <View>
-                  {(period === 'week' ? topWeekTx : period === 'month' ? topMonthTx : topYearTx).map((tx, i, arr) => {
-                    const item = (period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).find(c => c.name === tx.category);
-                    return (
-                      <View key={tx.id} style={[styles.txRow, i < arr.length - 1 && { borderBottomColor: tc.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-                        <View style={[styles.colorDot, { backgroundColor: item?.color || tc.textSubtle }]} />
-                        <View style={styles.txInfo}>
-                          <Text style={[styles.txCategory, { color: tc.text }]} numberOfLines={1}>{tx.category}</Text>
-                          <Text style={[styles.txNote, { color: tc.textMuted }]} numberOfLines={1}>
-                            {new Date(tx.date).toLocaleDateString('zh-CN')}{tx.note ? ` · ${tx.note}` : ''}
+                  <Ionicons
+                    name={rankingExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={tc.textMuted}
+                  />
+                </TouchableOpacity>
+                {rankingExpanded && (
+                  <View>
+                    {(period === 'week' ? topWeekTx : period === 'month' ? topMonthTx : topYearTx).map((tx, i, arr) => {
+                      const item = (period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).find(c => c.name === tx.category);
+                      return (
+                        <View key={tx.id} style={[styles.txRow, i < arr.length - 1 && { borderBottomColor: tc.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+                          <View style={[styles.colorDot, { backgroundColor: item?.color || tc.textSubtle }]} />
+                          <View style={styles.txInfo}>
+                            <Text style={[styles.txCategory, { color: tc.text }]} numberOfLines={1}>{tx.category}</Text>
+                            <Text style={[styles.txNote, { color: tc.textMuted }]} numberOfLines={1}>
+                              {new Date(tx.date).toLocaleDateString('zh-CN')}{tx.note ? ` · ${tx.note}` : ''}
+                            </Text>
+                          </View>
+                          <Text style={[styles.txAmount, { color: tc.text }]}>
+                            {dataType === 'expense' ? '-' : '+'}{formatMoney(tx.amount, settings.currency).replace('¥', '')}
                           </Text>
                         </View>
-                        <Text style={[styles.txAmount, { color: tc.text }]}>
-                          {dataType === 'expense' ? '-' : '+'}{formatMoney(tx.amount, settings.currency).replace('¥', '')}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
+                      );
+                    })}
+                  </View>
+                )}
               </View>
             )}
           </>
