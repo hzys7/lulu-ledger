@@ -66,7 +66,8 @@ export async function parseTransactionFromText(userText) {
     return { ok: false, error: err };
   }
 
-  const content = result.content;
+  try {
+    const content = result.content;
     // 1) 优先匹配 ```json ... ``` 代码块
     // 2) 否则用括号配对，从左到右提取第一段合法 JSON
     // 3) 支持多笔账目：AI 可能返回 {...} {...}（中间有逗号/换行）
