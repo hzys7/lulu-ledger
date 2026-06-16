@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
-    ...shadows.sm,
+    ...shadows.md,
   },
   heroLabel: { fontSize: fontSize.sm, letterSpacing: -0.1 },
   heroAmount: {

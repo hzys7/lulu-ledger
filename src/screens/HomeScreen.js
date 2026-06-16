@@ -225,6 +225,7 @@ export default function HomeScreen({ navigation }) {
         )}
 
         {/* 资金账户 */}
+        <View style={[styles.sectionWrap, { backgroundColor: tc.surfaceSection }]}>
         <View style={styles.accountsSection}>
           <View style={styles.accountsHeader}>
             <Text style={[styles.accountsTitle, { color: tc.text }]}>资金账户</Text>
@@ -269,6 +270,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           )}
         </View>
+        </View>
 
         {/* 异常消费提醒 */}
         {aiEnabled && anomalyAlert && !anomalyDismissed ? (
@@ -284,32 +286,34 @@ export default function HomeScreen({ navigation }) {
 
         {/* AI 智能（仅启用时显示） */}
         {aiEnabled ? (
-          <View style={styles.aiCardWrap}>
-            <View style={[styles.aiCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-              <View style={styles.aiCardLeft}>
-                <Text style={styles.aiCardEmoji}>✨</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.aiCardTitle, { color: tc.text }]}>AI 助手</Text>
-                  <Text style={[styles.aiCardHint, { color: tc.textMuted }]}>一句话记账 · 问答分析</Text>
+          <View style={[styles.sectionWrap, { backgroundColor: tc.surfaceSection }]}>
+            <View style={styles.aiCardWrap}>
+              <View style={[styles.aiCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+                <View style={styles.aiCardLeft}>
+                  <Text style={styles.aiCardEmoji}>✨</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.aiCardTitle, { color: tc.text }]}>AI 助手</Text>
+                    <Text style={[styles.aiCardHint, { color: tc.textMuted }]}>一句话记账 · 问答分析</Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.aiCardBtns}>
-                <TouchableOpacity
-                  style={[styles.aiCardBtn, { backgroundColor: tc.primary }]}
-                  onPress={() => setShowAiChat(true)}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="sparkles" size={16} color={tc.primaryOn} />
-                  <Text style={[styles.aiCardBtnText, { color: tc.primaryOn }]}>记账</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.aiCardBtn, { backgroundColor: tc.accent }]}
-                  onPress={() => setShowAiQA(true)}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="chatbubbles" size={16} color="#fff" />
-                  <Text style={[styles.aiCardBtnText, { color: '#fff' }]}>问问</Text>
-                </TouchableOpacity>
+                <View style={styles.aiCardBtns}>
+                  <TouchableOpacity
+                    style={[styles.aiCardBtn, { backgroundColor: tc.primary }]}
+                    onPress={() => setShowAiChat(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="sparkles" size={16} color={tc.primaryOn} />
+                    <Text style={[styles.aiCardBtnText, { color: tc.primaryOn }]}>记账</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.aiCardBtn, { backgroundColor: tc.accent }]}
+                    onPress={() => setShowAiQA(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="chatbubbles" size={16} color="#fff" />
+                    <Text style={[styles.aiCardBtnText, { color: '#fff' }]}>问问</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
@@ -385,12 +389,13 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  sectionWrap: { paddingVertical: spacing.sm, marginBottom: spacing.sm },
 
   // 净资产
   netWorthSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
   netWorthCard: {
     flexDirection: 'row', alignItems: 'center', padding: spacing.base,
-    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm,
+    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.md,
   },
   netWorthLeft: { flex: 1 },
   netWorthLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: 0.2, marginBottom: 6 },
@@ -398,7 +403,7 @@ const styles = StyleSheet.create({
   netWorthHint: { fontSize: fontSize.xs },
   netWorthEmpty: {
     flexDirection: 'row', alignItems: 'center', padding: spacing.base,
-    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md, ...shadows.sm,
+    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md, ...shadows.md,
   },
   netWorthEmptyIcon: {
     width: 48, height: 48, borderRadius: 14,
@@ -429,7 +434,7 @@ const styles = StyleSheet.create({
   accountsTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
   accountsManage: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   accountsManageText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
-  accountsList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', ...shadows.sm },
+  accountsList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', ...shadows.md },
   accountRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.md },
   accountIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   accountName: { fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.1, marginBottom: 2 },

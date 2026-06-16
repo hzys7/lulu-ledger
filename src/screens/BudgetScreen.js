@@ -465,6 +465,7 @@ const styles = StyleSheet.create({
   totalCard: {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
+    ...shadows.md,
   },
   totalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   totalLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
@@ -526,7 +527,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
-    ...shadows.sm,
+    ...shadows.md,
   },
   budgetTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   budgetLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },

@@ -73,10 +73,11 @@ export const colors = {
   },
 
   // 中性色（9 级灰阶）
-  background: '#FAFAFB',
+  background: '#F0F1F3',
   surface: '#FFFFFF',
   surfaceMuted: '#F4F4F5',
   surfaceSubtle: '#F9FAFB',
+  surfaceSection: '#F4F5F8',
   text: '#0F172A',
   textSecondary: '#475569',
   textMuted: '#64748B',
@@ -142,23 +143,23 @@ export const shadows = {
   sm: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   md: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 4,
   },
   lg: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.15,
     shadowRadius: 32,
-    elevation: 6,
+    elevation: 8,
   },
 };
 
@@ -228,6 +229,7 @@ export const darkColors = {
   surface: '#15151D',
   surfaceMuted: '#1C1C26',
   surfaceSubtle: '#10101A',
+  surfaceSection: '#10101A',
   text: '#F8FAFC',
   textSecondary: '#CBD5E1',
   textMuted: '#94A3B8',
