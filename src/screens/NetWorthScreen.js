@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
-import { typeInfo } from '../utils/accountTypes';
+import { ACCOUNT_TYPES, typeInfo } from '../utils/accountTypes';
 import {
   spacing,
   borderRadius,
