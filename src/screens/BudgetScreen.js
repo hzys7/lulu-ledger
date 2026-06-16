@@ -32,16 +32,29 @@ function hexAlpha(hex, a) {
   return hex + Math.round(a * 255).toString(16).padStart(2, '0');
 }
 
-export default function BudgetScreen() {
+export default function BudgetScreen({ route }) {
   const { budgets, transactions, settings, updateBudget, removeBudget, checkBudgetAlerts } = useFinance();
+
+  // 路由参数：可选 month（格式 'YYYY-MM'），传入时初始化当前选中月
+  // RecordsScreen 的预算模块会传对应筛选月份过来
+  const initialMonth = (() => {
+    const m = route?.params?.month;
+    if (typeof m !== 'string') return null;
+    const match = m.match(/^(\d{4})-(\d{2})$/);
+    if (!match) return null;
+    const y = parseInt(match[1], 10);
+    const mo = parseInt(match[2], 10) - 1;
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || mo < 0 || mo > 11) return null;
+    return { year: y, month: mo };
+  })();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
 
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth ? initialMonth.month : new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(initialMonth ? initialMonth.year : new Date().getFullYear());
   const [budgetAlerts, setBudgetAlerts] = useState([]);
 
   const currentMonth = selectedYear + '-' + String(selectedMonth + 1).padStart(2, '0');

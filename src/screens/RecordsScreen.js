@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { TransactionItem, EmptyState } from '../components/SharedComponents';
 import TransactionDetailModal from '../components/TransactionDetailModal';
+import BudgetPieChart from '../components/BudgetPieChart';
 import { formatMoney } from '../utils/currency';
 import { spacing, borderRadius, fontSize, fontWeight, getThemeColors } from '../theme';
 
@@ -49,7 +50,7 @@ function buildFlatData(grouped) {
 }
 
 export default function RecordsScreen({ navigation }) {
-  const { transactions, settings, getMonthSummary, reload, accounts, removeTx } = useFinance();
+  const { transactions, settings, getMonthSummary, reload, accounts, removeTx, budgets } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
   const [detailTx, setDetailTx] = useState(null);
   const insets = useSafeAreaInsets();
@@ -68,7 +69,10 @@ export default function RecordsScreen({ navigation }) {
   }, []);
 
   const now = new Date();
-  const summary = getMonthSummary(now.getFullYear(), now.getMonth());
+  const summaryYear = monthFilter ? monthFilter.year : now.getFullYear();
+  const summaryMonth = monthFilter ? monthFilter.month : now.getMonth();
+  const summary = getMonthSummary(summaryYear, summaryMonth);
+  const summaryMonthStr = summaryYear + '-' + String(summaryMonth + 1).padStart(2, '0');
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -298,6 +302,17 @@ export default function RecordsScreen({ navigation }) {
         scrollEventThrottle={16}
         ListHeaderComponent={(
           <View style={{ paddingTop: insets.top + spacing.sm }}>
+            {/* 预算环形图（顶部） */}
+            <View style={styles.budgetSection}>
+              <BudgetPieChart
+                budgets={(budgets || []).filter((b) => b.month === summaryMonthStr)}
+                byCategory={summary.byCategory || {}}
+                tc={tc}
+                categoryColors={tc.categories}
+                onNavigateBudget={() => navigation.navigate('Budget', { month: summaryMonthStr })}
+                currency={settings.currency}
+              />
+            </View>
             {/* 搜索框 */}
             <View style={styles.searchBarWrap}>
               <View style={[styles.searchBar, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
@@ -424,6 +439,9 @@ const styles = StyleSheet.create({
   stickyRight: { flexDirection: 'row', alignItems: 'center' },
   stickyMonthText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
   stickyAmount: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, fontVariant: ['tabular-nums'], letterSpacing: -0.1 },
+
+  // 预算
+  budgetSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
 
   searchBarWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   searchBar: {

@@ -1,5 +1,5 @@
 // 璐璐记账 · 首页（仪表盘）
-// 设计：预算概览 + 近期交易 + AI 入口
+// 设计：净资产 + 资金账户 + AI 入口
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
@@ -15,20 +15,29 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
-import { TransactionItem, EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
 import { loadAiConfig } from '../utils/aiConfig';
 import AiChatScreen from './AiChatScreen';
 import AiQAScreen from './AiQAScreen';
 import AnomalyAlert from '../components/AnomalyAlert';
-import BudgetPieChart from '../components/BudgetPieChart';
-import TransactionDetailModal from '../components/TransactionDetailModal';
 import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
 import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 
+// 与 NetWorthScreen 保持一致的账户类型映射（不复用以避免跨屏耦合）
+const ACCOUNT_TYPES = [
+  { key: 'wechat', name: '微信', icon: 'logo-wechat', color: '#07C160' },
+  { key: 'alipay', name: '支付宝', icon: 'wallet', color: '#1677FF' },
+  { key: 'bank', name: '银行卡', icon: 'card', color: '#722ED1' },
+  { key: 'cash', name: '现金', icon: 'cash', color: '#FA8C16' },
+  { key: 'other', name: '其他', icon: 'ellipsis-horizontal-circle', color: '#8C8C8C' },
+];
+function typeInfo(type) {
+  return ACCOUNT_TYPES.find((t) => t.key === type) || ACCOUNT_TYPES[4];
+}
+
 export default function HomeScreen({ navigation }) {
-  const { transactions, settings, getMonthSummary, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook, budgets, accounts, removeTx } = useFinance();
+  const { settings, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook, accounts, transactions, getMonthSummary } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -38,12 +47,7 @@ export default function HomeScreen({ navigation }) {
   const [newBookName, setNewBookName] = useState('');
   const [newBookIcon, setNewBookIcon] = useState('wallet');
   const [newBookColor, setNewBookColor] = useState('#7C5CFF');
-  // 交易详情弹窗
-  const [detailTx, setDetailTx] = useState(null);
-
   const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const summary = getMonthSummary(now.getFullYear(), now.getMonth());
   const netWorth = getNetWorth();
 
   // AI 配置
@@ -151,23 +155,6 @@ export default function HomeScreen({ navigation }) {
     ]);
   };
 
-  const [txFilter, setTxFilter] = useState('all'); // all | income | expense
-
-  // 近期交易（最近 5 笔，可筛选收支类型）
-  const recentTransactions = useMemo(() => {
-    let list = [...transactions];
-    if (txFilter === 'income') list = list.filter((t) => t.type === 'income');
-    if (txFilter === 'expense') list = list.filter((t) => t.type === 'expense');
-    return list
-      .sort((a, b) => {
-        if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-        return (a.createdAt || '') < (b.createdAt || '') ? 1 : -1;
-      })
-      .slice(0, 5);
-  }, [transactions, txFilter]);
-
-  const hasData = transactions.length > 0;
-
   return (
     <View style={[styles.container, { backgroundColor: tc.background }]}>
       <ScrollView
@@ -198,16 +185,92 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* 预算环形图 */}
-        <View style={styles.balanceSection}>
-          <BudgetPieChart
-            budgets={budgets?.filter(b => b.month === currentMonthStr) || []}
-            byCategory={summary.byCategory || {}}
-            tc={tc}
-            categoryColors={tc.categories}
-            onNavigateBudget={() => navigation.navigate('Budget')}
-            currency={settings.currency}
-          />
+        {/* 净资产 */}
+        {accounts.length === 0 ? (
+          <View style={styles.netWorthSection}>
+            <TouchableOpacity
+              style={[styles.netWorthEmpty, { backgroundColor: tc.surface, borderColor: tc.border }]}
+              onPress={() => navigation.navigate('NetWorth')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.netWorthEmptyIcon, { backgroundColor: tc.primarySubtle }]}>
+                <Ionicons name="wallet-outline" size={24} color={tc.primary} />
+              </View>
+              <View style={styles.netWorthLeft}>
+                <Text style={[styles.netWorthLabel, { color: tc.textMuted }]}>净资产</Text>
+                <Text style={[styles.netWorthEmptyTitle, { color: tc.text }]}>还没有账户</Text>
+                <Text style={[styles.netWorthHint, { color: tc.textSubtle }]}>
+                  添加微信/支付宝/银行卡，开始追踪总资产
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={tc.textMuted} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.netWorthSection}>
+            <TouchableOpacity
+              style={[styles.netWorthCard, { backgroundColor: tc.surface, borderColor: tc.border }]}
+              onPress={() => navigation.navigate('NetWorth')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.netWorthLeft}>
+                <Text style={[styles.netWorthLabel, { color: tc.textMuted }]}>净资产</Text>
+                <Text style={[styles.netWorthAmount, { color: tc.text }]}>
+                  {formatMoney(netWorth, settings.currency)}
+                </Text>
+                <Text style={[styles.netWorthHint, { color: tc.textSubtle }]}>
+                  {accounts.length} 个账户
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={tc.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 资金账户 */}
+        <View style={styles.accountsSection}>
+          <View style={styles.accountsHeader}>
+            <Text style={[styles.accountsTitle, { color: tc.text }]}>资金账户</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('NetWorth')}
+              activeOpacity={0.7}
+              style={styles.accountsManage}
+            >
+              <Text style={[styles.accountsManageText, { color: tc.primary }]}>管理</Text>
+              <Ionicons name="chevron-forward" size={14} color={tc.primary} />
+            </TouchableOpacity>
+          </View>
+          {accounts.length === 0 ? (
+            <View style={[styles.accountsEmpty, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <Ionicons name="wallet-outline" size={32} color={tc.textSubtle} />
+              <Text style={[styles.accountsEmptyText, { color: tc.textMuted }]}>还没有账户</Text>
+              <Text style={[styles.accountsEmptyHint, { color: tc.textSubtle }]}>点击「管理」添加微信/支付宝/银行卡</Text>
+            </View>
+          ) : (
+            <View style={[styles.accountsList, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              {accounts.map((acc, i) => {
+                const typeMeta = typeInfo(acc.type);
+                const isLast = i === accounts.length - 1;
+                return (
+                  <View
+                    key={acc.id}
+                    style={[styles.accountRow, !isLast && { borderBottomColor: tc.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
+                  >
+                    <View style={[styles.accountIcon, { backgroundColor: (acc.color || typeMeta.color) + '22' }]}>
+                      <Ionicons name={acc.icon || typeMeta.icon} size={18} color={acc.color || typeMeta.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.accountName, { color: tc.text }]} numberOfLines={1}>{acc.name}</Text>
+                      <Text style={[styles.accountType, { color: tc.textSubtle }]}>{typeMeta.name}</Text>
+                    </View>
+                    <Text style={[styles.accountBalance, { color: tc.text }]}>
+                      {formatMoney(acc.balance, settings.currency)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* 异常消费提醒 */}
@@ -255,78 +318,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : null}
 
-        {/* 近期交易 */}
-        <View style={styles.recentSection}>
-          <View style={styles.recentHeader}>
-            <Text style={[styles.recentTitle, { color: tc.text }]}>近期交易</Text>
-            {hasData ? (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Records')}
-                activeOpacity={0.7}
-                style={styles.recentViewAll}
-              >
-                <Text style={[styles.recentViewAllText, { color: tc.primary }]}>查看全部</Text>
-                <Ionicons name="chevron-forward" size={14} color={tc.primary} />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-          {/* 收支筛选 */}
-          {hasData ? (
-            <View style={styles.filterRow}>
-              {['all', 'expense', 'income'].map((f) => {
-                const active = txFilter === f;
-                return (
-                  <TouchableOpacity
-                    key={f}
-                    style={[
-                      styles.filterChip,
-                      { backgroundColor: tc.surfaceMuted, borderColor: tc.divider },
-                      active && { backgroundColor: tc.primary, borderColor: tc.primary },
-                    ]}
-                    onPress={() => setTxFilter(f)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        { color: tc.textSecondary },
-                        active && { color: tc.primaryOn, fontWeight: fontWeight.semibold },
-                      ]}
-                    >
-                      {f === 'all' ? '全部' : f === 'expense' ? '支出' : '收入'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {hasData ? (
-            <View style={[styles.recentList, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-              {recentTransactions.map((tx, i) => (
-                <TouchableOpacity
-                  key={tx.id}
-                  onPress={() => setDetailTx(tx)}
-                  activeOpacity={0.7}
-                >
-                  <TransactionItem
-                    transaction={tx}
-                    currency={settings.currency}
-                    isLast={i === recentTransactions.length - 1}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View style={[styles.recentList, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-              <EmptyState
-                icon="receipt-outline"
-                title="还没有记账记录"
-                subtitle="点击右上角 + 按钮开始记账第一笔"
-              />
-            </View>
-          )}
-        </View>
       </ScrollView>
 
       <AiChatScreen
@@ -338,28 +329,6 @@ export default function HomeScreen({ navigation }) {
       <AiQAScreen
         visible={showAiQA}
         onClose={() => setShowAiQA(false)}
-      />
-
-      <TransactionDetailModal
-        visible={!!detailTx}
-        transaction={detailTx}
-        accounts={accounts}
-        tc={tc}
-        onEdit={() => {
-          if (detailTx) {
-            setDetailTx(null);
-            navigation.navigate('AddTransaction', { transaction: detailTx });
-          }
-        }}
-        onDelete={() => {
-          if (detailTx) {
-            Alert.alert('删除交易', '确定删除这条记录吗？', [
-              { text: '取消', style: 'cancel' },
-              { text: '删除', style: 'destructive', onPress: () => { removeTx(detailTx.id); setDetailTx(null); reload(); } },
-            ]);
-          }
-        }}
-        onClose={() => setDetailTx(null)}
       />
 
       {/* 账本选择弹窗 */}
@@ -420,8 +389,28 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // 预算区域
-  balanceSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
+  // 净资产
+  netWorthSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
+  netWorthCard: {
+    flexDirection: 'row', alignItems: 'center', padding: spacing.base,
+    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm,
+  },
+  netWorthLeft: { flex: 1 },
+  netWorthLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: 0.2, marginBottom: 6 },
+  netWorthAmount: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, fontVariant: ['tabular-nums'], letterSpacing: -0.5, marginBottom: 4 },
+  netWorthHint: { fontSize: fontSize.xs },
+  netWorthEmpty: {
+    flexDirection: 'row', alignItems: 'center', padding: spacing.base,
+    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.md, ...shadows.sm,
+  },
+  netWorthEmptyIcon: {
+    width: 48, height: 48, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  netWorthEmptyTitle: {
+    fontSize: fontSize.md, fontWeight: fontWeight.semibold,
+    marginTop: 2, marginBottom: 4, letterSpacing: -0.2,
+  },
 
   // AI 卡片
   aiCardWrap: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
@@ -437,16 +426,24 @@ const styles = StyleSheet.create({
   aiCardBtns: { flexDirection: 'row', gap: spacing.sm },
   aiCardBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 
-  // 近期交易
-  recentSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.lg },
-  recentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: spacing.sm },
-  recentTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
-  recentViewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  recentViewAllText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
-  filterRow: { flexDirection: 'row', gap: spacing.sm, paddingBottom: spacing.sm },
-  filterChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.full, borderWidth: StyleSheet.hairlineWidth },
-  filterChipText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
-  recentList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', ...shadows.sm },
+  // 资金账户
+  accountsSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.lg },
+  accountsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: spacing.sm },
+  accountsTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
+  accountsManage: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  accountsManageText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+  accountsList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', ...shadows.sm },
+  accountRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.md },
+  accountIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  accountName: { fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.1, marginBottom: 2 },
+  accountType: { fontSize: fontSize.xs },
+  accountBalance: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'] },
+  accountsEmpty: {
+    borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, padding: spacing.xl,
+    alignItems: 'center', gap: 4,
+  },
+  accountsEmptyText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, marginTop: spacing.sm },
+  accountsEmptyHint: { fontSize: fontSize.xs, textAlign: 'center' },
 
   // 账本选择器
   bookHeader: {
