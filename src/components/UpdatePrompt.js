@@ -27,7 +27,6 @@ import {
   openInstallSettings,
   installFromDownloadManager,
 } from '../utils/updateInstaller';
-import { downloadApk, getDownloadProgress } from '../../modules/lulu-apk-installer/src/index';
 
 const DISMISSED_KEY = 'lulu_update_dismissed';
 
@@ -212,7 +211,8 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
       const primaryUrl = updateInfo.apk.url;
 
       // DownloadManager 下载到公共 Downloads/ 目录
-      const dmId = await downloadApk(primaryUrl, apkName);
+      if (!LuluApkInstaller?.downloadApk) throw new Error('原生模块不可用');
+      const dmId = await LuluApkInstaller.downloadApk(primaryUrl, apkName);
       setDownloadId(dmId);
 
       // 轮询进度（最多 2 分钟）
@@ -222,7 +222,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           return;
         }
         await new Promise(r => setTimeout(r, 500));
-        const prog = await getDownloadProgress(dmId);
+        const prog = await LuluApkInstaller.getDownloadProgress(dmId);
 
         if (prog.status === 'SUCCESS') {
           setProgress(100);
