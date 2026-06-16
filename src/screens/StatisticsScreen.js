@@ -487,19 +487,6 @@ export default function StatisticsScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
       >
-        <View style={styles.shareHeaderRow}>
-          {/* 分享按钮 — 周/月/年报都显示 */}
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity
-              style={[styles.shareBtn, { backgroundColor: tc.primary }]}
-              onPress={handleShare}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="share-outline" size={16} color={tc.primaryOn} />
-              <Text style={[styles.shareBtnText, { color: tc.primaryOn }]}>分享</Text>
-            </TouchableOpacity>
-        </View>
-
         {/* ── 档期选择器 ── */}
         <View style={styles.periodRow}>
           {['week', 'month', 'year'].map(p => (
@@ -591,6 +578,16 @@ export default function StatisticsScreen({ navigation }) {
               <Text style={[styles.segmentText, { color: dataType === 'income' ? tc.text : tc.textMuted }]}>收入</Text>
             </TouchableOpacity>
           </View>
+
+          {/* 分享按钮 — 集成在导航行右侧 */}
+          <TouchableOpacity
+            style={[styles.shareIconBtn, { backgroundColor: tc.surfaceMuted }]}
+            onPress={handleShare}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="share-outline" size={15} color={tc.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {hasData ? (
@@ -859,20 +856,11 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 0, paddingBottom: spacing.xl },
 
-  shareHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.base,
-    paddingBottom: spacing.sm,
-    minHeight: 0,
+  shareIconBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    marginLeft: spacing.sm,
   },
-  shareBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: spacing.md, paddingVertical: 8,
-    borderRadius: borderRadius.full,
-  },
-  shareBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 
   // 档期选择器
   periodRow: {
