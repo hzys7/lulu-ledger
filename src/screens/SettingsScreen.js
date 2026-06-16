@@ -20,7 +20,6 @@ import UpdateSection from "./settings/UpdateSection";
 import RecurringSection from "./settings/RecurringSection";
 import DataSection from "./settings/DataSection";
 import AiSection from "./settings/AiSection";
-import StatsSection from "./settings/StatsSection";
 import AboutSection from "./settings/AboutSection";
 import {
   spacing,
@@ -38,15 +37,6 @@ function checkResultText(r) {
     case 'error': return '检查失败：' + (r.error || '未知错误');
     default: return '';
   }
-}
-
-function formatTimeAgo(ms) {
-  if (!ms || ms <= 0) return '从未';
-  const sec = Math.floor((Date.now() - ms) / 1000);
-  if (sec < 60) return sec + ' 秒前';
-  if (sec < 3600) return Math.floor(sec / 60) + ' 分钟前';
-  if (sec < 86400) return Math.floor(sec / 3600) + ' 小时前';
-  return Math.floor(sec / 86400) + ' 天前';
 }
 
 export default function SettingsScreen({ navigation }) {
@@ -93,10 +83,6 @@ export default function SettingsScreen({ navigation }) {
   const handleToggleTheme = async () => {
     await updateAppSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' });
   };
-  const handleToggleProxy = async () => {
-    await updateAppSettings({ useProxy: !settings.useProxy });
-  };
-
   const handleToggleAutoCheck = async () => {
     await updateAppSettings({ autoCheckUpdate: !settings.autoCheckUpdate });
   };
@@ -193,9 +179,6 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
-  const totalTxCount = transactions.length;
-  const totalExpense = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const totalIncome = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   return (
     <View style={[styles.container, { backgroundColor: tc.background }]}>
       <ScrollView
@@ -211,8 +194,6 @@ export default function SettingsScreen({ navigation }) {
           isChecking={isChecking}
           checkResult={checkResult}
           checkResultText={checkResultText}
-          formatTimeAgo={formatTimeAgo}
-          onToggleProxy={handleToggleProxy}
           onToggleAutoCheck={handleToggleAutoCheck}
           onCheckNow={handleCheckNow}
         />
@@ -227,11 +208,6 @@ export default function SettingsScreen({ navigation }) {
           onOpenImportModal={() => setShowImportModal(true)}
         />
         <AiSection onOpenModal={() => setShowAiModal(true)} />
-        <StatsSection
-          totalTxCount={totalTxCount}
-          totalIncome={totalIncome}
-          totalExpense={totalExpense}
-        />
         <AboutSection />
       </ScrollView>
 

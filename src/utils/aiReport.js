@@ -1,7 +1,7 @@
 // 璐璐记账 · AI 月度复盘
 // 读取某月的全部账目，调用 DeepSeek 生成中文 markdown 复盘报告。
-import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { callAiApi } from './aiClient';
+import { getCache, setCache, removeCache } from './aiCache';
 
 const REPORT_SYSTEM_PROMPT = `你是一名亲切、专业的个人理财助手，名字叫"小璐"。请基于用户提供的当月和上月账目数据，输出一份简洁、可执行的中文月度复盘报告。
 
@@ -141,34 +141,20 @@ function cacheKey(year, month) {
 }
 
 export async function getCachedReport(year, month) {
-  try {
-    const raw = await AsyncStorage.getItem(cacheKey(year, month));
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
+  return getCache(cacheKey(year, month));
 }
 
 async function setCachedReport(year, month, data) {
-  try {
-    await AsyncStorage.setItem(cacheKey(year, month), JSON.stringify(data));
-  } catch (e) {}
+  await setCache(cacheKey(year, month), data);
 }
 
 export async function clearCachedReport(year, month) {
-  try {
-    await AsyncStorage.removeItem(cacheKey(year, month));
-  } catch (e) {}
+  await removeCache(cacheKey(year, month));
 }
 
 export async function generateMonthlyReport({
   year, month, currentTxs, lastTxs, summary, lastSummary, currency, forceRegenerate = false,
 }) {
-  const config = await loadAiConfig();
-  if (!config.apiKey) return { ok: false, error: '未配置 API Key，请先在设置 → AI 配置中填写' };
-  if (!config.enabled) return { ok: false, error: 'AI 功能未启用，请在设置 → AI 配置中打开开关' };
-
   if (!forceRegenerate) {
     const cached = await getCachedReport(year, month);
     if (cached && cached.content) {
@@ -176,46 +162,20 @@ export async function generateMonthlyReport({
     }
   }
 
-  const baseURL = (config.baseURL || AI_PROVIDERS[config.provider]?.defaultBaseURL || '').replace(/\/+$/, '');
-  if (!baseURL) return { ok: false, error: '接口地址未配置' };
-  const model = config.model === '__custom__' ? config.customModel : config.model;
-  if (!model) return { ok: false, error: '模型未配置' };
-
   const userPrompt = buildReportPrompt({ year, month, currentTxs, lastTxs, summary, lastSummary, currency });
-  try {
-    const res = await fetch(baseURL + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + config.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: REPORT_SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.4,
-        max_tokens: 1200,
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      if (res.status === 401) return { ok: false, error: 'API Key 无效（401）' };
-      if (res.status === 402) return { ok: false, error: '余额不足（402）' };
-      if (res.status === 429) return { ok: false, error: '请求过快（429）' };
-      return { ok: false, error: 'HTTP ' + res.status + (errText ? '：' + errText.substring(0, 120) : '') };
-    }
-    const json = await res.json();
-    let content = json?.choices?.[0]?.message?.content;
-    if (!content) return { ok: false, error: 'AI 返回内容为空' };
-    content = String(content).trim();
-    content = content.replace(/^```(?:markdown|md)?\n?([\s\S]*?)\n?```\s*$/, '$1').trim();
-    content = content.replace(/^```[\s\S]*?```/, '').trim();
-    const generatedAt = new Date().toISOString();
-    await setCachedReport(year, month, { content, generatedAt, txCount: currentTxs.length });
-    return { ok: true, content, cached: false, generatedAt };
-  } catch (e) {
-    return { ok: false, error: '网络错误：' + (e?.message || String(e)).substring(0, 120) };
-  }
+  const result = await callAiApi({
+    system: REPORT_SYSTEM_PROMPT,
+    userMessage: userPrompt,
+    temperature: 0.4,
+    maxTokens: 1200,
+  });
+
+  if (!result.ok) return result;
+
+  let content = result.content;
+  content = content.replace(/^```(?:markdown|md)?\n?([\s\S]*?)\n?```\s*$/, '$1').trim();
+  content = content.replace(/^```[\s\S]*?```/, '').trim();
+  const generatedAt = new Date().toISOString();
+  await setCachedReport(year, month, { content, generatedAt, txCount: currentTxs.length });
+  return { ok: true, content, cached: false, generatedAt };
 }

@@ -27,6 +27,7 @@ import ShareCard from '../components/ShareCard';
 import { shareCard } from '../utils/shareReport';
 import LineChartView from '../components/charts/LineChartView';
 import BarChartRow from '../components/charts/BarChartRow';
+import { MOOD_LABELS, MOOD_EMOJIS } from '../utils/aiMoodShared';
 import { analyzeMood } from '../utils/aiMood';
 import {
   MonthSummaryGrid,
@@ -79,17 +80,7 @@ function calcBalance(txList) {
 // ─── 颜色映射 ───────────────────────────────────────────
 
 
-// ─── 心情映射表（模块级常量，避免 Hooks 中重复创建）
-const MOOD_LABELS = {
-  '': '未标记', happy: '快乐', impulse: '手滑', regret: '踩坑',
-  necessary: '必要', reward: '犒劳', painful: '滴血',
-  satisfied: '真香', remorse: '后悔', neutral: '无感', worthit: '值了',
-};
-const MOOD_EMOJIS = {
-  '': '—', happy: '🥳', impulse: '🫣', regret: '💣',
-  necessary: '🤷', reward: '🍗', painful: '🩸',
-  satisfied: '✨', remorse: '🫠', neutral: '〰️', worthit: '💯',
-};
+
 
 // ============================================================
 //  主组件

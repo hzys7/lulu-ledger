@@ -1,6 +1,5 @@
 // BookModal: create / edit a book. All form state and the save / delete
-// handlers stay in the parent SettingsScreen; this modal is purely
-// presentational + propagation.
+// handlers stay in the parent; this modal is purely presentational.
 import React from 'react';
 import {
   Modal,
@@ -40,9 +39,6 @@ function BookModal({ visible, onClose, editingBook, newBookName, setNewBookName,
               <Ionicons name="close" size={22} color={tc.textMuted} />
             </TouchableOpacity>
           </View>
-          <Text style={{ color: tc.textMuted, fontSize: fontSize.sm, marginBottom: spacing.sm, lineHeight: 20 }}>
-            支持 JSON 完整备份 或 CSV 文本。自动识别格式，重复数据会被跳过。
-          </Text>
 
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: tc.textMuted }]}>账本名称</Text>

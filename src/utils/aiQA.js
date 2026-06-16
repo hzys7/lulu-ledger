@@ -1,6 +1,6 @@
 // 璐璐记账 · AI 对话式财务问答
 // 构建当前财务上下文，支持多轮对话，回答关于消费/收入的问题。
-import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
+import { callAiApi } from './aiClient';
 
 const QA_SYSTEM_PROMPT = `你是一名亲切、专业的个人理财助手，名字叫"小璐"。你需要基于用户的真实账目数据，用简洁友好的中文回答财务相关问题。
 
@@ -123,15 +123,6 @@ export function buildFinancialContext({ transactions, summary, lastSummary, curr
  * @returns {Promise<{ ok: boolean, reply?: string, error?: string }>}
  */
 export async function askFinanceQuestion({ userMessage, history = [], contextText = '' }) {
-  const config = await loadAiConfig();
-  if (!config.apiKey) return { ok: false, error: '未配置 API Key' };
-  if (!config.enabled) return { ok: false, error: 'AI 功能未启用' };
-
-  const baseURL = (config.baseURL || AI_PROVIDERS[config.provider]?.defaultBaseURL || '').replace(/\/+$/, '');
-  if (!baseURL) return { ok: false, error: '接口地址未配置' };
-  const model = config.model === '__custom__' ? config.customModel : config.model;
-  if (!model) return { ok: false, error: '模型未配置' };
-
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);
   const weekDay = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
@@ -141,39 +132,13 @@ export async function askFinanceQuestion({ userMessage, history = [], contextTex
     systemPrompt += '\n\n' + contextText;
   }
 
-  // 构建消息列表：system + 历史 + 当前消息
   const messages = [
     { role: 'system', content: systemPrompt },
     ...history.slice(-10), // 最多保留最近 10 轮对话
     { role: 'user', content: userMessage },
   ];
 
-  try {
-    const res = await fetch(baseURL + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + config.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: messages,
-        temperature: 0.5,
-        max_tokens: 500,
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      if (res.status === 401) return { ok: false, error: 'API Key 无效（401）' };
-      if (res.status === 402) return { ok: false, error: '余额不足（402）' };
-      if (res.status === 429) return { ok: false, error: '请求过快（429）' };
-      return { ok: false, error: 'HTTP ' + res.status + (errText ? '：' + errText.substring(0, 100) : '') };
-    }
-    const json = await res.json();
-    const reply = json?.choices?.[0]?.message?.content?.trim();
-    if (!reply) return { ok: false, error: 'AI 返回内容为空' };
-    return { ok: true, reply };
-  } catch (e) {
-    return { ok: false, error: '网络错误：' + (e?.message || String(e)).substring(0, 100) };
-  }
+  const result = await callAiApi({ messages, temperature: 0.5, maxTokens: 500 });
+  if (!result.ok) return result;
+  return { ok: true, reply: result.content };
 }

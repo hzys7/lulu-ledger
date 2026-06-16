@@ -1,5 +1,5 @@
 ﻿// 璐璐记账 · AI 解析（自然语言 → 账目 JSON）
-import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
+import { callAiApi } from './aiClient';
 import { buildCorrectionExamples } from './aiCorrections';
 import { extractAllJsonObjects, validateParsed } from './aiParserUtils';
 
@@ -50,51 +50,23 @@ async function buildSystemPrompt() {
 // data = { amount, type, category, date, note }
 
 export async function parseTransactionFromText(userText) {
-  const config = await loadAiConfig();
-  if (!config.apiKey) {
-    return { ok: false, error: '未配置 API Key，请先在设置 → AI 配置中填写' };
+  const systemPrompt = await buildSystemPrompt();
+  const result = await callAiApi({
+    system: systemPrompt,
+    userMessage: userText,
+    temperature: 0.1,
+    maxTokens: 300,
+  });
+
+  if (!result.ok) {
+    // 保留友好的提示文案
+    const err = result.error || '';
+    if (err.includes('API Key')) return { ok: false, error: '未配置 API Key，请先在设置 → AI 配置中填写' };
+    if (err.includes('未启用')) return { ok: false, error: 'AI 功能未启用，请在设置 → AI 配置中打开开关' };
+    return { ok: false, error: err };
   }
-  if (!config.enabled) {
-    return { ok: false, error: 'AI 功能未启用，请在设置 → AI 配置中打开开关' };
-  }
-  const baseURL = (config.baseURL || AI_PROVIDERS[config.provider]?.defaultBaseURL || '').replace(/\/+$/, '');
-  if (!baseURL) {
-    return { ok: false, error: '接口地址未配置' };
-  }
-  const model = config.model === '__custom__' ? config.customModel : config.model;
-  if (!model) {
-    return { ok: false, error: '模型未配置' };
-  }
-  try {
-    const url = baseURL + '/chat/completions';
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + config.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: await buildSystemPrompt() },
-          { role: 'user', content: userText },
-        ],
-        temperature: 0.1,
-        max_tokens: 300,
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      if (res.status === 401) return { ok: false, error: 'API Key 无效（401）' };
-      if (res.status === 402) return { ok: false, error: '余额不足（402）' };
-      if (res.status === 429) return { ok: false, error: '请求过快（429）' };
-      return { ok: false, error: 'HTTP ' + res.status + (errText ? '：' + errText.substring(0, 100) : '') };
-    }
-    const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content;
-    if (!content) {
-      return { ok: false, error: 'AI 返回内容为空' };
-    }
+
+  const content = result.content;
     // 1) 优先匹配 ```json ... ``` 代码块
     // 2) 否则用括号配对，从左到右提取第一段合法 JSON
     // 3) 支持多笔账目：AI 可能返回 {...} {...}（中间有逗号/换行）

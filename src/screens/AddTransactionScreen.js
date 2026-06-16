@@ -19,6 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
 import { saveCorrection } from '../utils/aiCorrections';
+import { MOOD_OPTIONS } from '../utils/aiMoodShared';
 import {
   categories as categoryConfig,
   spacing,
@@ -36,19 +37,7 @@ const KEYS = [
   ['.', '0', 'del'],
 ];
 
-const MOOD_OPTIONS = [
-  { key: '', label: '不选', emoji: '—' },
-  { key: 'happy', label: '快乐就完事了', emoji: '🥳' },
-  { key: 'impulse', label: '手一滑就买了', emoji: '🫣' },
-  { key: 'regret', label: '又踩坑了', emoji: '💣' },
-  { key: 'necessary', label: '该花还是得花', emoji: '🤷' },
-  { key: 'reward', label: '辛苦钱犒劳自己', emoji: '🍗' },
-  { key: 'painful', label: '心在滴血', emoji: '🩸' },
-  { key: 'satisfied', label: '真香！', emoji: '✨' },
-  { key: 'remorse', label: '我为什么要买', emoji: '🫠' },
-  { key: 'neutral', label: '就那样吧', emoji: '〰️' },
-  { key: 'worthit', label: '值了', emoji: '💯' },
-];
+
 
 function fmtDay(iso) {
   const d = new Date(iso);

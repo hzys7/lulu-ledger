@@ -87,6 +87,5 @@ export const DEFAULT_SETTINGS = {
   firstDayOfWeek: 1,
   theme: 'light',
   notifications: true,
-  useProxy: false,
   autoCheckUpdate: true,
 };

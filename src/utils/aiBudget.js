@@ -1,6 +1,6 @@
 // 璐璐记账 · AI 预算建议生成器
 // 分析过去几个月的消费数据，为每个支出分类推荐合理的月度预算
-import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
+import { callAiApi } from './aiClient';
 
 // AI 系统提示词：要求仅输出 JSON 数组
 const BUDGET_SYSTEM_PROMPT = `你是一名专业的个人理财助手。根据用户过去几个月的消费数据，为每个支出分类推荐合理的月度预算。
@@ -183,74 +183,38 @@ export async function generateBudgetSuggestions({ pastSummaries, currency = 'CNY
     return { ok: false, error: '历史数据中无有效支出分类' };
   }
 
-  // 尝试加载 AI 配置
-  const config = await loadAiConfig();
-  if (!config.apiKey || !config.enabled) {
-    // AI 未配置，返回本地算法结果
-    return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
-  }
-
-  const baseURL = (config.baseURL || AI_PROVIDERS[config.provider]?.defaultBaseURL || '').replace(/\/+$/, '');
-  if (!baseURL) return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
-  const model = config.model === '__custom__' ? config.customModel : config.model;
-  if (!model) return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
-
-  // 构建用户提示
+  // 尝试用 AI 生成建议
   const userPrompt = buildBudgetPrompt(pastSummaries, currency);
+  const result = await callAiApi({
+    system: BUDGET_SYSTEM_PROMPT,
+    userMessage: userPrompt,
+    temperature: 0.3,
+    maxTokens: 800,
+  });
 
-  try {
-    const res = await fetch(baseURL + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + config.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: BUDGET_SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 800,
-      }),
-    });
-
-    if (!res.ok) {
-      // AI 调用失败，降级到本地算法
-      return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
-    }
-
-    const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content?.trim();
-    if (!content) {
-      return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
-    }
-
-    // 解析 AI 返回的 JSON
-    const aiResults = parseAiJson(content);
-    if (!aiResults || aiResults.length === 0) {
-      return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
-    }
-
-    // 将 AI 结果标准化为统一格式
-    const suggestions = aiResults.map((item) => {
-      // 在本地结果中查找对应分类，获取趋势信息
-      const localMatch = fallbackSuggestions.find((s) => s.category === item.category);
-      return {
-        category: item.category || '',
-        suggested: Math.max(Math.round(Number(item.suggested) || 0), 10),
-        average: localMatch ? localMatch.average : 0,
-        trend: localMatch ? localMatch.trend : 'stable',
-        reason: item.reason || '',
-      };
-    });
-
-    // 按推荐金额降序排列
-    suggestions.sort((a, b) => b.suggested - a.suggested);
-    return { ok: true, suggestions, source: 'ai' };
-  } catch {
-    // 网络或其他异常，降级到本地算法
+  if (!result.ok) {
+    // AI 未配置或调用失败，降级到本地算法
     return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
   }
+
+  // 解析 AI 返回的 JSON
+  const aiResults = parseAiJson(result.content);
+  if (!aiResults || aiResults.length === 0) {
+    return { ok: true, suggestions: fallbackSuggestions, source: 'local' };
+  }
+
+  // 将 AI 结果标准化为统一格式
+  const suggestions = aiResults.map((item) => {
+    const localMatch = fallbackSuggestions.find((s) => s.category === item.category);
+    return {
+      category: item.category || '',
+      suggested: Math.max(Math.round(Number(item.suggested) || 0), 10),
+      average: localMatch ? localMatch.average : 0,
+      trend: localMatch ? localMatch.trend : 'stable',
+      reason: item.reason || '',
+    };
+  });
+
+  suggestions.sort((a, b) => b.suggested - a.suggested);
+  return { ok: true, suggestions, source: 'ai' };
 }

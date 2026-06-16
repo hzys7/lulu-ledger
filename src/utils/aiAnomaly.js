@@ -1,7 +1,7 @@
 // 璐璐记账 · 异常消费检测
 // 本地统计分析 + AI 生成友好提醒文案
-import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { callAiApi } from './aiClient';
+import { getCache, setCache, removeCache } from './aiCache';
 
 const CACHE_KEY = 'lulu_anomaly_cache';
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 小时
@@ -137,17 +137,7 @@ export async function generateAnomalyMessage(anomalies) {
     return { ok: true, message: '' };
   }
 
-  const config = await loadAiConfig();
-  if (!config.apiKey || !config.enabled) {
-    // 无 AI 时使用本地文案
-    return { ok: true, message: buildLocalMessage(anomalies) };
-  }
-
-  const baseURL = (config.baseURL || AI_PROVIDERS[config.provider]?.defaultBaseURL || '').replace(/\/+$/, '');
-  if (!baseURL) return { ok: true, message: buildLocalMessage(anomalies) };
-  const model = config.model === '__custom__' ? config.customModel : config.model;
-  if (!model) return { ok: true, message: buildLocalMessage(anomalies) };
-
+  const anomaliesText = anomalies.map((a) => '- ' + a.detail).join('\n');
   const systemPrompt = `你是"小璐"，一个亲切的记账助手。用户有一些消费异常需要你友善提醒。
 要求：
 - 用 1-2 句简短的中文提醒，语气亲切不生硬
@@ -155,35 +145,17 @@ export async function generateAnomalyMessage(anomalies) {
 - 可以给一个小建议
 - 不要使用 Markdown
 - 可以用 1 个 emoji`;
-
-  const anomaliesText = anomalies.map((a) => '- ' + a.detail).join('\n');
   const userPrompt = '以下是检测到的消费异常：\n' + anomaliesText + '\n\n请生成一条友好的提醒文案。';
 
-  try {
-    const res = await fetch(baseURL + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + config.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.6,
-        max_tokens: 150,
-      }),
-    });
-    if (!res.ok) return { ok: true, message: buildLocalMessage(anomalies) };
-    const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content?.trim();
-    if (!content) return { ok: true, message: buildLocalMessage(anomalies) };
-    return { ok: true, message: content };
-  } catch {
-    return { ok: true, message: buildLocalMessage(anomalies) };
-  }
+  const result = await callAiApi({
+    system: systemPrompt,
+    userMessage: userPrompt,
+    temperature: 0.6,
+    maxTokens: 150,
+  });
+
+  if (result.ok) return { ok: true, message: result.content };
+  return { ok: true, message: buildLocalMessage(anomalies) };
 }
 
 /**
@@ -210,37 +182,18 @@ function buildLocalMessage(anomalies) {
  *   如果不同则视为缓存失效（说明有新交易产生），返回 null 触发重新检测
  */
 export async function getCachedAnomalies(currentTxCount) {
-  try {
-    const raw = await AsyncStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    // 6 小时过期
-    if (Date.now() - data.timestamp > CACHE_TTL) return null;
-    // 交易数变了 → 缓存失效（有新交易未检测）
-    if (currentTxCount != null && data.txCount != null && data.txCount !== currentTxCount) return null;
-    return data;
-  } catch {
-    return null;
-  }
+  const data = await getCache(CACHE_KEY);
+  if (!data) return null;
+  // 自定义过期检查：6 小时 + 交易数指纹
+  if (Date.now() - data.timestamp > CACHE_TTL) return null;
+  if (currentTxCount != null && data.txCount != null && data.txCount !== currentTxCount) return null;
+  return data;
 }
 
-/**
- * 缓存异常检测结果
- */
 export async function setCachedAnomalies(anomalies, message, txCount) {
-  try {
-    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({
-      anomalies,
-      message,
-      txCount,
-      timestamp: Date.now(),
-    }));
-  } catch {}
+  await setCache(CACHE_KEY, { anomalies, message, txCount, timestamp: Date.now() });
 }
 
-/**
- * 清除缓存
- */
 export async function clearAnomalyCache() {
-  await AsyncStorage.removeItem(CACHE_KEY);
+  await removeCache(CACHE_KEY);
 }
