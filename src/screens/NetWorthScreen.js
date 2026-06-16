@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
+import { typeInfo } from '../utils/accountTypes';
 import {
   spacing,
   borderRadius,
@@ -24,18 +25,6 @@ import {
   shadows,
   getThemeColors,
 } from '../theme';
-
-const ACCOUNT_TYPES = [
-  { key: 'wechat', name: '微信', icon: 'logo-wechat', color: '#07C160' },
-  { key: 'alipay', name: '支付宝', icon: 'wallet', color: '#1677FF' },
-  { key: 'bank', name: '银行卡', icon: 'card', color: '#722ED1' },
-  { key: 'cash', name: '现金', icon: 'cash', color: '#FA8C16' },
-  { key: 'other', name: '其他', icon: 'ellipsis-horizontal-circle', color: '#8C8C8C' },
-];
-
-function typeInfo(type) {
-  return ACCOUNT_TYPES.find(t => t.key === type) || ACCOUNT_TYPES[4];
-}
 
 export default function NetWorthScreen() {
   const { accounts, addAccount, editAccount, removeAccount, adjustAccount, setDefaultAccount, settings } = useFinance();
@@ -131,7 +120,7 @@ export default function NetWorthScreen() {
     if (adjusting) await adjustAccount(adjusting.id, delta);
     setAdjustModalOpen(false);
     setAdjusting(null);
-  }, [adjustDelta, adjusting, adjusting?.id, adjusting]);
+  }, [adjustDelta, adjusting, adjustAccount]);
 
   return (
     <View style={[styles.container, { backgroundColor: tc.background }]}>

@@ -104,14 +104,16 @@ export default function AddTransactionScreen({ navigation, route }) {
   }, [cursorOpacity]);
 
   // 数字键盘按压动画值
-  const keyAnims = useRef({});
-  KEYS.flat().forEach((k) => {
-    if (!keyAnims.current[k]) {
-      keyAnims.current[k] = new Animated.Value(1);
-    }
-  });
+  const keyAnimsRef = useRef(null);
+  if (!keyAnimsRef.current) {
+    keyAnimsRef.current = {};
+    KEYS.flat().forEach((k) => {
+      keyAnimsRef.current[k] = new Animated.Value(1);
+    });
+  }
+  const keyAnims = keyAnimsRef.current;
   const animateKey = (key, toValue) => {
-    Animated.spring(keyAnims.current[key], {
+    Animated.spring(keyAnims[key], {
       toValue,
       useNativeDriver: true,
       friction: 12,
@@ -371,7 +373,7 @@ export default function AddTransactionScreen({ navigation, route }) {
                         style={[
                           styles.keypadKey,
                           !isLast && styles.keypadKeyGap,
-                          { backgroundColor: tc.surfaceMuted, transform: [{ scale: keyAnims.current[k] }] },
+                          { backgroundColor: tc.surfaceMuted, transform: [{ scale: keyAnims[k] }] },
                         ]}
                       >
                         <TouchableOpacity

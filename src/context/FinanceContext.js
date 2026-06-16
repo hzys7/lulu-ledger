@@ -15,11 +15,10 @@
 //
 // 内部 useFinance() 是个聚合 hook：按字段名路由到对应 context，所以旧代码
 // `const { transactions, settings, addTx } = useFinance();` 一行不用改。
-import { useSettings } from './SettingsContext';
-import { useBooks } from './BooksContext';
-import { useData } from './DataContext';
-import { useMemo, useEffect } from 'react';
-import * as storage from '../utils/storage';
+import React, { useMemo, useEffect } from 'react';
+import { useSettings, SettingsProvider } from './SettingsContext';
+import { useBooks, BooksProvider } from './BooksContext';
+import { useData, DataProvider } from './DataContext';
 
 export function FinanceProvider({ children }) {
   return (
@@ -30,14 +29,6 @@ export function FinanceProvider({ children }) {
     </SettingsProvider>
   );
 }
-
-// Each underlying provider re-exports its own useXxx, but for backward
-// compatibility we also keep a single useFinance() that fans out by key.
-// We import the inner providers here (not at the top) to avoid circular
-// imports through the useFinance hook.
-import { SettingsProvider } from './SettingsContext';
-import { BooksProvider } from './BooksContext';
-import { DataProvider } from './DataContext';
 
 // One-time bootstrap that loads all three providers in order. Settings is
 // independent, Books depends on its own storage, Data depends on both.

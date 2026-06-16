@@ -77,10 +77,6 @@ function calcBalance(txList) {
   return income - expense;
 }
 
-// ─── 颜色映射 ───────────────────────────────────────────
-
-
-
 
 // ============================================================
 //  主组件
@@ -238,7 +234,7 @@ export default function StatisticsScreen({ navigation }) {
       .reduce((s, t) => s + t.amount, 0);
   }, [transactions, lastWeekStart, lastWeekEnd, dataType]);
 
-  const weekDailyAvg = 7 > 0 ? weekSummaryTotal / 7 : 0;
+  const weekDailyAvg = weekSummaryTotal / 7;
   const weekDiffVsLast = weekSummaryTotal - lastWeekTotal;
   const weekBalance = useMemo(() => {
     return calcBalance(weekAllTx);
@@ -338,6 +334,7 @@ export default function StatisticsScreen({ navigation }) {
   // 重置饼图选中状态（周期/数据变化时）
   useEffect(() => {
     setSelectedPieIndex(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryItems]);
 
   const moodPeriodTotal = period === 'week' ? weekSummaryTotal : period === 'month' ? monthTotalAmount : yearSummaryTotal;
@@ -425,7 +422,7 @@ export default function StatisticsScreen({ navigation }) {
       .reduce((s, t) => s + t.amount, 0);
   }, [transactions, reportYear, dataType]);
 
-  const yearMonthlyAvg = 12 > 0 ? yearSummaryTotal / 12 : 0;
+  const yearMonthlyAvg = yearSummaryTotal / 12;
   const yearDiffVsLast = yearSummaryTotal - lastYearTotal;
   const yearBalance = useMemo(() => {
     return calcBalance(yearAllTx);

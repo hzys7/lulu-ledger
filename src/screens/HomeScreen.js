@@ -18,24 +18,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney } from '../utils/currency';
 import { loadAiConfig } from '../utils/aiConfig';
+import { ACCOUNT_TYPES, typeInfo } from '../utils/accountTypes';
 import AiChatScreen from './AiChatScreen';
 import AiQAScreen from './AiQAScreen';
 import AnomalyAlert from '../components/AnomalyAlert';
 import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
 import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
-
-// 与 NetWorthScreen 保持一致的账户类型映射（不复用以避免跨屏耦合）
-const ACCOUNT_TYPES = [
-  { key: 'wechat', name: '微信', icon: 'logo-wechat', color: '#07C160' },
-  { key: 'alipay', name: '支付宝', icon: 'wallet', color: '#1677FF' },
-  { key: 'bank', name: '银行卡', icon: 'card', color: '#722ED1' },
-  { key: 'cash', name: '现金', icon: 'cash', color: '#FA8C16' },
-  { key: 'other', name: '其他', icon: 'ellipsis-horizontal-circle', color: '#8C8C8C' },
-];
-function typeInfo(type) {
-  return ACCOUNT_TYPES.find((t) => t.key === type) || ACCOUNT_TYPES[4];
-}
 
 export default function HomeScreen({ navigation }) {
   const { settings, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook, accounts, transactions, getMonthSummary } = useFinance();
