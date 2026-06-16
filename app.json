@@ -43,9 +43,6 @@
         }
       ],
       "./withInstallPermission"
-    ],
-    "experiments": {
-      "inlineRequires": true
-    }
+    ]
   }
 }
