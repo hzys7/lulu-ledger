@@ -1,5 +1,5 @@
 // 璐璐记账 · 首页（仪表盘）
-// 设计：大号余额卡 + 快捷统计 + 近期交易 + AI 入口
+// 设计：预算概览 + 近期交易 + AI 入口
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
@@ -21,12 +21,14 @@ import { loadAiConfig } from '../utils/aiConfig';
 import AiChatScreen from './AiChatScreen';
 import AiQAScreen from './AiQAScreen';
 import AnomalyAlert from '../components/AnomalyAlert';
+import BudgetPieChart from '../components/BudgetPieChart';
+import TransactionDetailModal from '../components/TransactionDetailModal';
 import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
 import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 
 export default function HomeScreen({ navigation }) {
-  const { transactions, settings, getMonthSummary, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook } = useFinance();
+  const { transactions, settings, getMonthSummary, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook, budgets, accounts, removeTx } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -36,8 +38,11 @@ export default function HomeScreen({ navigation }) {
   const [newBookName, setNewBookName] = useState('');
   const [newBookIcon, setNewBookIcon] = useState('wallet');
   const [newBookColor, setNewBookColor] = useState('#7C5CFF');
+  // 交易详情弹窗
+  const [detailTx, setDetailTx] = useState(null);
 
   const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const summary = getMonthSummary(now.getFullYear(), now.getMonth());
   const netWorth = getNetWorth();
 
@@ -99,13 +104,6 @@ export default function HomeScreen({ navigation }) {
     await reload();
     setRefreshing(false);
   }, [reload]);
-
-  // 上月对照
-  const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-  const lastSummary = getMonthSummary(lastMonthYear, lastMonth);
-  const expenseDiff = summary.expense - lastSummary.expense;
-  const expenseDiffPct = lastSummary.expense > 0 ? Math.round((expenseDiff / lastSummary.expense) * 100) : 0;
 
   const currentBook = books.find(b => b.id === currentBookId) || books[0];
 
@@ -200,84 +198,16 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* 余额卡片 */}
+        {/* 预算环形图 */}
         <View style={styles.balanceSection}>
-          <View style={[styles.balanceCard, { backgroundColor: tc.surface, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm }]}>
-            <View style={styles.balanceBlock}>
-              <Text style={[styles.balanceLabel, { color: tc.textMuted }]}>本月收支</Text>
-              <Text style={[styles.balanceAmount, { color: summary.balance >= 0 ? tc.text : tc.danger }]}>
-                {formatMoney(summary.balance, settings.currency)}
-              </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('NetWorth')}
-                activeOpacity={0.6}
-                style={styles.netWorthRow}
-              >
-                <Text style={[styles.netWorthLabel, { color: tc.textMuted }]}>净资产</Text>
-                <Text style={[styles.netWorthValue, { color: netWorth >= 0 ? tc.text : tc.danger }]} numberOfLines={1}>
-                  {formatMoney(netWorth, settings.currency)}
-                </Text>
-                <Ionicons name="chevron-forward" size={14} color={tc.textSubtle} />
-              </TouchableOpacity>
-            </View>
-            <View style={[styles.statDivider, { backgroundColor: tc.divider }]} />
-            <View style={styles.statRow}>
-              <View style={styles.statItem}>
-                <View style={styles.statMeta}>
-                  <View style={[styles.statArrow, { backgroundColor: tc.successSubtle }]}>
-                    <Ionicons name="arrow-down" size={10} color={tc.success} />
-                  </View>
-                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>收入</Text>
-                </View>
-                <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(summary.income, settings.currency)}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <View style={styles.statMeta}>
-                  <View style={[styles.statArrow, { backgroundColor: tc.dangerSubtle }]}>
-                    <Ionicons name="arrow-up" size={10} color={tc.danger} />
-                  </View>
-                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>支出</Text>
-                </View>
-                <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(summary.expense, settings.currency)}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* 快捷统计 */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
-            <Text style={[styles.statCardLabel, { color: tc.textMuted }]}>本月支出</Text>
-            <View style={styles.statCardRow}>
-              <Text style={[styles.statCardValue, { color: tc.text }]}>
-                -{formatMoney(summary.expense, settings.currency)}
-              </Text>
-              <View style={[styles.diffBadge, { backgroundColor: expenseDiff > 0 ? tc.dangerSubtle : tc.successSubtle }]}>
-                <Ionicons
-                  name={expenseDiff > 0 ? 'arrow-up' : 'arrow-down'}
-                  size={10}
-                  color={expenseDiff > 0 ? tc.danger : tc.success}
-                />
-                <Text style={[styles.diffText, { color: expenseDiff > 0 ? tc.danger : tc.success }]}>
-                  {expenseDiffPct > 0 ? '+' : ''}{expenseDiffPct}%
-                </Text>
-              </View>
-            </View>
-            <Text style={[styles.statCardSub, { color: tc.textSubtle }]}>vs 上月</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.statCard, { backgroundColor: tc.surface, borderColor: tc.border }]}
-            onPress={() => navigation.navigate('Statistics')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.statCardLabel, { color: tc.textMuted }]}>日均支出</Text>
-            <Text style={[styles.statCardValue, { color: tc.text }]}>
-              -{formatMoney(now.getDate() > 0 ? summary.expense / now.getDate() : 0, settings.currency)}
-            </Text>
-            <View style={styles.statCardFooter}>
-              <Text style={[styles.statCardSub, { color: tc.primary }]}>查看统计 →</Text>
-            </View>
-          </TouchableOpacity>
+          <BudgetPieChart
+            budgets={budgets?.filter(b => b.month === currentMonthStr) || []}
+            byCategory={summary.byCategory || {}}
+            tc={tc}
+            categoryColors={tc.categories}
+            onNavigateBudget={() => navigation.navigate('Budget')}
+            currency={settings.currency}
+          />
         </View>
 
         {/* 异常消费提醒 */}
@@ -376,7 +306,7 @@ export default function HomeScreen({ navigation }) {
               {recentTransactions.map((tx, i) => (
                 <TouchableOpacity
                   key={tx.id}
-                  onPress={() => navigation.navigate('AddTransaction', { transaction: tx })}
+                  onPress={() => setDetailTx(tx)}
                   activeOpacity={0.7}
                 >
                   <TransactionItem
@@ -408,6 +338,28 @@ export default function HomeScreen({ navigation }) {
       <AiQAScreen
         visible={showAiQA}
         onClose={() => setShowAiQA(false)}
+      />
+
+      <TransactionDetailModal
+        visible={!!detailTx}
+        transaction={detailTx}
+        accounts={accounts}
+        tc={tc}
+        onEdit={() => {
+          if (detailTx) {
+            setDetailTx(null);
+            navigation.navigate('AddTransaction', { transaction: detailTx });
+          }
+        }}
+        onDelete={() => {
+          if (detailTx) {
+            Alert.alert('删除交易', '确定删除这条记录吗？', [
+              { text: '取消', style: 'cancel' },
+              { text: '删除', style: 'destructive', onPress: () => { removeTx(detailTx.id); setDetailTx(null); reload(); } },
+            ]);
+          }
+        }}
+        onClose={() => setDetailTx(null)}
       />
 
       {/* 账本选择弹窗 */}
@@ -468,36 +420,8 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // 余额卡
+  // 预算区域
   balanceSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
-  balanceCard: { borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.base },
-  balanceBlock: { marginTop: spacing.lg },
-  balanceLabel: { fontSize: fontSize.sm, letterSpacing: -0.1 },
-  balanceAmount: { fontSize: 44, fontWeight: fontWeight.bold, letterSpacing: -1.5, marginTop: spacing.xs, fontVariant: ['tabular-nums'] },
-  netWorthRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: 4 },
-  netWorthLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
-  netWorthValue: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
-  statDivider: { height: StyleSheet.hairlineWidth, marginVertical: spacing.base },
-  statRow: { flexDirection: 'row', alignItems: 'center' },
-  statItem: { flex: 1 },
-  statMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  statArrow: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  statLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
-  statValue: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, marginTop: spacing.xxs, letterSpacing: -0.3, fontVariant: ['tabular-nums'] },
-
-  // 快捷统计行
-  statsRow: { flexDirection: 'row', paddingHorizontal: spacing.base, paddingBottom: spacing.sm, gap: spacing.sm },
-  statCard: {
-    flex: 1, padding: spacing.base, borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth, ...shadows.sm,
-  },
-  statCardLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
-  statCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
-  statCardValue: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3, fontVariant: ['tabular-nums'] },
-  diffBadge: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 },
-  diffText: { fontSize: 10, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'] },
-  statCardSub: { fontSize: fontSize.xs, marginTop: spacing.xxs, letterSpacing: -0.1 },
-  statCardFooter: { flexDirection: 'row', marginTop: spacing.xs },
 
   // AI 卡片
   aiCardWrap: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
