@@ -47,7 +47,6 @@ export default function ShareCard({
     <View style={[styles.card, { backgroundColor: t.bg }]}>
       {/* 头部 */}
       <View style={styles.header}>
-        <Text style={[styles.appName, { color: t.textMuted }]}>小璐记账</Text>
         <Text style={[styles.periodText, { color: t.text }]}>{periodLabel}</Text>
         <View style={[styles.badge, { backgroundColor: t.primary }]}>
           <Text style={styles.badgeText}>{topLabel}报告</Text>
