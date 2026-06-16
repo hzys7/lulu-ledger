@@ -18,7 +18,6 @@ import StatisticsScreen from './src/screens/StatisticsScreen';
 import NetWorthScreen from './src/screens/NetWorthScreen';
 import BudgetScreen from './src/screens/BudgetScreen';
 import AiMonthlyReportScreen from './src/screens/AiMonthlyReportScreen';
-import GoalScreen from './src/screens/GoalScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { colors, getThemeColors, fontSize, fontWeight, spacing } from './src/theme';
 
@@ -175,20 +174,6 @@ function RootNavigator() {
         options={{
           headerShown: true,
           headerTitle: 'AI 月度复盘',
-          headerTitleStyle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: tc.text, letterSpacing: -0.3 },
-          headerStyle: { backgroundColor: tc.background, elevation: 0, shadowOpacity: 0 },
-          headerTintColor: tc.text,
-          headerShadowVisible: false,
-          headerBackTitle: '',
-          headerBackTitleVisible: false,
-        }}
-      />
-      <Stack.Screen
-        name="Goal"
-        component={GoalScreen}
-        options={{
-          headerShown: true,
-          headerTitle: '消费目标',
           headerTitleStyle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: tc.text, letterSpacing: -0.3 },
           headerStyle: { backgroundColor: tc.background, elevation: 0, shadowOpacity: 0 },
           headerTintColor: tc.text,
