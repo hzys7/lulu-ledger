@@ -77,7 +77,7 @@ class LuluApkInstallerModule : Module() {
       val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
       val request = DownloadManager.Request(Uri.parse(url)).apply {
-        setTitle("璐璐记账更新")
+        setTitle("小璐记账更新")
         setDescription("正在下载 $fileName")
         setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)

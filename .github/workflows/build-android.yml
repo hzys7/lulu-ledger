@@ -202,7 +202,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.PKG_VERSION }}
-          name: 璐璐记账 v${{ env.PKG_VERSION }}
+          name: 小璐记账 v${{ env.PKG_VERSION }}
           body: |
             最新 APK 自动构建。
 
