@@ -24,7 +24,7 @@
       "package": "com.lululedger.app"
     },
     "web": {
-"name": "小璐记账",
+      "name": "小璐记账",
       "shortName": "小璐记账",
       "description": "小璐记账",
       "lang": "zh-CN",
@@ -43,6 +43,9 @@
         }
       ],
       "./withInstallPermission"
-    ]
+    ],
+    "experiments": {
+      "inlineRequires": true
+    }
   }
 }

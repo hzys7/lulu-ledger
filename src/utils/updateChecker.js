@@ -1,4 +1,4 @@
-﻿// Lulu Ledger update checker.
+// Lulu Ledger update checker.
 // api.github.com works in most regions but times out (504) in mainland China.
 // We fall back to the public GitHub Atom feed which is reachable from CN.
 // The Atom feed has no asset URLs, so we CONSTRUCT the APK download URL
@@ -279,9 +279,15 @@ export function getLastSourceErrors() {
 
 export async function checkForUpdate() {
   const local = getLocalVersion();
+  console.log('[UpdateChecker] Local version:', local);
   const remote = await fetchLatestRelease();
-  if (!remote) return { hasUpdate: false, local, remote: null, apk: null, errors: _sourceErrors.slice() };
+  console.log('[UpdateChecker] Remote version:', remote?.version, 'source:', remote?.source);
+  if (!remote) {
+    console.log('[UpdateChecker] No remote release found, errors:', _sourceErrors);
+    return { hasUpdate: false, local, remote: null, apk: null, errors: _sourceErrors.slice() };
+  }
   const cmp = compareVersion(remote.version, local);
+  console.log('[UpdateChecker] Compare result:', cmp, '(>0 means has update)');
   const rawApk = remote.assets.find((a) => a.name.endsWith('.apk')) || null;
   const apk = rawApk
     ? { ...rawApk, mirrors: withMirror(rawApk.url) }
