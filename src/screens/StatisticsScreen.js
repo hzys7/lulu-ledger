@@ -333,6 +333,14 @@ export default function StatisticsScreen({ navigation }) {
   const [moodAnalysisError, setMoodAnalysisError] = useState('');
 
   const [rankingExpanded, setRankingExpanded] = useState(false);
+  const [selectedPieIndex, setSelectedPieIndex] = useState(null);
+
+  const categoryItems = period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems;
+
+  // 重置饼图选中状态（周期/数据变化时）
+  useEffect(() => {
+    setSelectedPieIndex(null);
+  }, [categoryItems]);
 
   const moodPeriodTotal = period === 'week' ? weekSummaryTotal : period === 'month' ? monthTotalAmount : yearSummaryTotal;
 
@@ -704,17 +712,35 @@ export default function StatisticsScreen({ navigation }) {
               </View>
               <View style={styles.pieRow}>
                 <PieRing
-                  data={(period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).map(it => ({ value: it.amount, color: it.color }))}
+                  data={categoryItems.map(it => ({ value: it.amount, color: it.color }))}
                   size={150}
                   thickness={26}
+                  selectedIndex={selectedPieIndex}
+                  onSegmentPress={(idx) => setSelectedPieIndex(prev => prev === idx ? null : idx)}
                   center={(
                     <View style={styles.pieCenter}>
-                      <Text style={[styles.pieCenterLabel, { color: tc.textMuted }]} numberOfLines={1} adjustsFontSizeToFit>
-                        {period === 'week' ? '本周' : period === 'month' ? '本月' : '本年'}{totalLabel}
-                      </Text>
-                      <Text style={[styles.pieCenterAmount, { color: tc.text }]} numberOfLines={1} adjustsFontSizeToFit>
-                        {formatMoney(period === 'week' ? weekSummaryTotal : period === 'month' ? monthTotalAmount : yearSummaryTotal, settings.currency).replace('¥', '')}
-                      </Text>
+                      {selectedPieIndex !== null && categoryItems[selectedPieIndex] ? (
+                        <>
+                          <Text style={[styles.pieCenterLabel, { color: categoryItems[selectedPieIndex].color }]} numberOfLines={1} adjustsFontSizeToFit>
+                            {categoryItems[selectedPieIndex].name}
+                          </Text>
+                          <Text style={[styles.pieCenterAmount, { color: tc.text }]} numberOfLines={1} adjustsFontSizeToFit>
+                            {formatMoney(categoryItems[selectedPieIndex].amount, settings.currency).replace('¥', '')}
+                          </Text>
+                          <Text style={[styles.pieCenterPct, { color: tc.textMuted, fontSize: fontSize.sm, marginTop: 2 }]}>
+                            {categoryItems[selectedPieIndex].percent}%
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={[styles.pieCenterLabel, { color: tc.textMuted }]} numberOfLines={1} adjustsFontSizeToFit>
+                            {period === 'week' ? '本周' : period === 'month' ? '本月' : '本年'}{totalLabel}
+                          </Text>
+                          <Text style={[styles.pieCenterAmount, { color: tc.text }]} numberOfLines={1} adjustsFontSizeToFit>
+                            {formatMoney(period === 'week' ? weekSummaryTotal : period === 'month' ? monthTotalAmount : yearSummaryTotal, settings.currency).replace('¥', '')}
+                          </Text>
+                        </>
+                      )}
                     </View>
                   )}
                 />

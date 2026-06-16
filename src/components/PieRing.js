@@ -1,9 +1,9 @@
 // 手画环形图
 // props: data = [{ value, color }], size, thickness, center (React node)
-import { useThemeColors } from '../hooks/useThemeColors';
+//         selectedIndex, onSegmentPress (支持点击高亮)
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, G } from 'react-native-svg';
+import Svg, { Path, G, Circle } from 'react-native-svg';
 import { fontSize } from '../theme';
 
 function polarToCartesian(cx, cy, r, angleDeg) {
@@ -29,14 +29,19 @@ function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
   ].join(' ');
 }
 
-const PieRing = memo(function PieRing({ data, size = 180, thickness = 28, center = null }) {
-  const tc = useThemeColors();
-
+const PieRing = memo(function PieRing({
+  data,
+  size = 180,
+  thickness = 28,
+  center = null,
+  selectedIndex = null,
+  onSegmentPress,
+}) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) {
     return (
       <View style={[styles.empty, { width: size, height: size }]}>
-        <Text style={[styles.emptyText, { color: tc.textMuted }]}>{'暂无数据'}</Text>
+        <Text style={[styles.emptyText, { color: '#999' }]}>{'暂无数据'}</Text>
       </View>
     );
   }
@@ -45,8 +50,11 @@ const PieRing = memo(function PieRing({ data, size = 180, thickness = 28, center
   const cy = size / 2;
   const rOuter = size / 2 - 2;
   const rInner = rOuter - thickness;
+  const trackR = rOuter - thickness / 2;
 
-  const gapDeg = data.length > 1 ? 1.5 : 0;
+  // 多个色块时使用更大间隙 + 背景轨道，单色块时保持简洁
+  const hasMultiple = data.length > 1;
+  const gapDeg = hasMultiple ? 2.5 : 0;
 
   let cursor = 0;
   const arcs = data.map((d, i) => {
@@ -55,17 +63,59 @@ const PieRing = memo(function PieRing({ data, size = 180, thickness = 28, center
     const startAngle = cursor + gapDeg / 2;
     const endAngle = cursor + sweep - gapDeg / 2;
     cursor += sweep;
-    return { d, startAngle, endAngle, key: i };
+    return { d, startAngle, endAngle, key: i, index: i };
   });
 
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <Svg width={size} height={size}>
+        {/* 背景轨道环 — 增加视觉层次感 */}
+        {hasMultiple && (
+          <Circle
+            cx={cx}
+            cy={cy}
+            r={trackR}
+            fill="none"
+            stroke="rgba(128,128,128,0.07)"
+            strokeWidth={thickness + 2}
+          />
+        )}
         <G>
-          {arcs.map(({ d, startAngle, endAngle, key }) => {
+          {arcs.map(({ d, startAngle, endAngle, key, index }) => {
             if (endAngle - startAngle <= 0) return null;
-            const path = arcPath(cx, cy, rOuter, rInner, startAngle, endAngle);
-            return <Path key={key} d={path} fill={d.color} />;
+
+            const isSelected = selectedIndex === index;
+            const isDimmed = selectedIndex !== null && !isSelected;
+
+            // 选中段向外微微扩展（发光效果）
+            const glowAmt = isSelected ? Math.min(thickness * 0.12, 3) : 0;
+            const rOuterAdj = rOuter + glowAmt;
+            const rInnerAdj = rInner - glowAmt;
+
+            const path = arcPath(cx, cy, rOuterAdj, rInnerAdj, startAngle, endAngle);
+
+            return (
+              <G key={key}>
+                {/* 选中段发光外层 */}
+                {isSelected && (
+                  <Path
+                    d={arcPath(cx, cy, rOuter + 3, rInner - 3, startAngle, endAngle)}
+                    fill={d.color}
+                    opacity={0.25}
+                    stroke="none"
+                  />
+                )}
+                {/* 色块本体 */}
+                <Path
+                  d={path}
+                  fill={d.color}
+                  stroke="rgba(0,0,0,0.08)"
+                  strokeWidth={0.5}
+                  opacity={isDimmed ? 0.3 : 1}
+                  onPress={() => onSegmentPress?.(index)}
+                />
+              </G>
+            );
           })}
         </G>
       </Svg>
