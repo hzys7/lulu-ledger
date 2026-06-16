@@ -1,82 +1,87 @@
-﻿import React, { memo } from 'react';
-import { useThemeColors } from '../hooks/useThemeColors';
+// 数字键盘组件 - 独立渲染，避免父组件 re-render
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 
-export const NumberPad = memo(function NumberPad({ onInput, onDelete, onConfirm, style, confirmLabel = '确定' }) {
-  const tc = useThemeColors();
+const KEYS = [
+  ['1', '2', '3'],
+  ['4', '5', '6'],
+  ['7', '8', '9'],
+  ['.', '0', 'del'],
+];
 
-  const keys = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['.', '0', 'back'],
-  ];
+export default function NumberPad({ onInput, onDelete, tc }) {
+  const [pressedKey, setPressedKey] = useState(null);
+
+  const handlePressIn = useCallback((key) => {
+    setPressedKey(key);
+  }, []);
+
+  const handlePressOut = useCallback(() => {
+    setPressedKey(null);
+  }, []);
+
+  const handlePress = useCallback((key) => {
+    if (key === 'del') {
+      onDelete();
+    } else {
+      onInput(key);
+    }
+  }, [onInput, onDelete]);
 
   return (
-    <View style={style}>
-      {keys.map((row, ri) => (
-        <View key={ri} style={styles.row}>
-          {row.map((k) => {
-            const isBack = k === 'back';
+    <View style={styles.keypad}>
+      {KEYS.map((row, ri) => (
+        <View key={ri} style={styles.keypadRow}>
+          {row.map((k, ki) => {
+            const isDel = k === 'del';
+            const isLast = ki === row.length - 1;
+            const isPressed = pressedKey === k;
             return (
               <TouchableOpacity
                 key={k}
-                style={[styles.key, { backgroundColor: tc.surface }]}
-                onPress={() => (isBack ? onDelete?.() : onInput?.(k))}
-                activeOpacity={0.55}
+                style={[
+                  styles.keypadKey,
+                  !isLast && styles.keypadKeyGap,
+                  { 
+                    backgroundColor: isPressed ? tc.surfaceSubtle : tc.surfaceMuted,
+                  },
+                ]}
+                onPress={() => handlePress(k)}
+                onPressIn={() => handlePressIn(k)}
+                onPressOut={handlePressOut}
+                activeOpacity={0.8}
               >
-                {isBack ? (
+                {isDel ? (
                   <Ionicons name="backspace-outline" size={20} color={tc.text} />
                 ) : (
-                  <Text style={[styles.keyText, { color: tc.text }]}>{k}</Text>
+                  <Text style={[styles.keypadKeyText, { color: tc.text }]}>{k}</Text>
                 )}
               </TouchableOpacity>
             );
           })}
         </View>
       ))}
-      <TouchableOpacity
-        style={[styles.confirm, { backgroundColor: tc.primary }]}
-        onPress={onConfirm}
-        activeOpacity={0.85}
-      >
-        <Text style={[styles.confirmText, { color: tc.primaryOn }]}>{confirmLabel}</Text>
-      </TouchableOpacity>
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  key: {
+  keypad: {},
+  keypadRow: { flexDirection: 'row', marginBottom: spacing.sm },
+  keypadKey: {
     flex: 1,
-    height: 56,
+    height: 52,
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  keyText: {
-    fontSize: fontSize.xl,
+  keypadKeyGap: { marginRight: spacing.sm },
+  keypadKeyText: {
+    fontSize: fontSize.xxl,
     fontWeight: fontWeight.medium,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.5,
-  },
-  confirm: {
-    height: 56,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.xs,
-  },
-  confirmText: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-    letterSpacing: -0.2,
   },
 });

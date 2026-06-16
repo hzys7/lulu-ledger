@@ -21,6 +21,7 @@ import { formatMoney, getCurrencySymbol } from '../utils/currency';
 import { saveCorrection } from '../utils/aiCorrections';
 import { suggestCategories } from '../utils/aiCategorySuggest';
 import { MOOD_OPTIONS } from '../utils/aiMoodShared';
+import NumberPad from '../components/NumberPad';
 import {
   categories as categoryConfig,
   spacing,
@@ -30,15 +31,6 @@ import {
   shadows,
   getThemeColors,
 } from '../theme';
-
-const KEYS = [
-  ['1', '2', '3'],
-  ['4', '5', '6'],
-  ['7', '8', '9'],
-  ['.', '0', 'del'],
-];
-
-
 
 function fmtDay(iso) {
   const d = new Date(iso);
@@ -82,13 +74,16 @@ export default function AddTransactionScreen({ navigation, route }) {
   // 抽屉状态
   const [formOpen, setFormOpen] = useState(false);
   const [formCategory, setFormCategory] = useState('');
-  const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [date, setDate] = useState(new Date().toISOString());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const defaultAccId = (accounts.find(a => a.isDefault) || accounts[0])?.id;
   const [accountId, setAccountId] = useState(defaultAccId);
   const [mood, setMood] = useState('');
+
+  // 金额用 ref 存储，避免 re-render
+  const amountRef = useRef('');
+  const [displayAmount, setDisplayAmount] = useState('0');
 
   // 智能分类建议
   const [categorySuggestions, setCategorySuggestions] = useState([]);
@@ -100,10 +95,6 @@ export default function AddTransactionScreen({ navigation, route }) {
     const suggestions = suggestCategories(note, type);
     setCategorySuggestions(suggestions.filter(s => s.category !== formCategory));
   }, [note, type, formCategory]);
-
-  // 使用 ref 缓存金额，减少 re-render
-  const amountRef = useRef('');
-  const [displayAmount, setDisplayAmount] = useState('0');
 
   // 打开抽屉：新建（从分类页来）
   function openFormForCategory(catName) {
@@ -140,7 +131,7 @@ export default function AddTransactionScreen({ navigation, route }) {
     }
   }
 
-  // 数字键盘 - 使用 ref 减少 re-render
+  // 数字键盘回调 - 用 useCallback 避免每次创建新函数
   const handleNumberInput = useCallback((key) => {
     let val = amountRef.current;
     if (key === '.' && val.includes('.')) return;
@@ -353,39 +344,12 @@ export default function AddTransactionScreen({ navigation, route }) {
               })}
             </ScrollView>
 
-            {/* 数字键盘 */}
-            <View style={styles.keypad}>
-              {KEYS.map((row, ri) => (
-                <View key={ri} style={styles.keypadRow}>
-                  {row.map((k, ki) => {
-                    const isDel = k === 'del';
-                    const isLast = ki === row.length - 1;
-                    return (
-                      <View
-                        key={k}
-                        style={[
-                          styles.keypadKey,
-                          !isLast && styles.keypadKeyGap,
-                          { backgroundColor: tc.surfaceMuted },
-                        ]}
-                      >
-                        <TouchableOpacity
-                          style={styles.keypadKeyInner}
-                          onPress={() => (isDel ? handleDelete() : handleNumberInput(k))}
-                          activeOpacity={0.6}
-                        >
-                          {isDel ? (
-                            <Ionicons name="backspace-outline" size={20} color={tc.text} />
-                          ) : (
-                            <Text style={[styles.keypadKeyText, { color: tc.text }]}>{k}</Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })}
-                </View>
-              ))}
-            </View>
+            {/* 数字键盘 - 独立组件，避免父组件 re-render */}
+            <NumberPad
+              onInput={handleNumberInput}
+              onDelete={handleDelete}
+              tc={tc}
+            />
 
             {/* 日期 + 备注 + 账户 */}
             <View style={styles.metaRow}>
@@ -654,30 +618,6 @@ const styles = StyleSheet.create({
   },
   moodEmoji: { fontSize: fontSize.sm },
   moodLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
-
-  // 数字键盘
-  keypad: {},
-  keypadRow: { flexDirection: 'row', marginBottom: spacing.sm },
-  keypadKey: {
-    flex: 1,
-    height: 46,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  keypadKeyInner: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: borderRadius.md,
-  },
-  keypadKeyGap: { marginRight: spacing.sm },
-  keypadKeyText: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.medium,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.5,
-  },
 
   // 日期 + 备注
   metaRow: {
