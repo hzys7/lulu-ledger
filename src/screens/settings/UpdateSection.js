@@ -1,1 +1,83 @@
-// UpdateSection: auto-check toggle + manual check.\n// Proxy toggle was removed (useProxy setting was dead code).\n// All state lives in the parent SettingsScreen.\nimport React from 'react';\nimport { View, Text, TouchableOpacity } from 'react-native';\nimport { Ionicons } from '@expo/vector-icons';\nimport { useFinance } from '../../context/FinanceContext';\nimport { getThemeColors } from '../../theme';\nimport { Section } from './Section';\nimport { styles } from './styles';\n\nfunction UpdateSection({\n  isChecking,\n  checkResult,\n  checkResultText,\n  onToggleAutoCheck,\n  onCheckNow,\n}) {\n  const { settings } = useFinance();\n  const tc = getThemeColors(settings.theme);\n  return (\n    <Section title=\"版本更新\">\n      <TouchableOpacity\n        style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}\n        onPress={onToggleAutoCheck}\n        activeOpacity={0.7}\n      >\n        <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>\n          <Ionicons name=\"sync\" size={18} color={tc.text} />\n        </View>\n        <View style={styles.listContent}>\n          <Text style={[styles.listTitle, { color: tc.text }]}>自动检查更新</Text>\n          <Text style={[styles.listSub, { color: tc.textMuted }]}>\n            {settings.autoCheckUpdate ? '进入首页时自动检查' : '需要手动检查'}\n          </Text>\n        </View>\n        <View style={styles.rightMeta}>\n          <View\n            style={[\n              styles.toggleTrack,\n              {\n                backgroundColor: settings.autoCheckUpdate ? tc.primary : tc.surfaceMuted,\n                justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start',\n              },\n            ]}\n          >\n            <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />\n          </View>\n        </View>\n      </TouchableOpacity>\n\n      <TouchableOpacity\n        style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}\n        onPress={onCheckNow}\n        activeOpacity={0.7}\n        disabled={isChecking}\n      >\n        <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>\n          <Ionicons\n            name={isChecking ? 'sync' : 'cloud-download-outline'}\n            size={18}\n            color={tc.text}\n          />\n        </View>\n        <View style={styles.listContent}>\n          <Text style={[styles.listTitle, { color: tc.text }]}>检查更新</Text>\n          <Text style={[styles.listSub, { color: tc.textMuted }]}>\n            {isChecking\n              ? '正在检查…'\n              : checkResult\n              ? checkResultText(checkResult)\n              : '点击检查新版本'}\n          </Text>\n        </View>\n        <View style={styles.rightMeta}>\n          <Ionicons name=\"chevron-forward\" size={16} color={tc.textMuted} />\n        </View>\n      </TouchableOpacity>\n    </Section>\n  );\n}\n\nexport default UpdateSection;\n
+// UpdateSection: auto-check toggle + manual check.
+// Proxy toggle was removed (useProxy setting was dead code).
+// All state lives in the parent SettingsScreen.
+import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useFinance } from '../../context/FinanceContext';
+import { getThemeColors } from '../../theme';
+import { Section } from './Section';
+import { styles } from './styles';
+
+function UpdateSection({
+  isChecking,
+  checkResult,
+  checkResultText,
+  onToggleAutoCheck,
+  onCheckNow,
+}) {
+  const { settings } = useFinance();
+  const tc = getThemeColors(settings.theme);
+  return (
+    <Section title="版本更新">
+      <TouchableOpacity
+        style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        onPress={onToggleAutoCheck}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
+          <Ionicons name="sync" size={18} color={tc.text} />
+        </View>
+        <View style={styles.listContent}>
+          <Text style={[styles.listTitle, { color: tc.text }]}>自动检查更新</Text>
+          <Text style={[styles.listSub, { color: tc.textMuted }]}>
+            {settings.autoCheckUpdate ? '进入首页时自动检查' : '需要手动检查'}
+          </Text>
+        </View>
+        <View style={styles.rightMeta}>
+          <View
+            style={[
+              styles.toggleTrack,
+              {
+                backgroundColor: settings.autoCheckUpdate ? tc.primary : tc.surfaceMuted,
+                justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start',
+              },
+            ]}
+          >
+            <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        onPress={onCheckNow}
+        activeOpacity={0.7}
+        disabled={isChecking}
+      >
+        <View style={[styles.listIcon, { backgroundColor: tc.surfaceMuted }]}>
+          <Ionicons
+            name={isChecking ? 'sync' : 'cloud-download-outline'}
+            size={18}
+            color={tc.text}
+          />
+        </View>
+        <View style={styles.listContent}>
+          <Text style={[styles.listTitle, { color: tc.text }]}>检查更新</Text>
+          <Text style={[styles.listSub, { color: tc.textMuted }]}>
+            {isChecking
+              ? '正在检查…'
+              : checkResult
+              ? checkResultText(checkResult)
+              : '点击检查新版本'}
+          </Text>
+        </View>
+        <View style={styles.rightMeta}>
+          <Ionicons name="chevron-forward" size={16} color={tc.textMuted} />
+        </View>
+      </TouchableOpacity>
+    </Section>
+  );
+}
+
+export default UpdateSection;
