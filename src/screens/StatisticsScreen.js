@@ -87,7 +87,7 @@ export default function StatisticsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
   // ── 档期选择 ──
-  const [period, setPeriod] = useState('month'); // 'week' | 'month' | 'year'
+  const [period, setPeriod] = useState('week'); // 'week' | 'month' | 'year'
   const [dataType, setDataType] = useState('expense');
 
   // 月
@@ -271,6 +271,56 @@ export default function StatisticsScreen({ navigation }) {
   const topWeekTx = useMemo(() => {
     return [...weekTx].sort((a, b) => b.amount - a.amount).slice(0, 10);
   }, [weekTx]);
+
+  // =============== 心情统计 ===============
+  const MOOD_LABELS = useMemo(() => ({
+    '': '未标记', happy: '快乐', impulse: '手滑', regret: '踩坑',
+    necessary: '必要', reward: '犒劳', painful: '滴血',
+    satisfied: '真香', remorse: '后悔', neutral: '无感', worthit: '值了',
+  }), []);
+  const MOOD_EMOJIS = useMemo(() => ({
+    '': '—', happy: '🥳', impulse: '🫣', regret: '💣',
+    necessary: '🤷', reward: '🍗', painful: '🩸',
+    satisfied: '✨', remorse: '🫠', neutral: '〰️', worthit: '💯',
+  }), []);
+
+  // 当前周期内的心情分布（expense only）
+  const moodStats = useMemo(() => {
+    let txs = [];
+    if (period === 'week') {
+      txs = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d >= weekStart && d <= weekEnd && t.type === 'expense';
+      });
+    } else if (period === 'month') {
+      txs = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && t.type === 'expense';
+      });
+    } else {
+      txs = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() === reportYear && t.type === 'expense';
+      });
+    }
+    const counts = {};
+    let total = 0;
+    for (const t of txs) {
+      const m = t.mood || '';
+      counts[m] = (counts[m] || 0) + 1;
+      total++;
+    }
+    const items = Object.entries(counts)
+      .map(([key, count]) => ({
+        key,
+        label: MOOD_LABELS[key] || key,
+        emoji: MOOD_EMOJIS[key] || '',
+        count,
+        pct: total > 0 ? ((count / total) * 100).toFixed(0) : '0',
+      }))
+      .sort((a, b) => b.count - a.count);
+    return { items, total };
+  }, [period, transactions, weekStart, weekEnd, selectedYear, selectedMonth, reportYear, MOOD_LABELS, MOOD_EMOJIS]);
 
   // =============== 年报数据 ===============
   const reportYear = currentYear + yearOffset;
@@ -708,6 +758,41 @@ export default function StatisticsScreen({ navigation }) {
               </View>
             ) : null}
 
+            {/* ── 消费心情统计 ── */}
+            {moodStats.items.length > 0 && (
+              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+                <View style={styles.cardHeader}>
+                  <Text style={[styles.cardTitle, { color: tc.text }]}>
+                    消费心情
+                  </Text>
+                  <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>
+                    共 {moodStats.total} 笔标记
+                  </Text>
+                </View>
+                {moodStats.items.map((m, i) => {
+                  const barWidth = moodStats.total > 0 ? (m.count / moodStats.total) * 100 : 0;
+                  return (
+                    <View key={m.key} style={[styles.moodRow, i === moodStats.items.length - 1 && { borderBottomWidth: 0 }]}>
+                      <View style={styles.moodLabelWrap}>
+                        <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                        <Text style={[styles.moodLabelText, { color: tc.text }]}>{m.label}</Text>
+                      </View>
+                      <View style={[styles.moodBarBg, { backgroundColor: tc.surfaceMuted }]}>
+                        <View style={[styles.moodBar, {
+                          width: `${Math.max(barWidth, 4)}%`,
+                          backgroundColor: i === 0 ? tc.accent : tc.textMuted,
+                          opacity: i === 0 ? 1 : 0.5,
+                        }]} />
+                      </View>
+                      <Text style={[styles.moodCount, { color: tc.textMuted }]}>
+                        {m.count}笔 {m.pct}%
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
             {/* ── 排行 ── */}
             {(period === 'week' ? topWeekTx : period === 'month' ? topMonthTx : topYearTx).length > 0 && (
               <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
@@ -1126,6 +1211,16 @@ const styles = StyleSheet.create({
   pieCenter: { position: 'absolute', alignItems: 'center' },
   pieCenterLabel: { fontSize: fontSize.xs },
   pieCenterAmount: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginTop: 2, fontVariant: ['tabular-nums'] },
+
+  // 心情统计
+  moodRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
+  moodLabelWrap: { flexDirection: 'row', alignItems: 'center', width: 72, gap: 4 },
+  moodEmoji: { fontSize: 14 },
+  moodLabelText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
+  moodBarBg: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
+  moodBar: { height: 8, borderRadius: 4 },
+  moodCount: { fontSize: fontSize.xs, width: 68, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  cardSubtitle: { fontSize: fontSize.xs },
 
   // 排行
   rankList: { marginTop: spacing.base },

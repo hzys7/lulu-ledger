@@ -13,11 +13,13 @@ import {
   Modal,
   Pressable,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { TransactionItem, EmptyState } from '../components/SharedComponents';
+import TransactionDetailModal from '../components/TransactionDetailModal';
 import { formatMoney } from '../utils/currency';
 import { spacing, borderRadius, fontSize, fontWeight, getThemeColors } from '../theme';
 
@@ -47,8 +49,9 @@ function buildFlatData(grouped) {
 }
 
 export default function RecordsScreen({ navigation }) {
-  const { transactions, settings, getMonthSummary, reload } = useFinance();
+  const { transactions, settings, getMonthSummary, reload, accounts, removeTx } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
+  const [detailTx, setDetailTx] = useState(null);
   const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -199,7 +202,7 @@ export default function RecordsScreen({ navigation }) {
       <TransactionItem
         transaction={item.data}
         currency={settings.currency}
-        onPress={() => navigation.navigate('AddTransaction', { transaction: item.data })}
+        onPress={() => setDetailTx(item.data)}
         isLast={isLastInList}
       />
     );
@@ -383,6 +386,28 @@ export default function RecordsScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+      />
+
+      <TransactionDetailModal
+        visible={!!detailTx}
+        transaction={detailTx}
+        accounts={accounts}
+        tc={tc}
+        onEdit={() => {
+          if (detailTx) {
+            setDetailTx(null);
+            navigation.navigate('AddTransaction', { transaction: detailTx });
+          }
+        }}
+        onDelete={() => {
+          if (detailTx) {
+            Alert.alert('删除交易', '确定删除这条记录吗？', [
+              { text: '取消', style: 'cancel' },
+              { text: '删除', style: 'destructive', onPress: () => { removeTx(detailTx.id); setDetailTx(null); reload(); } },
+            ]);
+          }
+        }}
+        onClose={() => setDetailTx(null)}
       />
     </View>
   );

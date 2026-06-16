@@ -119,6 +119,17 @@ export {
   clearAnomalyCache,
 } from './aiAnomaly';
 
+// --- AI 预算建议
+export {
+  generateBudgetSuggestions,
+} from './aiBudget';
+
+// --- 周期性消费检测
+export {
+  detectRecurringPatterns,
+  formatRecurringSuggestion,
+} from './aiRecurring';
+
 // --- 更新检查
 export {
   compareVersion,
