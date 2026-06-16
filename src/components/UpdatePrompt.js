@@ -20,7 +20,7 @@ import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 import { checkForUpdate, getLocalVersion } from '../utils/updateChecker';
 import { formatBytes } from '../utils/updateDownloader';
 import {
-  LuluApkInstaller,
+  getLuluApkInstaller,
   openInstallSettings,
   installFromDownloadManager,
 } from '../utils/updateInstaller';
@@ -185,8 +185,9 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
         abortRef.current = ac;
 
         // DownloadManager 下载到公共 Downloads/ 目录
-        if (!LuluApkInstaller?.downloadApk) throw new Error('原生模块不可用');
-        const dmId = await LuluApkInstaller.downloadApk(url, apkName);
+        const installer = getLuluApkInstaller();
+        if (!installer?.downloadApk) throw new Error('原生模块不可用');
+        const dmId = await installer.downloadApk(url, apkName);
         setDownloadId(dmId);
 
         // 轮询进度（最多 10 分钟/URL）
@@ -196,7 +197,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
             return;
           }
           await new Promise(r => setTimeout(r, 500));
-          const prog = await LuluApkInstaller.getDownloadProgress(dmId);
+          const prog = await getLuluApkInstaller().getDownloadProgress(dmId);
 
           if (prog.status === 'SUCCESS') {
             setProgress(100);

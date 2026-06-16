@@ -4,17 +4,26 @@
 import { Platform, Linking } from 'react-native';
 import * as Application from 'expo-application';
 
-// DownloadManager native module
-let LuluInstaller = null;
-if (Platform.OS === 'android') {
-  try {
-    LuluInstaller = require('../../modules/lulu-apk-installer/src/index');
-  } catch {
-    // Module not available
+// DownloadManager native module — lazy loaded (not at module init),
+// so the app doesn't crash when the native module isn't compiled in.
+let _lazyInstaller = null;
+function getInstaller() {
+  if (_lazyInstaller === undefined) {
+    _lazyInstaller = null;
+    if (Platform.OS === 'android') {
+      try {
+        _lazyInstaller = require('../../modules/lulu-apk-installer/src/index');
+      } catch {
+        // Module not available
+      }
+    }
   }
+  return _lazyInstaller;
 }
 
-export { LuluInstaller as LuluApkInstaller };
+export function getLuluApkInstaller() {
+  return getInstaller();
+}
 
 // ─── 安装权限 ──────────────────────────────────────────
 
