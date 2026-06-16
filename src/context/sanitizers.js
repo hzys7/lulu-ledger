@@ -12,6 +12,7 @@ export function sanitizeTransactions(list) {
       amount: Number(t.amount) > 0 ? Number(t.amount) : 0,
       category: t.category || '其他支出',
       note: t.note || '',
+      mood: t.mood || '',
       date: t.date || new Date().toISOString(),
       currency: t.currency || 'CNY',
       bookId: t.bookId || 'default',

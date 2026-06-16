@@ -2,32 +2,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
-  Text,
-  StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  TextInput,
   Alert,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import { useFinance } from '../context/FinanceContext';
 import { triggerUpdateCheck, getLastUpdateCheck } from '../components/UpdatePrompt';
-import { Button } from '../components/SharedComponents';
 import AiSettingsScreen from './AiSettingsScreen';
-import { formatMoney } from '../utils/currency';
 import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile } from '../utils/export';
 import { exportAllData, importData } from '../utils/storage';
-import { Section, ActionRow } from "./settings/Section";
-import BookModal from "./settings/BookModal";
 import ImportModal from "./settings/ImportModal";
 import RecurringModal from "./settings/RecurringModal";
 import { styles } from "./settings/styles";
-import BookManagerSection from "./settings/BookManagerSection";
 import BudgetSection from "./settings/BudgetSection";
 import AppearanceSection from "./settings/AppearanceSection";
 import UpdateSection from "./settings/UpdateSection";
@@ -38,17 +24,8 @@ import StatsSection from "./settings/StatsSection";
 import AboutSection from "./settings/AboutSection";
 import {
   spacing,
-  borderRadius,
-  fontSize,
-  fontWeight,
-  shadows,
   getThemeColors,
 } from '../theme';
-
-function hexAlpha(hex, a) {
-  if (!hex) return hex;
-  return hex + Math.round(a * 255).toString(16).padStart(2, '0');
-}
 
 function checkResultText(r) {
   if (!r) return '';
@@ -74,15 +51,9 @@ function formatTimeAgo(ms) {
 
 export default function SettingsScreen({ navigation }) {
   const {
-    books,
-    currentBookId,
     transactions,
     settings,
     recurring,
-    switchBook,
-    createBook,
-    editBook,
-    removeBook,
     addRecurringItem,
     removeRecurringItem,
     updateAppSettings,
@@ -91,11 +62,6 @@ export default function SettingsScreen({ navigation }) {
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
 
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [editingBook, setEditingBook] = useState(null);
-  const [newBookName, setNewBookName] = useState('');
-  const [newBookIcon, setNewBookIcon] = useState('wallet');
-  const [newBookColor, setNewBookColor] = useState('#7C5CFF');
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [importJson, setImportJson] = useState('');
@@ -107,54 +73,6 @@ export default function SettingsScreen({ navigation }) {
     note: '',
     type: 'expense',
   });
-
-  const openAddBook = () => {
-    setEditingBook(null);
-    setNewBookName('');
-    setNewBookIcon('wallet');
-    setNewBookColor('#7C5CFF');
-    setShowBookModal(true);
-  };
-  const openEditBook = (book) => {
-    setEditingBook(book);
-    setNewBookName(book.name);
-    setNewBookIcon(book.icon);
-    setNewBookColor(book.color);
-    setShowBookModal(true);
-  };
-  const handleSaveBook = async () => {
-    if (!newBookName.trim()) {
-      Alert.alert('提示', '请输入账本名称');
-      return;
-    }
-    if (editingBook) {
-      await editBook(editingBook.id, { name: newBookName, icon: newBookIcon, color: newBookColor });
-    } else {
-      await createBook({
-        id: `book_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: newBookName,
-        icon: newBookIcon,
-        color: newBookColor,
-        currency: settings.currency,
-        createdAt: new Date().toISOString(),
-      });
-    }
-    setShowBookModal(false);
-  };
-  const handleDeleteBook = (book) => {
-    if (books.length <= 1) {
-      Alert.alert('提示', '至少需要保留一个账本');
-      return;
-    }
-    Alert.alert('删除账本', `确定删除「${book.name}」吗?该账本下的所有记录也会被删除。`, [
-      { text: '取消', style: 'cancel' },
-      { text: '删除', style: 'destructive', onPress: () => removeBook(book.id) },
-    ]);
-  };
-  const handleSwitchBook = async (bookId) => {
-    await switchBook(bookId);
-  };
-
 
   const handleExportCSV = async () => {
     try {
@@ -287,13 +205,6 @@ export default function SettingsScreen({ navigation }) {
           { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xxl },
         ]}
       >
-        <BookManagerSection
-          books={books}
-          currentBookId={currentBookId}
-          onSwitch={handleSwitchBook}
-          onEdit={openEditBook}
-          onAdd={openAddBook}
-        />
         <BudgetSection onNavigate={() => navigation.navigate("Budget")} />
         <AppearanceSection onToggleTheme={handleToggleTheme} />
         <UpdateSection
@@ -325,20 +236,6 @@ export default function SettingsScreen({ navigation }) {
       </ScrollView>
 
       <AiSettingsScreen visible={showAiModal} onClose={() => setShowAiModal(false)} />
-
-      <BookModal
-        visible={showBookModal}
-        onClose={() => setShowBookModal(false)}
-        editingBook={editingBook}
-        newBookName={newBookName}
-        setNewBookName={setNewBookName}
-        newBookIcon={newBookIcon}
-        setNewBookIcon={setNewBookIcon}
-        newBookColor={newBookColor}
-        setNewBookColor={setNewBookColor}
-        onSave={handleSaveBook}
-        onDelete={() => { setShowBookModal(false); handleDeleteBook(editingBook); }}
-      />
 
       <ImportModal
         visible={showImportModal}

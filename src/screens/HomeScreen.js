@@ -8,6 +8,9 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Modal,
+  Pressable,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,13 +19,20 @@ import { TransactionItem, EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
 import { loadAiConfig } from '../utils/aiConfig';
 import AiChatScreen from './AiChatScreen';
+import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 
 export default function HomeScreen({ navigation }) {
-  const { transactions, settings, getMonthSummary, reload, getNetWorth } = useFinance();
+  const { transactions, settings, getMonthSummary, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const [bookPickerOpen, setBookPickerOpen] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [editingBook, setEditingBook] = useState(null);
+  const [newBookName, setNewBookName] = useState('');
+  const [newBookIcon, setNewBookIcon] = useState('wallet');
+  const [newBookColor, setNewBookColor] = useState('#7C5CFF');
 
   const now = new Date();
   const summary = getMonthSummary(now.getFullYear(), now.getMonth());
@@ -62,6 +72,52 @@ export default function HomeScreen({ navigation }) {
   const expenseDiff = summary.expense - lastSummary.expense;
   const expenseDiffPct = lastSummary.expense > 0 ? Math.round((expenseDiff / lastSummary.expense) * 100) : 0;
 
+  const currentBook = books.find(b => b.id === currentBookId) || books[0];
+
+  const openAddBook = () => {
+    setEditingBook(null);
+    setNewBookName('');
+    setNewBookIcon('wallet');
+    setNewBookColor('#7C5CFF');
+    setShowBookModal(true);
+  };
+  const openEditBook = (book) => {
+    setEditingBook(book);
+    setNewBookName(book.name);
+    setNewBookIcon(book.icon);
+    setNewBookColor(book.color);
+    setShowBookModal(true);
+  };
+  const handleSaveBook = async () => {
+    if (!newBookName.trim()) {
+      Alert.alert('提示', '请输入账本名称');
+      return;
+    }
+    if (editingBook) {
+      await editBook(editingBook.id, { name: newBookName, icon: newBookIcon, color: newBookColor });
+    } else {
+      await createBook({
+        id: `book_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: newBookName,
+        icon: newBookIcon,
+        color: newBookColor,
+        currency: settings.currency,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    setShowBookModal(false);
+  };
+  const handleDeleteBook = (book) => {
+    if (books.length <= 1) {
+      Alert.alert('提示', '至少需要保留一个账本');
+      return;
+    }
+    Alert.alert('删除账本', `确定删除「${book.name}」吗？该账本下的所有记录也会被删除。`, [
+      { text: '取消', style: 'cancel' },
+      { text: '删除', style: 'destructive', onPress: () => removeBook(book.id) },
+    ]);
+  };
+
   const [txFilter, setTxFilter] = useState('all'); // all | income | expense
 
   // 近期交易（最近 5 笔，可筛选收支类型）
@@ -86,8 +142,28 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tc.text} />}
       >
-        {/* 顶部间距（已删除标题和记一笔按钮） */}
-        <View style={{ height: spacing.sm }} />
+        {/* 顶部账本选择器 */}
+        <View style={styles.bookHeader}>
+          <TouchableOpacity
+            style={[styles.bookSelector, { backgroundColor: tc.surface, borderColor: tc.border }]}
+            onPress={() => setBookPickerOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name={currentBook?.icon || 'wallet'} size={16} color={currentBook?.color || tc.primary} />
+            <Text style={[styles.bookSelectorText, { color: tc.text }]} numberOfLines={1}>
+              {currentBook?.name || '默认账本'}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={tc.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={openAddBook}
+            style={[styles.bookAddBtn, { backgroundColor: tc.surfaceMuted }]}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="add" size={18} color={tc.text} />
+          </TouchableOpacity>
+        </View>
 
         {/* 余额卡片 */}
         <View style={styles.balanceSection}>
@@ -271,6 +347,58 @@ export default function HomeScreen({ navigation }) {
         onClose={() => setShowAiChat(false)}
         onSaved={() => { setShowAiChat(false); reload(); }}
       />
+
+      {/* 账本选择弹窗 */}
+      <Modal visible={bookPickerOpen} transparent animationType="fade" onRequestClose={() => setBookPickerOpen(false)}>
+        <Pressable style={styles.bookModalBackdrop} onPress={() => setBookPickerOpen(false)}>
+          <Pressable style={[styles.bookModalSheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
+            <View style={[styles.bookModalHandle, { backgroundColor: tc.divider }]} />
+            <Text style={[styles.bookModalTitle, { color: tc.text }]}>选择账本</Text>
+            {books.map((book) => {
+              const active = book.id === currentBookId;
+              return (
+                <TouchableOpacity
+                  key={book.id}
+                  style={[styles.bookModalItem, { borderBottomColor: tc.divider }]}
+                  onPress={() => { switchBook(book.id); setBookPickerOpen(false); }}
+                  onLongPress={() => { setBookPickerOpen(false); openEditBook(book); }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.bookModalIcon, { backgroundColor: book.color + '22' }]}>
+                    <Ionicons name={book.icon} size={16} color={book.color} />
+                  </View>
+                  <Text style={[styles.bookModalItemText, { color: active ? tc.primary : tc.text }]}>
+                    {book.name}
+                  </Text>
+                  {active ? <Ionicons name="checkmark" size={18} color={tc.primary} /> : null}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              style={[styles.bookModalAdd, { borderTopColor: tc.divider }]}
+              onPress={() => { setBookPickerOpen(false); openAddBook(); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={tc.primary} />
+              <Text style={[styles.bookModalAddText, { color: tc.primary }]}>新建账本</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <BookModal
+        visible={showBookModal}
+        onClose={() => setShowBookModal(false)}
+        editingBook={editingBook}
+        newBookName={newBookName}
+        setNewBookName={setNewBookName}
+        newBookIcon={newBookIcon}
+        setNewBookIcon={setNewBookIcon}
+        newBookColor={newBookColor}
+        setNewBookColor={setNewBookColor}
+        onSave={handleSaveBook}
+        onDelete={() => { setShowBookModal(false); handleDeleteBook(editingBook); }}
+      />
     </View>
   );
 }
@@ -332,4 +460,56 @@ const styles = StyleSheet.create({
   filterChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.full, borderWidth: StyleSheet.hairlineWidth },
   filterChipText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
   recentList: { borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', ...shadows.sm },
+
+  // 账本选择器
+  bookHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  bookSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+    flex: 1,
+  },
+  bookSelectorText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  bookAddBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // 账本选择弹窗
+  bookModalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  bookModalSheet: {
+    borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: spacing.sm, paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.base, borderTopWidth: StyleSheet.hairlineWidth,
+    borderLeftWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth,
+  },
+  bookModalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.md },
+  bookModalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, marginBottom: spacing.sm, letterSpacing: -0.3 },
+  bookModalItem: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.base, borderBottomWidth: StyleSheet.hairlineWidth, gap: spacing.md,
+  },
+  bookModalIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  bookModalItemText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, flex: 1, letterSpacing: -0.2 },
+  bookModalAdd: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingTop: spacing.base, marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  bookModalAddText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
 });

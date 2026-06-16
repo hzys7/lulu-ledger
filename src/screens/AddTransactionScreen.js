@@ -35,6 +35,20 @@ const KEYS = [
   ['.', '0', 'del'],
 ];
 
+const MOOD_OPTIONS = [
+  { key: '', label: '不选', emoji: '—' },
+  { key: 'happy', label: '快乐就完事了', emoji: '🥳' },
+  { key: 'impulse', label: '手一滑就买了', emoji: '🫣' },
+  { key: 'regret', label: '又踩坑了', emoji: '💣' },
+  { key: 'necessary', label: '该花还是得花', emoji: '🤷' },
+  { key: 'reward', label: '辛苦钱犒劳自己', emoji: '🍗' },
+  { key: 'painful', label: '心在滴血', emoji: '🩸' },
+  { key: 'satisfied', label: '真香！', emoji: '✨' },
+  { key: 'remorse', label: '我为什么要买', emoji: '🫠' },
+  { key: 'neutral', label: '就那样吧', emoji: '〰️' },
+  { key: 'worthit', label: '值了', emoji: '💯' },
+];
+
 function fmtDay(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
@@ -83,6 +97,7 @@ export default function AddTransactionScreen({ navigation, route }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const defaultAccId = (accounts.find(a => a.isDefault) || accounts[0])?.id;
   const [accountId, setAccountId] = useState(defaultAccId);
+  const [mood, setMood] = useState('');
 
   // 打开抽屉：新建（从分类页来）
   function openFormForCategory(catName) {
@@ -91,6 +106,7 @@ export default function AddTransactionScreen({ navigation, route }) {
     setNote('');
     setDate(new Date().toISOString());
     setAccountId(defaultAccId);
+    setMood('');
     setFormOpen(true);
   }
 
@@ -103,6 +119,7 @@ export default function AddTransactionScreen({ navigation, route }) {
       setNote(editTransaction.note || '');
       setDate(editTransaction.date);
       setAccountId(editTransaction.accountId || defaultAccId);
+      setMood(editTransaction.mood || '');
       setFormOpen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,7 +152,7 @@ export default function AddTransactionScreen({ navigation, route }) {
     }
     const txData = {
       type, amount: numAmount, category: formCategory, note, date,
-      currency: settings.currency, accountId,
+      currency: settings.currency, accountId, mood,
     };
     if (editTransaction) {
       await editTx(editTransaction.id, txData);
@@ -275,6 +292,42 @@ export default function AddTransactionScreen({ navigation, route }) {
                 <View style={[styles.cursor, { backgroundColor: tc.text }]} />
               </View>
             </View>
+
+            {/* 消费心情 */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.moodScroll}
+            >
+              {MOOD_OPTIONS.map((m) => {
+                const active = mood === m.key;
+                return (
+                  <TouchableOpacity
+                    key={m.key}
+                    style={[
+                      styles.moodChip,
+                      {
+                        backgroundColor: active ? tc.primary : tc.surfaceMuted,
+                        borderColor: active ? tc.primary : tc.border,
+                      },
+                    ]}
+                    onPress={() => setMood(m.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.moodLabel,
+                        { color: active ? tc.primaryOn : tc.text },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {m.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
             {/* 数字键盘 */}
             <View style={styles.keypad}>
@@ -548,6 +601,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     opacity: 0.6,
   },
+
+  // 消费心情
+  moodScroll: { gap: 6, paddingBottom: spacing.sm, paddingRight: spacing.base },
+  moodChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 4,
+  },
+  moodEmoji: { fontSize: 14 },
+  moodLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
 
   // 数字键盘
   keypad: {},
