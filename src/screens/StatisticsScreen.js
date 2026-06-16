@@ -1105,6 +1105,7 @@ export default function StatisticsScreen({ navigation }) {
             topCategories={shareCardData.topCategories}
             dataType={dataType}
             currency={settings.currency}
+            theme={settings.theme}
           />
         </ViewShot>
       </View>
