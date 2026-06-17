@@ -113,10 +113,8 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
         />
 
         {/* 自动备份开关 */}
-        <TouchableOpacity
+        <View
           style={[autoStyles.row, { backgroundColor: tc.surface, borderColor: tc.border }]}
-          onPress={handleToggleAutoBackup}
-          activeOpacity={0.7}
         >
           <View style={[autoStyles.iconWrap, { backgroundColor: '#FF9F0A' + '15' }]}>
             <Ionicons name="time-outline" size={18} color="#FF9F0A" />
@@ -133,7 +131,7 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
             trackColor={{ false: tc.surfaceMuted, true: '#FF9F0A' }}
             thumbColor="#fff"
           />
-        </TouchableOpacity>
+        </View>
 
         {/* 自动备份详情 */}
         {backupSettings.enabled && (
