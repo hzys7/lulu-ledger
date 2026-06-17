@@ -125,7 +125,7 @@ export default function BudgetPieChart({
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const dayOfMonth = now.getDate();
     const daysLeft = Math.max(daysInMonth - dayOfMonth, 1);
-    const dailyRemaining = daysLeft > 0 ? Math.abs(totalRemaining) / daysLeft : 0;
+    const dailyRemaining = isOver ? 0 : (daysLeft > 0 ? totalRemaining / daysLeft : 0);
 
     // 预算健康度评分
     let healthScore = 100;
