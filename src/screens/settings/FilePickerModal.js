@@ -36,7 +36,8 @@ export default function FilePickerModal({ visible, onClose, onSelect }) {
       if (docDir.exists) {
         const items = docDir.list();
         for (const item of items) {
-          if (item instanceof File) {
+          // 检查是否是文件（有 name 和 size 属性，且不是目录）
+          if (item.name && item.size !== undefined && typeof item.size === 'number') {
             if (item.name.endsWith('.json') || item.name.endsWith('.csv')) {
               fileList.push({
                 name: item.name,
@@ -55,7 +56,7 @@ export default function FilePickerModal({ visible, onClose, onSelect }) {
       if (backupDir.exists) {
         const items = backupDir.list();
         for (const item of items) {
-          if (item instanceof File) {
+          if (item.name && item.size !== undefined && typeof item.size === 'number') {
             if (item.name.endsWith('.json') || item.name.endsWith('.csv')) {
               fileList.push({
                 name: item.name,

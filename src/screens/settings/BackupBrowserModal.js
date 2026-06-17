@@ -30,7 +30,7 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
 
   const loadBackups = async () => {
     setLoading(true);
-    const list = await listAutoBackups();
+    const list = listAutoBackups();
     setBackups(list);
     setLoading(false);
   };

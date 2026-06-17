@@ -90,7 +90,7 @@ function cleanupOldBackupsSync() {
 
     const items = backupDir.list();
     const backupFiles = items
-      .filter(item => item instanceof File && item.name.startsWith('auto_backup_') && item.name.endsWith('.json'))
+      .filter(item => item.name && item.size !== undefined && item.name.startsWith('auto_backup_') && item.name.endsWith('.json'))
       .map(item => ({ name: item.name, file: item }))
       .sort((a, b) => b.name.localeCompare(a.name)); // 最新的在前
 
@@ -118,12 +118,15 @@ export function listAutoBackups() {
     const items = backupDir.list();
     const backups = [];
     for (const item of items) {
-      if (item instanceof File && item.name.startsWith('auto_backup_') && item.name.endsWith('.json')) {
-        backups.push({
-          name: item.name,
-          size: item.size,
-          uri: item.uri,
-        });
+      // 检查是否是文件（有 name 和 size 属性）
+      if (item.name && item.size !== undefined && typeof item.size === 'number') {
+        if (item.name.startsWith('auto_backup_') && item.name.endsWith('.json')) {
+          backups.push({
+            name: item.name,
+            size: item.size,
+            uri: item.uri,
+          });
+        }
       }
     }
     return backups.sort((a, b) => b.name.localeCompare(a.name));
