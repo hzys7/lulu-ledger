@@ -1,5 +1,5 @@
-// 小璐记账 · AI 财务问答（全屏聊天界面）
-import React, { useState, useRef, useEffect } from 'react';
+// 小璐记账 · AI 财务问答（增强版：流式输出 + 动态快捷问题 + 追问建议）
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,36 +12,55 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { spacing, borderRadius, fontSize, fontWeight, getThemeColors } from '../theme';
-import { askFinanceQuestion, buildFinancialContext } from '../utils/aiQA';
+import {
+  buildFinancialContext,
+  generateQuickQuestions,
+  generateFollowUpSuggestions,
+  askFinanceQuestion,
+  askFinanceQuestionStream,
+} from '../utils/aiQA';
 import { loadAiConfig } from '../utils/aiConfig';
 
-const QUICK_QUESTIONS = [
-  '这个月花了多少钱？',
-  '哪项支出最多？',
-  '跟上个月比怎么样？',
-  '有什么省钱建议吗？',
-];
-
 export default function AiQAScreen({ visible, onClose }) {
-  const { transactions, settings, getMonthTransactions, getMonthSummary, budgets } = useFinance();
+  const { transactions, settings, getMonthTransactions, getMonthSummary, budgets, accounts } = useFinance();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
 
-  const [messages, setMessages] = useState([]); // [{ role: 'user'|'assistant', content: string }]
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [contextText, setContextText] = useState('');
   const [aiReady, setAiReady] = useState(true);
+  const [quickQuestions, setQuickQuestions] = useState([]);
+  const [followUpSuggestions, setFollowUpSuggestions] = useState([]);
+  const [streamingText, setStreamingText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const typingAnim = useRef(new Animated.Value(0)).current;
 
-  // 构建财务上下文
+  // 打字机动画
+  useEffect(() => {
+    if (isStreaming) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(typingAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+          Animated.timing(typingAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      typingAnim.setValue(0);
+    }
+  }, [isStreaming]);
+
+  // 构建财务上下文和动态快捷问题
   useEffect(() => {
     if (!visible) return;
     (async () => {
@@ -62,14 +81,39 @@ export default function AiQAScreen({ visible, onClose }) {
       const lastYear = month === 0 ? year - 1 : year;
       const lastSummary = getMonthSummary(lastYear, lastMonth);
 
+      // 近3个月趋势
+      const last3MonthSummary = [];
+      for (let i = 2; i >= 0; i--) {
+        const m = month - i;
+        const y = m < 0 ? year - 1 : year;
+        const monthIndex = m < 0 ? m + 12 : m;
+        const s = getMonthSummary(y, monthIndex);
+        const label = `${y}年${monthIndex + 1}月`;
+        last3MonthSummary.push({ label, ...s });
+      }
+
+      // 当月预算
+      const currentBudgets = budgets?.filter((b) => b.month === `${year}-${String(month + 1).padStart(2, '0')}`) || [];
+
       const ctx = buildFinancialContext({
         transactions: currentTxs,
         summary,
         lastSummary,
+        last3MonthSummary,
         currency: settings.currency,
-        budgets: budgets?.filter((b) => b.month === `${year}-${String(month + 1).padStart(2, '0')}`) || [],
+        budgets: currentBudgets,
+        accounts,
       });
       setContextText(ctx);
+
+      // 生成动态快捷问题
+      const quickQs = generateQuickQuestions({
+        summary,
+        lastSummary,
+        budgets: currentBudgets,
+        accounts,
+      });
+      setQuickQuestions(quickQs);
     })();
   }, [visible]);
 
@@ -80,6 +124,9 @@ export default function AiQAScreen({ visible, onClose }) {
       setInput('');
       setError('');
       setLoading(false);
+      setStreamingText('');
+      setIsStreaming(false);
+      setFollowUpSuggestions([]);
       setTimeout(() => inputRef.current?.focus(), 400);
     }
   }, [visible]);
@@ -94,30 +141,69 @@ export default function AiQAScreen({ visible, onClose }) {
 
     setInput('');
     setError('');
+    setFollowUpSuggestions([]);
     const userMsg = { role: 'user', content: msg };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setLoading(true);
+    setIsStreaming(true);
+    setStreamingText('');
     scrollToBottom();
 
-    // 构建对话历史（不含 system）
     const history = updatedMessages.map((m) => ({
       role: m.role,
       content: m.content,
     }));
 
-    const res = await askFinanceQuestion({
+    // 尝试流式输出
+    let finalReply = '';
+    const result = await askFinanceQuestionStream({
       userMessage: msg,
-      history: history.slice(0, -1), // 不含当前消息（askFinanceQuestion 会加）
+      history: history.slice(0, -1),
       contextText,
+      onChunk: (text) => {
+        setStreamingText(text);
+        scrollToBottom();
+      },
     });
 
+    setIsStreaming(false);
     setLoading(false);
-    if (res.ok) {
-      setMessages([...updatedMessages, { role: 'assistant', content: res.reply }]);
+
+    if (result.ok) {
+      finalReply = result.reply;
+      setMessages([...updatedMessages, { role: 'assistant', content: finalReply }]);
+      
+      // 生成追问建议
+      const suggestions = generateFollowUpSuggestions({
+        userMessage: msg,
+        aiReply: finalReply,
+        summary: null,
+        lastSummary: null,
+      });
+      setFollowUpSuggestions(suggestions);
     } else {
-      setError(res.error);
+      // 流式失败，尝试普通请求
+      const fallbackResult = await askFinanceQuestion({
+        userMessage: msg,
+        history: history.slice(0, -1),
+        contextText,
+      });
+      if (fallbackResult.ok) {
+        finalReply = fallbackResult.reply;
+        setMessages([...updatedMessages, { role: 'assistant', content: finalReply }]);
+        const suggestions = generateFollowUpSuggestions({
+          userMessage: msg,
+          aiReply: finalReply,
+          summary: null,
+          lastSummary: null,
+        });
+        setFollowUpSuggestions(suggestions);
+      } else {
+        setError(fallbackResult.error);
+      }
     }
+    setStreamingText('');
     scrollToBottom();
   }
 
@@ -173,7 +259,7 @@ export default function AiQAScreen({ visible, onClose }) {
                       可以问我关于你账目的任何问题
                     </Text>
                     <View style={styles.quickList}>
-                      {QUICK_QUESTIONS.map((q, i) => (
+                      {quickQuestions.map((q, i) => (
                         <TouchableOpacity
                           key={i}
                           style={[styles.quickChip, { backgroundColor: tc.surface, borderColor: tc.border }]}
@@ -225,7 +311,20 @@ export default function AiQAScreen({ visible, onClose }) {
                   })
                 )}
 
-                {loading && (
+                {/* 流式输出中的消息 */}
+                {isStreaming && streamingText ? (
+                  <View style={[styles.msgRow, styles.msgRowBot]}>
+                    <View style={[styles.avatar, { backgroundColor: tc.primary + '22' }]}>
+                      <Text style={styles.avatarText}>🤖</Text>
+                    </View>
+                    <View style={[styles.bubble, { backgroundColor: tc.surface, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth }]}>
+                      <Text style={[styles.bubbleText, { color: tc.text }]}>{streamingText}</Text>
+                      <Animated.View style={[styles.typingDot, { opacity: typingAnim }]}>
+                        <Text style={{ color: tc.textMuted }}>●</Text>
+                      </Animated.View>
+                    </View>
+                  </View>
+                ) : loading && !isStreaming ? (
                   <View style={[styles.msgRow, styles.msgRowBot]}>
                     <View style={[styles.avatar, { backgroundColor: tc.primary + '22' }]}>
                       <Text style={styles.avatarText}>🤖</Text>
@@ -234,7 +333,7 @@ export default function AiQAScreen({ visible, onClose }) {
                       <ActivityIndicator size="small" color={tc.primary} />
                     </View>
                   </View>
-                )}
+                ) : null}
 
                 {error ? (
                   <View style={[styles.errorRow, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
@@ -242,6 +341,25 @@ export default function AiQAScreen({ visible, onClose }) {
                     <Text style={[styles.errorText, { color: tc.danger }]}>{error}</Text>
                   </View>
                 ) : null}
+
+                {/* 追问建议 */}
+                {followUpSuggestions.length > 0 && !loading && (
+                  <View style={styles.followUpWrap}>
+                    <Text style={[styles.followUpLabel, { color: tc.textMuted }]}>你可以接着问：</Text>
+                    <View style={styles.followUpList}>
+                      {followUpSuggestions.map((q, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          style={[styles.followUpChip, { backgroundColor: tc.primary + '10', borderColor: tc.primary + '30' }]}
+                          onPress={() => handleSend(q)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.followUpText, { color: tc.primary }]}>{q}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </ScrollView>
 
               {/* 输入栏 */}
@@ -335,12 +453,38 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: fontSize.sm },
   bubble: {
-    maxWidth: '75%',
+    maxWidth: '80%',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.lg,
   },
   bubbleText: { fontSize: fontSize.md, lineHeight: 22 },
+  typingDot: {
+    marginTop: 4,
+  },
+
+  // 追问建议
+  followUpWrap: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  followUpLabel: {
+    fontSize: fontSize.xs,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+  },
+  followUpList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  followUpChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  followUpText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
 
   // 错误
   errorRow: {
