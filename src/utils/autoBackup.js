@@ -5,13 +5,16 @@ import * as storage from './storage';
 const BACKUP_DIR = 'backups';
 const backupDir = new Directory(Paths.document, BACKUP_DIR);
 
+// 最多保留的备份数量
+const MAX_BACKUPS = 10;
+
 // 获取备份设置
 export function getAutoBackupSettings(settings) {
   return {
     enabled: settings?.autoBackupEnabled ?? false,
     frequency: settings?.autoBackupFrequency ?? 'weekly',
     lastBackupTime: settings?.autoBackupLastTime ?? null,
-    keepCount: settings?.autoBackupKeepCount ?? 5,
+    keepCount: settings?.autoBackupKeepCount ?? MAX_BACKUPS,
   };
 }
 
@@ -70,8 +73,8 @@ export async function performAutoBackup() {
       autoBackupLastFile: fileName,
     });
 
-    // 清理旧备份
-    await cleanupOldBackups();
+    // 清理旧备份（保留最近 MAX_BACKUPS 个）
+    cleanupOldBackupsSync();
 
     return { success: true, fileName, timestamp };
   } catch (e) {
@@ -80,29 +83,25 @@ export async function performAutoBackup() {
   }
 }
 
-// 清理旧备份，保留最近 N 个
-async function cleanupOldBackups() {
+// 同步清理旧备份，保留最近 N 个
+function cleanupOldBackupsSync() {
   try {
-    const settings = await storage.getSettings();
-    const keepCount = settings?.autoBackupKeepCount ?? 5;
-
     if (!backupDir.exists) return;
 
     const items = backupDir.list();
     const backupFiles = items
       .filter(item => item instanceof File && item.name.startsWith('auto_backup_') && item.name.endsWith('.json'))
-      .map(item => item.name)
-      .sort()
-      .reverse();
+      .map(item => ({ name: item.name, file: item }))
+      .sort((a, b) => b.name.localeCompare(a.name)); // 最新的在前
 
-    if (backupFiles.length > keepCount) {
-      const toDelete = backupFiles.slice(keepCount);
-      for (const name of toDelete) {
+    // 删除超出数量的旧备份
+    if (backupFiles.length > MAX_BACKUPS) {
+      const toDelete = backupFiles.slice(MAX_BACKUPS);
+      for (const { name, file } of toDelete) {
         try {
-          const f = new File(backupDir, name);
-          f.delete();
+          file.delete();
         } catch (e) {
-          console.warn('[AutoBackup] Failed to delete old backup:', name, e);
+          console.warn('[AutoBackup] Failed to delete:', name);
         }
       }
     }
@@ -112,7 +111,7 @@ async function cleanupOldBackups() {
 }
 
 // 获取所有自动备份文件列表
-export async function listAutoBackups() {
+export function listAutoBackups() {
   try {
     if (!backupDir.exists) return [];
 
@@ -135,7 +134,7 @@ export async function listAutoBackups() {
 }
 
 // 从备份恢复数据
-export async function restoreFromBackup(backupUri) {
+export function restoreFromBackup(backupUri) {
   try {
     const file = new File(backupUri);
     const content = file.text();
@@ -145,8 +144,9 @@ export async function restoreFromBackup(backupUri) {
       throw new Error('备份文件格式无效');
     }
 
-    await storage.importData(data, 'replace');
-    return { success: true };
+    // 注意：这里需要异步调用 storage.importData
+    // 但由于 File API 是同步的，我们返回数据让调用者处理
+    return { success: true, data };
   } catch (e) {
     console.error('[AutoBackup] Restore failed:', e);
     return { success: false, reason: e.message };
@@ -154,7 +154,7 @@ export async function restoreFromBackup(backupUri) {
 }
 
 // 删除指定备份
-export async function deleteBackup(fileName) {
+export function deleteBackup(fileName) {
   try {
     const file = new File(backupDir, fileName);
     file.delete();
