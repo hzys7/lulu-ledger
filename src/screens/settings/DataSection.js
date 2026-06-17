@@ -45,8 +45,10 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
     }
   };
 
-  const handleToggleAutoBackup = async () => {
-    const newEnabled = !backupSettings.enabled;
+  const handleToggleAutoBackup = async (value) => {
+    // Switch 的 onValueChange 会传入新值，直接使用
+    const newEnabled = value !== undefined ? value : !backupSettings.enabled;
+    console.log('[DataSection] Toggle auto backup:', newEnabled);
     await updateAppSettings({ autoBackupEnabled: newEnabled });
 
     if (newEnabled) {
