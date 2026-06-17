@@ -173,5 +173,55 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   currencyLabel: { fontSize: fontSize.md, letterSpacing: -0.2 },
+
+  // 文件列表
+  fileList: {
+    maxHeight: 150,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.xs,
+  },
+  fileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    marginBottom: spacing.xs,
+    gap: spacing.sm,
+  },
+  fileIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fileInfo: {
+    flex: 1,
+  },
+  fileName: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    letterSpacing: -0.1,
+  },
+  fileSize: {
+    fontSize: fontSize.xs,
+    marginTop: 1,
+  },
+  loadingWrap: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  emptyWrap: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.xs,
+  },
+  emptyText: {
+    fontSize: fontSize.sm,
+  },
 });
 export { styles };
