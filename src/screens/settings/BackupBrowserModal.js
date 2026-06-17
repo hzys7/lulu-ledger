@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFinance } from '../../context/FinanceContext';
 import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme';
-import { listAutoBackups, restoreFromBackup, deleteBackup } from '../../utils/autoBackup';
+import { listAutoBackups, readBackupFile, deleteBackup } from '../../utils/autoBackup';
 
 export default function BackupBrowserModal({ visible, onClose, onRestore }) {
   const { settings } = useFinance();
@@ -46,7 +46,7 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
           style: 'destructive',
           onPress: async () => {
             setRestoring(backup.name);
-            const result = restoreFromBackup(backup.uri);
+            const result = await readBackupFile(backup.uri);
             if (result.success && result.data) {
               const { importData } = await import('../../utils/storage');
               await importData(result.data, 'replace');

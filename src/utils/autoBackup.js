@@ -65,7 +65,7 @@ export async function performAutoBackup() {
 
     // 写入备份文件
     const file = new File(backupDir, fileName);
-    file.write(jsonContent);
+    await file.write(jsonContent);
 
     // 更新设置
     await saveAutoBackupSettings({
@@ -133,22 +133,24 @@ export function listAutoBackups() {
   }
 }
 
-// 从备份恢复数据
-export function restoreFromBackup(backupUri) {
+// 读取备份文件并解析 JSON（异步）
+export async function readBackupFile(backupUri) {
   try {
     const file = new File(backupUri);
-    const content = file.text();
+    const content = await file.text();
+    
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      return { success: false, reason: '备份文件为空' };
+    }
+
     const data = JSON.parse(content);
 
     if (!data.transactions && !data.books && !data.budgets) {
-      throw new Error('备份文件格式无效');
+      return { success: false, reason: '备份文件格式无效' };
     }
 
-    // 注意：这里需要异步调用 storage.importData
-    // 但由于 File API 是同步的，我们返回数据让调用者处理
     return { success: true, data };
   } catch (e) {
-    console.error('[AutoBackup] Restore failed:', e);
     return { success: false, reason: e.message };
   }
 }
