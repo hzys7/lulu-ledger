@@ -1,19 +1,27 @@
-// 小璐记账 · 预算环形图组件（美化版）
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Svg, { Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
+// 小璐记账 · 预算环形图组件（视觉优化版）
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import Svg, { Circle, G, Defs, LinearGradient, Stop, Line } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, borderRadius, fontSize, fontWeight, shadows } from '../theme';
 import { formatMoney } from '../utils/currency';
 
-const CHART_SIZE = 140;
-const STROKE_WIDTH = 18;
+const CHART_SIZE = 150;
+const STROKE_WIDTH = 20;
 const RADIUS = (CHART_SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const CENTER = CHART_SIZE / 2;
 
 const MODE_OVERVIEW = 'overview';
 const MODE_CATEGORY = 'category';
+
+// 分类颜色渐变配置
+const GRADIENT_COLORS = {
+  primary: ['#6C63FF', '#8B83FF'],
+  success: ['#34C759', '#5BD87A'],
+  danger: ['#FF6B6B', '#FF8A8A'],
+  warning: ['#FF9F0A', '#FFB340'],
+};
 
 export default function BudgetPieChart({
   budgets = [],
@@ -26,6 +34,16 @@ export default function BudgetPieChart({
   const [mode, setMode] = useState(MODE_OVERVIEW);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [overviewSelected, setOverviewSelected] = useState(null);
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  // 入场动画
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const chartData = useMemo(() => {
     const totalBudgetItem = budgets.find(
@@ -47,6 +65,7 @@ export default function BudgetPieChart({
           remaining: b.amount - spent,
           isOver: spent > b.amount,
           color,
+          percent: Math.round((spent / b.amount) * 100),
         };
       });
       items.sort((a, b) => b.budget - a.budget);
@@ -108,6 +127,11 @@ export default function BudgetPieChart({
     const daysLeft = Math.max(daysInMonth - dayOfMonth, 1);
     const dailyRemaining = daysLeft > 0 ? Math.abs(totalRemaining) / daysLeft : 0;
 
+    // 预算健康度评分
+    let healthScore = 100;
+    if (usedPct > 0.8) healthScore = Math.max(0, 100 - (usedPct - 0.8) * 500);
+    if (isOver) healthScore = 0;
+
     return {
       used: {
         arcLength: usedArc,
@@ -126,6 +150,8 @@ export default function BudgetPieChart({
       isOver,
       daysLeft,
       dailyRemaining,
+      healthScore,
+      usedPct,
     };
   }, [chartData, tc]);
 
@@ -144,11 +170,17 @@ export default function BudgetPieChart({
     setOverviewSelected(null);
   }, [chartData?.isTotalOnly]);
 
+  const getHealthColor = (score) => {
+    if (score >= 70) return tc.success;
+    if (score >= 40) return '#FF9F0A';
+    return tc.danger;
+  };
+
   if (!chartData) {
     return (
       <View style={[styles.emptyCard, { backgroundColor: tc.surface, borderColor: tc.border, ...shadows.sm }]}>
-        <View style={[styles.emptyIconWrap, { backgroundColor: tc.surfaceMuted }]}>
-          <Ionicons name="pie-chart-outline" size={28} color={tc.textSubtle} />
+        <View style={[styles.emptyIconWrap, { backgroundColor: tc.primary + '10' }]}>
+          <Ionicons name="pie-chart-outline" size={32} color={tc.primary} />
         </View>
         <Text style={[styles.emptyTitle, { color: tc.text }]}>暂无预算</Text>
         <Text style={[styles.emptyHint, { color: tc.textMuted }]}>
@@ -159,8 +191,8 @@ export default function BudgetPieChart({
           onPress={onNavigateBudget}
           activeOpacity={0.85}
         >
-          <Ionicons name="add-circle-outline" size={16} color={tc.primaryOn} />
-          <Text style={[styles.emptyBtnText, { color: tc.primaryOn }]}>去设置预算</Text>
+          <Ionicons name="add-circle-outline" size={16} color="#fff" />
+          <Text style={[styles.emptyBtnText, { color: '#fff' }]}>去设置预算</Text>
         </TouchableOpacity>
       </View>
     );
@@ -169,9 +201,19 @@ export default function BudgetPieChart({
   const selected = selectedIndex !== null ? chartData.segments[selectedIndex] : null;
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: animatedValue }]}>
+      {/* 头部 */}
       <View style={styles.headerRow}>
-        <Text style={[styles.headerTitle, { color: tc.text }]}>预算概览</Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, { color: tc.text }]}>预算概览</Text>
+          {overviewSegments && (
+            <View style={[styles.healthBadge, { backgroundColor: getHealthColor(overviewSegments.healthScore) + '15' }]}>
+              <Text style={[styles.healthText, { color: getHealthColor(overviewSegments.healthScore) }]}>
+                {overviewSegments.healthScore >= 70 ? '健康' : overviewSegments.healthScore >= 40 ? '注意' : '超支'}
+              </Text>
+            </View>
+          )}
+        </View>
         {!chartData.isTotalOnly && (
           <TouchableOpacity
             style={[styles.modeToggle, { backgroundColor: tc.surfaceMuted }]}
@@ -195,14 +237,24 @@ export default function BudgetPieChart({
         <View style={[styles.chartWrap, { width: CHART_SIZE, height: CHART_SIZE }]}>
           <Svg width={CHART_SIZE} height={CHART_SIZE}>
             <Defs>
+              <LinearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor={tc.surfaceMuted} stopOpacity={0.5} />
+                <Stop offset="1" stopColor={tc.surfaceMuted} stopOpacity={0.3} />
+              </LinearGradient>
               <LinearGradient id="usedGrad" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor={overviewSegments?.isOver ? tc.danger : tc.primary} />
-                <Stop offset="1" stopColor={overviewSegments?.isOver ? tc.danger : tc.primary} stopOpacity={0.7} />
+                <Stop offset="0" stopColor={overviewSegments?.isOver ? GRADIENT_COLORS.danger[0] : GRADIENT_COLORS.primary[0]} />
+                <Stop offset="1" stopColor={overviewSegments?.isOver ? GRADIENT_COLORS.danger[1] : GRADIENT_COLORS.primary[1]} />
+              </LinearGradient>
+              <LinearGradient id="remainGrad" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor={GRADIENT_COLORS.success[0]} />
+                <Stop offset="1" stopColor={GRADIENT_COLORS.success[1]} />
               </LinearGradient>
             </Defs>
+            
+            {/* 底部圆环 */}
             <Circle
               cx={CENTER} cy={CENTER} r={RADIUS}
-              fill="none" stroke={tc.surfaceMuted} strokeWidth={STROKE_WIDTH}
+              fill="none" stroke="url(#bgGrad)" strokeWidth={STROKE_WIDTH}
             />
 
             {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
@@ -212,8 +264,8 @@ export default function BudgetPieChart({
                     <Circle
                       cx={CENTER} cy={CENTER} r={RADIUS}
                       fill="none"
-                      stroke={overviewSegments.used.color}
-                      strokeWidth={overviewSelected === 'used' ? STROKE_WIDTH + 3 : STROKE_WIDTH}
+                      stroke="url(#usedGrad)"
+                      strokeWidth={overviewSelected === 'used' ? STROKE_WIDTH + 4 : STROKE_WIDTH}
                       strokeDasharray={`${overviewSegments.used.arcLength} ${CIRCUMFERENCE - overviewSegments.used.arcLength}`}
                       strokeDashoffset={0}
                       strokeLinecap="round"
@@ -225,8 +277,8 @@ export default function BudgetPieChart({
                     <Circle
                       cx={CENTER} cy={CENTER} r={RADIUS}
                       fill="none"
-                      stroke={overviewSegments.remaining.color}
-                      strokeWidth={overviewSelected === 'remaining' ? STROKE_WIDTH + 3 : STROKE_WIDTH}
+                      stroke="url(#remainGrad)"
+                      strokeWidth={overviewSelected === 'remaining' ? STROKE_WIDTH + 4 : STROKE_WIDTH}
                       strokeDasharray={`${overviewSegments.remaining.arcLength} ${CIRCUMFERENCE - overviewSegments.remaining.arcLength}`}
                       strokeDashoffset={-overviewSegments.used.arcLength}
                       strokeLinecap="round"
@@ -240,8 +292,8 @@ export default function BudgetPieChart({
               <G rotation="-90" origin={`${CENTER}, ${CENTER}`}>
                 {chartData.segments.map((seg) => {
                   const isSelected = selected && selected.index === seg.index;
-                  const sw = isSelected ? STROKE_WIDTH + 3 : STROKE_WIDTH;
-                  const gap = chartData.segments.length > 1 ? 2 : 0;
+                  const sw = isSelected ? STROKE_WIDTH + 4 : STROKE_WIDTH;
+                  const gap = chartData.segments.length > 1 ? 3 : 0;
                   const dashLen = Math.max(seg.arcLength - gap, 0);
                   return (
                     <Circle
@@ -252,7 +304,7 @@ export default function BudgetPieChart({
                       strokeDasharray={`${dashLen} ${CIRCUMFERENCE - dashLen}`}
                       strokeDashoffset={-seg.rotation}
                       strokeLinecap="round"
-                      opacity={selected && !isSelected ? 0.4 : 1}
+                      opacity={selected && !isSelected ? 0.3 : 1}
                       onPress={() => handleSegmentPress(seg.index)}
                     />
                   );
@@ -261,6 +313,7 @@ export default function BudgetPieChart({
             )}
           </Svg>
 
+          {/* 中心覆盖层 */}
           <View style={[styles.centerOverlay, { width: CHART_SIZE, height: CHART_SIZE }]} pointerEvents="none">
             {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
               overviewSelected === 'used' ? (
@@ -293,13 +346,14 @@ export default function BudgetPieChart({
               )
             ) : selected ? (
               <View style={styles.centerContent}>
-                <Text style={[styles.centerCategory, { color: selected.color }]} numberOfLines={1}>
+                <View style={[styles.centerDot, { backgroundColor: selected.color }]} />
+                <Text style={[styles.centerCategory, { color: tc.text }]} numberOfLines={1}>
                   {selected.category}
                 </Text>
                 <Text style={[styles.centerSpent, { color: tc.text }]} numberOfLines={1}>
                   {formatMoney(selected.spent, currency)}
                 </Text>
-                <Text style={[styles.centerBudget, { color: tc.textSubtle }]} numberOfLines={1}>
+                <Text style={[styles.centerBudget, { color: tc.textMuted }]} numberOfLines={1}>
                   / {formatMoney(selected.budget, currency)}
                 </Text>
               </View>
@@ -314,57 +368,55 @@ export default function BudgetPieChart({
           </View>
         </View>
 
-        {/* 右侧：统计信息 */}
+        {/* 右侧：统计卡片 */}
         <View style={styles.statsCol}>
           {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
             <>
               <TouchableOpacity
-                style={[styles.statCard, overviewSelected === 'used' && { backgroundColor: tc.primary + '10', borderColor: tc.primary + '30' }]}
+                style={[styles.statCard, overviewSelected === 'used' && { backgroundColor: tc.primary + '08', borderColor: tc.primary + '20' }]}
                 onPress={() => handleOverviewPress('used')}
                 activeOpacity={0.7}
               >
                 <View style={[styles.statDot, { backgroundColor: overviewSegments?.used.color || tc.primary }]} />
-                <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
-                <Text style={[styles.statValue, { color: tc.text }]}>
-                  {formatMoney(chartData.totalSpent, currency, 0)}
-                </Text>
+                <View style={styles.statInfo}>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
+                  <Text style={[styles.statValue, { color: tc.text }]}>
+                    {formatMoney(chartData.totalSpent, currency, 0)}
+                  </Text>
+                </View>
                 <Text style={[styles.statPct, { color: overviewSegments?.used.color || tc.primary }]}>
                   {overviewSegments?.used.percent || 0}%
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.statCard, overviewSelected === 'remaining' && { backgroundColor: tc.success + '10', borderColor: tc.success + '30' }]}
+                style={[styles.statCard, overviewSelected === 'remaining' && { backgroundColor: tc.success + '08', borderColor: tc.success + '20' }]}
                 onPress={() => handleOverviewPress('remaining')}
                 activeOpacity={0.7}
               >
                 <View style={[styles.statDot, { backgroundColor: overviewSegments?.remaining.color || tc.success }]} />
-                <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
-                <Text style={[styles.statValue, { color: chartData.isOver ? tc.danger : tc.text }]}>
-                  {chartData.isOver ? '-' : ''}{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
-                </Text>
+                <View style={styles.statInfo}>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
+                  <Text style={[styles.statValue, { color: chartData.isOver ? tc.danger : tc.text }]}>
+                    {chartData.isOver ? '-' : ''}{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
+                  </Text>
+                </View>
                 <Text style={[styles.statPct, { color: overviewSegments?.remaining.color || tc.success }]}>
                   {overviewSegments?.remaining.percent || 0}%
                 </Text>
               </TouchableOpacity>
 
-              <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
-                <View style={[styles.statDot, { backgroundColor: tc.textSubtle }]} />
-                <Text style={[styles.statLabel, { color: tc.textMuted }]}>总预算</Text>
-                <Text style={[styles.statValue, { color: tc.text }]}>
-                  {formatMoney(chartData.totalBudget, currency, 0)}
-                </Text>
-              </View>
-
               {overviewSegments && overviewSegments.daysLeft > 0 && (
-                <View style={[styles.statCard, { backgroundColor: tc.primary + '08' }]}>
-                  <Ionicons name="calendar-outline" size={12} color={tc.primary} />
-                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>日均可用</Text>
-                  <Text style={[styles.statValueSmall, { color: tc.primary }]}>
-                    {formatMoney(overviewSegments.dailyRemaining, currency, 0)}
-                  </Text>
+                <View style={[styles.statCard, { backgroundColor: tc.primary + '05', borderColor: tc.primary + '10' }]}>
+                  <Ionicons name="calendar-outline" size={14} color={tc.primary} />
+                  <View style={styles.statInfo}>
+                    <Text style={[styles.statLabel, { color: tc.textMuted }]}>日均可用</Text>
+                    <Text style={[styles.statValueSmall, { color: tc.primary }]}>
+                      {formatMoney(overviewSegments.dailyRemaining, currency, 0)}
+                    </Text>
+                  </View>
                   <Text style={[styles.statHint, { color: tc.textSubtle }]}>
-                    还剩{overviewSegments.daysLeft}天
+                    {overviewSegments.daysLeft}天
                   </Text>
                 </View>
               )}
@@ -372,19 +424,21 @@ export default function BudgetPieChart({
           ) : selected ? (
             <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
               <View style={[styles.statDot, { backgroundColor: selected.color }]} />
-              <Text style={[styles.statLabel, { color: tc.textMuted }]}>预算</Text>
-              <Text style={[styles.statValue, { color: tc.text }]}>
-                {formatMoney(selected.budget, currency, 0)}
-              </Text>
+              <View style={styles.statInfo}>
+                <Text style={[styles.statLabel, { color: tc.textMuted }]}>预算</Text>
+                <Text style={[styles.statValue, { color: tc.text }]}>
+                  {formatMoney(selected.budget, currency, 0)}
+                </Text>
+              </View>
               {selected.isOver ? (
                 <View style={[styles.overBadge, { backgroundColor: tc.dangerSubtle }]}>
                   <Text style={[styles.overBadgeText, { color: tc.danger }]}>
-                    超支 {formatMoney(Math.abs(selected.remaining), currency)}
+                    超支
                   </Text>
                 </View>
               ) : (
                 <Text style={[styles.statHint, { color: tc.textSubtle }]}>
-                  剩余 {formatMoney(selected.remaining, currency)}
+                  {selected.percent}%
                 </Text>
               )}
             </View>
@@ -392,17 +446,21 @@ export default function BudgetPieChart({
             <>
               <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
                 <View style={[styles.statDot, { backgroundColor: tc.primary }]} />
-                <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
-                <Text style={[styles.statValue, { color: tc.text }]}>
-                  {formatMoney(chartData.totalSpent, currency, 0)}
-                </Text>
+                <View style={styles.statInfo}>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
+                  <Text style={[styles.statValue, { color: tc.text }]}>
+                    {formatMoney(chartData.totalSpent, currency, 0)}
+                  </Text>
+                </View>
               </View>
               <View style={[styles.statCard, { backgroundColor: tc.surfaceMuted }]}>
                 <View style={[styles.statDot, { backgroundColor: tc.success }]} />
-                <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
-                <Text style={[styles.statValue, { color: tc.text }]}>
-                  {formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
-                </Text>
+                <View style={styles.statInfo}>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
+                  <Text style={[styles.statValue, { color: tc.text }]}>
+                    {formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
+                  </Text>
+                </View>
               </View>
             </>
           )}
@@ -422,6 +480,11 @@ export default function BudgetPieChart({
                 },
               ]}
             />
+          </View>
+          <View style={styles.progressLabels}>
+            <Text style={[styles.progressLabel, { color: tc.textMuted }]}>0%</Text>
+            <Text style={[styles.progressLabel, { color: tc.textMuted }]}>{overviewSegments.used.percent}%</Text>
+            <Text style={[styles.progressLabel, { color: tc.textMuted }]}>100%</Text>
           </View>
         </View>
       )}
@@ -444,9 +507,16 @@ export default function BudgetPieChart({
               >
                 <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
                 <View style={styles.legendInfo}>
-                  <Text style={[styles.legendName, { color: isSelected ? tc.text : tc.textMuted }]} numberOfLines={1}>
-                    {seg.category}
-                  </Text>
+                  <View style={styles.legendHeader}>
+                    <Text style={[styles.legendName, { color: isSelected ? tc.text : tc.textMuted }]} numberOfLines={1}>
+                      {seg.category}
+                    </Text>
+                    {seg.isOver && (
+                      <View style={[styles.overTag, { backgroundColor: tc.dangerSubtle }]}>
+                        <Text style={[styles.overTagText, { color: tc.danger }]}>超支</Text>
+                      </View>
+                    )}
+                  </View>
                   <View style={styles.legendBarBg}>
                     <View
                       style={[
@@ -467,17 +537,13 @@ export default function BudgetPieChart({
                     / {formatMoney(seg.budget, currency)}
                   </Text>
                 </View>
-                {seg.isOver && (
-                  <View style={[styles.overTag, { backgroundColor: tc.dangerSubtle }]}>
-                    <Text style={[styles.overTagText, { color: tc.danger }]}>超</Text>
-                  </View>
-                )}
               </TouchableOpacity>
             );
           })}
         </View>
       )}
 
+      {/* 底部按钮 */}
       <View style={styles.footerRow}>
         <TouchableOpacity
           style={[styles.footerBtn, { backgroundColor: tc.surfaceMuted }]}
@@ -488,7 +554,7 @@ export default function BudgetPieChart({
           <Text style={[styles.footerBtnText, { color: tc.textMuted }]}>管理预算</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -504,17 +570,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.md,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   headerTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     letterSpacing: -0.3,
+  },
+  healthBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  healthText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
   },
   modeToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: borderRadius.full,
   },
   modeToggleText: {
@@ -546,7 +626,14 @@ const styles = StyleSheet.create({
   centerLabel: {
     fontSize: 10,
     letterSpacing: 0.3,
-    marginBottom: 2,
+    marginBottom: 3,
+    textTransform: 'uppercase',
+  },
+  centerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 4,
   },
   centerTotal: {
     fontSize: fontSize.xl,
@@ -557,11 +644,11 @@ const styles = StyleSheet.create({
   centerSub: {
     fontSize: 10,
     fontWeight: fontWeight.medium,
-    marginTop: 1,
+    marginTop: 2,
     fontVariant: ['tabular-nums'],
   },
   centerCategory: {
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     letterSpacing: -0.1,
     marginBottom: 2,
@@ -574,7 +661,7 @@ const styles = StyleSheet.create({
   },
   centerBudget: {
     fontSize: 10,
-    marginTop: 1,
+    marginTop: 2,
     fontVariant: ['tabular-nums'],
   },
 
@@ -593,13 +680,17 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   statDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  statInfo: {
+    flex: 1,
   },
   statLabel: {
-    fontSize: 11,
-    flex: 1,
+    fontSize: 10,
+    letterSpacing: 0.2,
+    marginBottom: 1,
   },
   statValue: {
     fontSize: fontSize.md,
@@ -614,14 +705,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   statPct: {
-    fontSize: 11,
-    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
     fontVariant: ['tabular-nums'],
-    minWidth: 32,
+    minWidth: 36,
     textAlign: 'right',
   },
   statHint: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontVariant: ['tabular-nums'],
   },
   overBadge: {
@@ -632,7 +723,6 @@ const styles = StyleSheet.create({
   overBadgeText: {
     fontSize: 10,
     fontWeight: fontWeight.semibold,
-    fontVariant: ['tabular-nums'],
   },
 
   progressWrap: {
@@ -640,13 +730,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   progressBg: {
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  progressLabel: {
+    fontSize: 9,
+    fontVariant: ['tabular-nums'],
   },
 
   legendList: {
@@ -668,7 +767,12 @@ const styles = StyleSheet.create({
   },
   legendInfo: {
     flex: 1,
-    gap: 3,
+    gap: 4,
+  },
+  legendHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   legendName: {
     fontSize: fontSize.sm,
@@ -676,14 +780,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   legendBarBg: {
-    height: 3,
-    borderRadius: 1.5,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: 'rgba(0,0,0,0.05)',
     overflow: 'hidden',
   },
   legendBar: {
     height: '100%',
-    borderRadius: 1.5,
+    borderRadius: 2,
   },
   legendValues: {
     alignItems: 'flex-end',
@@ -700,12 +804,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   overTag: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 3,
+    borderRadius: borderRadius.xs,
   },
   overTagText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: fontWeight.bold,
   },
 
@@ -737,9 +841,9 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm,
   },
   emptyIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,

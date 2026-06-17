@@ -188,13 +188,17 @@ function RootNavigator() {
 }
 
 function ThemedApp() {
-  const { settings } = useFinance();
+  const { settings, updateAppSettings } = useFinance();
   const tc = getThemeColors(settings.theme);
 
   // 启动时检查自动备份
   React.useEffect(() => {
     if (shouldBackup(settings)) {
-      performAutoBackup().catch(() => {});
+      performAutoBackup().then(async (result) => {
+        if (result.success) {
+          await updateAppSettings({ autoBackupLastTime: new Date().toISOString() });
+        }
+      }).catch(() => {});
     }
   }, [settings.autoBackupEnabled, settings.autoBackupLastTime]);
 

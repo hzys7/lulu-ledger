@@ -1,10 +1,11 @@
-// DataSection: CSV export, JSON backup, import, and auto backup settings.
+// DataSection: 可折叠的数据管理模块
 import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors } from '../../theme';
-import { Section, ActionRow } from './Section';
-import { styles } from './styles';
+import { getThemeColors, spacing } from '../../theme';
+import { ActionRow } from './Section';
+import CollapsibleSection from './CollapsibleSection';
 import {
   getAutoBackupSettings,
   shouldBackup,
@@ -24,7 +25,6 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal }) {
   const tc = getThemeColors(settings.theme);
 
   const backupSettings = getAutoBackupSettings(settings);
-  const [showBackupSettings, setShowBackupSettings] = useState(false);
   const [backupCount, setBackupCount] = useState(0);
   const [lastBackupDisplay, setLastBackupDisplay] = useState('');
 
@@ -45,16 +45,14 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal }) {
 
   const handleToggleAutoBackup = async () => {
     const newEnabled = !backupSettings.enabled;
-    await saveAutoBackupSettings({ autoBackupEnabled: newEnabled });
     await updateAppSettings({ autoBackupEnabled: newEnabled });
 
-    if (newEnabled && shouldBackup({ ...settings, autoBackupEnabled: true, autoBackupLastTime: null })) {
+    if (newEnabled) {
       Alert.alert('自动备份', '已开启自动备份，将在下次满足条件时自动执行。');
     }
   };
 
   const handleChangeFrequency = async (freq) => {
-    await saveAutoBackupSettings({ autoBackupFrequency: freq });
     await updateAppSettings({ autoBackupFrequency: freq });
   };
 
@@ -67,6 +65,7 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal }) {
           const result = await performAutoBackup();
           if (result.success) {
             await loadBackupInfo();
+            await updateAppSettings({ autoBackupLastTime: new Date().toISOString() });
             Alert.alert('备份成功', `已保存为 ${result.fileName}`);
           } else {
             Alert.alert('备份失败', result.reason || '未知错误');
@@ -90,191 +89,178 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal }) {
     Alert.alert(`自动备份 (${backups.length}个)`, list);
   };
 
-  const tc2 = tc;
+  const backupSummary = backupSettings.enabled
+    ? `已开启 · ${FREQUENCY_OPTIONS.find(f => f.value === backupSettings.frequency)?.label || '每周'}`
+    : '未开启';
 
   return (
-    <Section title="数据管理">
+    <CollapsibleSection
+      title="数据管理"
+      icon="folder-open-outline"
+      iconColor="#34C759"
+    >
       <ActionRow
         icon="document-text-outline"
-        iconColor={tc2.text}
-        iconBg={tc2.surfaceMuted}
+        iconColor={tc.text}
+        iconBg={tc.surfaceMuted}
         label="导出为 CSV"
         onPress={onExportCSV}
         rightIcon="download-outline"
       />
       <ActionRow
         icon="cloud-upload-outline"
-        iconColor={tc2.text}
-        iconBg={tc2.surfaceMuted}
+        iconColor={tc.text}
+        iconBg={tc.surfaceMuted}
         label="完整备份导出"
         onPress={onExportJSON}
         rightIcon="download-outline"
       />
       <ActionRow
         icon="download-outline"
-        iconColor={tc2.text}
-        iconBg={tc2.surfaceMuted}
+        iconColor={tc.text}
+        iconBg={tc.surfaceMuted}
         label="导入备份"
         onPress={onOpenImportModal}
       />
 
-      {/* 自动备份设置 */}
+      {/* 自动备份开关 */}
       <TouchableOpacity
-        style={[autoStyles.header, { borderTopColor: tc2.border }]}
-        onPress={() => setShowBackupSettings(!showBackupSettings)}
+        style={[autoStyles.row, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        onPress={handleToggleAutoBackup}
         activeOpacity={0.7}
       >
-        <View style={autoStyles.headerLeft}>
-          <View style={[autoStyles.iconCircle, { backgroundColor: tc2.surfaceMuted }]}>
-            <Text style={[autoStyles.icon, { color: tc2.text }]}>⏰</Text>
-          </View>
-          <Text style={[autoStyles.label, { color: tc2.text }]}>自动备份</Text>
+        <View style={[autoStyles.iconWrap, { backgroundColor: '#FF9F0A' + '15' }]}>
+          <Ionicons name="time-outline" size={18} color="#FF9F0A" />
         </View>
-        <View style={autoStyles.headerRight}>
-          <Text style={[autoStyles.status, { color: tc2.textSecondary }]}>
-            {backupSettings.enabled ? '已开启' : '已关闭'}
+        <View style={autoStyles.rowContent}>
+          <Text style={[autoStyles.rowLabel, { color: tc.text }]}>自动备份</Text>
+          <Text style={[autoStyles.rowHint, { color: tc.textMuted }]}>
+            {backupSummary}
           </Text>
         </View>
+        <Switch
+          value={backupSettings.enabled}
+          onValueChange={handleToggleAutoBackup}
+          trackColor={{ false: tc.surfaceMuted, true: '#FF9F0A' }}
+          thumbColor="#fff"
+        />
       </TouchableOpacity>
 
-      {showBackupSettings && (
-        <View style={[autoStyles.panel, { backgroundColor: tc2.surface }]}>
-          {/* 开关 */}
-          <View style={[autoStyles.row, { borderBottomColor: tc2.border }]}>
-            <Text style={[autoStyles.rowLabel, { color: tc2.text }]}>启用自动备份</Text>
-            <Switch
-              value={backupSettings.enabled}
-              onValueChange={handleToggleAutoBackup}
-              trackColor={{ false: tc2.surfaceMuted, true: '#6C63FF' }}
-              thumbColor="#fff"
-            />
+      {/* 自动备份详情 */}
+      {backupSettings.enabled && (
+        <View style={[autoStyles.panel, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+          {/* 频率选择 */}
+          <Text style={[autoStyles.panelLabel, { color: tc.textMuted }]}>备份频率</Text>
+          <View style={autoStyles.freqRow}>
+            {FREQUENCY_OPTIONS.map(opt => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[
+                  autoStyles.freqBtn,
+                  { backgroundColor: tc.surfaceMuted, borderColor: tc.border },
+                  backupSettings.frequency === opt.value && {
+                    backgroundColor: '#FF9F0A',
+                    borderColor: '#FF9F0A',
+                  },
+                ]}
+                onPress={() => handleChangeFrequency(opt.value)}
+              >
+                <Text style={[
+                  autoStyles.freqBtnText,
+                  { color: tc.text },
+                  backupSettings.frequency === opt.value && { color: '#fff' },
+                ]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {/* 备份频率 */}
-          {backupSettings.enabled && (
-            <>
-              <View style={[autoStyles.row, { borderBottomColor: tc2.border }]}>
-                <Text style={[autoStyles.rowLabel, { color: tc2.text }]}>备份频率</Text>
-              </View>
-              <View style={autoStyles.freqRow}>
-                {FREQUENCY_OPTIONS.map(opt => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[
-                      autoStyles.freqBtn,
-                      { backgroundColor: tc2.surfaceMuted, borderColor: tc2.border },
-                      backupSettings.frequency === opt.value && {
-                        backgroundColor: '#6C63FF',
-                        borderColor: '#6C63FF',
-                      },
-                    ]}
-                    onPress={() => handleChangeFrequency(opt.value)}
-                  >
-                    <Text style={[
-                      autoStyles.freqBtnText,
-                      { color: tc2.text },
-                      backupSettings.frequency === opt.value && { color: '#fff' },
-                    ]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          {/* 备份信息 */}
+          <View style={[autoStyles.infoRow, { borderTopColor: tc.border }]}>
+            <Ionicons name="time-outline" size={14} color={tc.textMuted} />
+            <Text style={[autoStyles.infoLabel, { color: tc.textMuted }]}>上次备份</Text>
+            <Text style={[autoStyles.infoValue, { color: tc.text }]}>
+              {lastBackupDisplay}
+            </Text>
+          </View>
 
-              {/* 备份信息 */}
-              <View style={[autoStyles.row, { borderBottomColor: tc2.border }]}>
-                <Text style={[autoStyles.rowLabel, { color: tc2.text }]}>上次备份</Text>
-                <Text style={[autoStyles.rowValue, { color: tc2.textSecondary }]}>
-                  {lastBackupDisplay}
-                </Text>
-              </View>
+          <View style={[autoStyles.infoRow, { borderTopColor: tc.border }]}>
+            <Ionicons name="folder-outline" size={14} color={tc.textMuted} />
+            <Text style={[autoStyles.infoLabel, { color: tc.textMuted }]}>已保存</Text>
+            <Text style={[autoStyles.infoValue, { color: tc.text }]}>
+              {backupCount}个备份
+            </Text>
+          </View>
 
-              <View style={[autoStyles.row, { borderBottomColor: tc2.border }]}>
-                <Text style={[autoStyles.rowLabel, { color: tc2.text }]}>已保存备份</Text>
-                <Text style={[autoStyles.rowValue, { color: tc2.textSecondary }]}>
-                  {backupCount}个
-                </Text>
-              </View>
-
-              {/* 操作按钮 */}
-              <View style={autoStyles.actionRow}>
-                <TouchableOpacity
-                  style={[autoStyles.actionBtn, { backgroundColor: '#6C63FF' }]}
-                  onPress={handleBackupNow}
-                >
-                  <Text style={autoStyles.actionBtnText}>立即备份</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[autoStyles.actionBtn, { backgroundColor: tc2.surfaceMuted }]}
-                  onPress={handleViewBackups}
-                >
-                  <Text style={[autoStyles.actionBtnText, { color: tc2.text }]}>查看备份</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
+          {/* 操作按钮 */}
+          <View style={autoStyles.actionRow}>
+            <TouchableOpacity
+              style={[autoStyles.actionBtn, { backgroundColor: '#FF9F0A' }]}
+              onPress={handleBackupNow}
+            >
+              <Ionicons name="cloud-upload-outline" size={14} color="#fff" />
+              <Text style={autoStyles.actionBtnText}>立即备份</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[autoStyles.actionBtn, { backgroundColor: tc.surfaceMuted }]}
+              onPress={handleViewBackups}
+            >
+              <Ionicons name="list-outline" size={14} color={tc.text} />
+              <Text style={[autoStyles.actionBtnText, { color: tc.text }]}>查看备份</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
-    </Section>
+    </CollapsibleSection>
   );
 }
 
 const autoStyles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 16,
-  },
-  label: {
-    fontSize: 15,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  status: {
-    fontSize: 13,
-  },
-  panel: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.sm,
+  },
+  iconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowContent: {
+    flex: 1,
   },
   rowLabel: {
     fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
-  rowValue: {
-    fontSize: 13,
+  rowHint: {
+    fontSize: 12,
+    marginTop: 1,
+  },
+  panel: {
+    marginTop: spacing.sm,
+    padding: spacing.md,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.sm,
+  },
+  panelLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    marginBottom: spacing.xs,
   },
   freqRow: {
     flexDirection: 'row',
     gap: 8,
-    paddingVertical: 10,
   },
   freqBtn: {
     flex: 1,
@@ -287,20 +273,38 @@ const autoStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  infoLabel: {
+    fontSize: 13,
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
   actionRow: {
     flexDirection: 'row',
-    gap: 10,
-    paddingVertical: 12,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   actionBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    gap: 6,
   },
   actionBtnText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
 });

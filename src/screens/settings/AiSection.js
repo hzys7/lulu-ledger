@@ -1,26 +1,30 @@
-// AiSection: single row that opens the AI configuration modal. The modal
-// itself (AiSettingsScreen) is owned by the parent.
+// AiSection: AI 智能（可折叠）
 import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
 import { getThemeColors } from '../../theme';
-import { hexAlpha } from './_shared';
-import { Section, ActionRow } from './Section';
-import { styles } from './styles';
+import { ActionRow } from './Section';
+import CollapsibleSection from './CollapsibleSection';
 
 function AiSection({ onOpenModal }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+
   return (
-    <Section title="AI 智能">
+    <CollapsibleSection
+      title="AI 智能"
+      icon="sparkles"
+      iconColor="#AF52DE"
+    >
       <ActionRow
         icon="sparkles"
-        iconColor={tc.accent}
-        iconBg={hexAlpha(tc.accent, 0.12)}
+        iconColor="#AF52DE"
+        iconBg="#AF52DE15"
         label="AI 配置"
         onPress={onOpenModal}
         rightIcon="chevron-forward"
       />
-    </Section>
+    </CollapsibleSection>
   );
 }
 
