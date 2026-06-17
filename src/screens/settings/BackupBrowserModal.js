@@ -45,18 +45,23 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
           text: '恢复',
           style: 'destructive',
           onPress: async () => {
-            setRestoring(backup.name);
-            const result = await readBackupFile(backup.uri);
-            if (result.success && result.data) {
-              const { importData } = await import('../../utils/storage');
-              await importData(result.data, 'replace');
-              Alert.alert('恢复成功', '数据已恢复，请刷新页面');
-              if (onRestore) onRestore();
-              onClose();
-            } else {
-              Alert.alert('恢复失败', result.reason || '未知错误');
+            try {
+              setRestoring(backup.name);
+              const result = await readBackupFile(backup.uri);
+              if (result.success && result.data) {
+                const { importData } = await import('../../utils/storage');
+                await importData(result.data, 'replace');
+                Alert.alert('恢复成功', '数据已恢复，请刷新页面');
+                if (onRestore) await onRestore();
+                onClose();
+              } else {
+                Alert.alert('恢复失败', result.reason || '未知错误');
+              }
+            } catch (e) {
+              Alert.alert('恢复失败', e.message || '未知错误');
+            } finally {
+              setRestoring(null);
             }
-            setRestoring(null);
           },
         },
       ]

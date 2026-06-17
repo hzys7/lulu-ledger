@@ -448,22 +448,28 @@ export async function importData(data, mode = 'merge') {
   const hasFullBackup = data.transactions || data.books || data.budgets || data.settings || data.accounts;
 
   if (hasFullBackup) {
-    if (Array.isArray(data.transactions)) {
-      const stats = await mergeTransactions(data.transactions);
-      if (mode === 'replace') await writeField('transactions', data.transactions);
-    }
     if (mode === 'replace') {
+      // 替换模式：直接写入，不需要合并
+      if (data.transactions) await writeField('transactions', data.transactions);
       if (data.books) await writeField('books', data.books);
       if (data.budgets) await writeField('budgets', data.budgets);
       if (data.settings) await writeField('settings', data.settings);
       if (data.accounts) await writeField('accounts', data.accounts);
+      if (data.recurring) await writeField('recurring', data.recurring);
+      if (data.currentBookId) await writeField('currentBookId', data.currentBookId);
+      return { format: 'json', mode: 'replace', total: (data.transactions || []).length };
+    } else {
+      // 合并模式：追加并去重
+      let stats = { added: 0, skipped: 0, total: 0 };
+      if (Array.isArray(data.transactions)) {
+        stats = await mergeTransactions(data.transactions);
+      }
+      return { format: 'json', ...stats };
     }
-    return { format: 'json', ...(stats || { added: 0, skipped: 0, total: 0 }) };
   }
 
   if (Array.isArray(data)) {
     const stats = await mergeTransactions(data);
-    if (mode === 'replace') await writeField('transactions', data);
     return { format: 'json', ...stats };
   }
 
