@@ -88,4 +88,9 @@ export const DEFAULT_SETTINGS = {
   theme: 'light',
   notifications: true,
   autoCheckUpdate: true,
+  autoBackupEnabled: false,
+  autoBackupFrequency: 'weekly',
+  autoBackupLastTime: null,
+  autoBackupLastFile: null,
+  autoBackupKeepCount: 5,
 };

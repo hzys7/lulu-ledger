@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { FinanceProvider, useFinance } from './src/context/FinanceContext';
+import { shouldBackup, performAutoBackup } from './src/utils/autoBackup';
 import HomeScreen from './src/screens/HomeScreen';
 import RecordsScreen from './src/screens/RecordsScreen';
 import AddTransactionScreen from './src/screens/AddTransactionScreen';
@@ -189,6 +190,14 @@ function RootNavigator() {
 function ThemedApp() {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+
+  // 启动时检查自动备份
+  React.useEffect(() => {
+    if (shouldBackup(settings)) {
+      performAutoBackup().catch(() => {});
+    }
+  }, [settings.autoBackupEnabled, settings.autoBackupLastTime]);
+
   const navTheme = settings.theme === 'dark'
     ? {
         ...DarkTheme,

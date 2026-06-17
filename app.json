@@ -2,7 +2,7 @@
   "expo": {
     "name": "小璐记账",
     "slug": "lulu-ledger",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
