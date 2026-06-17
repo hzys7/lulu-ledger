@@ -18,6 +18,7 @@ export function sanitizeTransactions(list) {
       currency: t.currency || 'CNY',
       bookId: t.bookId || 'default',
       bookName: t.bookName || '',
+      accountId: t.accountId || null,
       createdAt: t.createdAt || new Date().toISOString(),
     }))
     .filter((t) => t.amount > 0);
