@@ -1,9 +1,9 @@
 // 自动备份工具 - 本地定期自动备份
-import * as FileSystem from 'expo-file-system';
+import { File, Directory, Paths } from 'expo-file-system';
 import * as storage from './storage';
 
 const BACKUP_DIR = 'backups';
-const backupDirPath = `${FileSystem.documentDirectory}${BACKUP_DIR}`;
+const backupDir = new Directory(Paths.document, BACKUP_DIR);
 
 // 获取备份设置
 export function getAutoBackupSettings(settings) {
@@ -56,14 +56,13 @@ export async function performAutoBackup() {
     const jsonContent = JSON.stringify(data, null, 2);
 
     // 确保备份目录存在
-    const dirInfo = await FileSystem.getInfoAsync(backupDirPath);
-    if (!dirInfo.exists) {
-      await FileSystem.makeDirectoryAsync(backupDirPath, { intermediates: true });
+    if (!backupDir.exists) {
+      backupDir.create();
     }
 
     // 写入备份文件
-    const fileUri = `${backupDirPath}/${fileName}`;
-    await FileSystem.writeAsStringAsync(fileUri, jsonContent);
+    const file = new File(backupDir, fileName);
+    file.write(jsonContent);
 
     // 更新设置
     await saveAutoBackupSettings({
@@ -87,22 +86,23 @@ async function cleanupOldBackups() {
     const settings = await storage.getSettings();
     const keepCount = settings?.autoBackupKeepCount ?? 5;
 
-    const dirInfo = await FileSystem.getInfoAsync(backupDirPath);
-    if (!dirInfo.exists) return;
+    if (!backupDir.exists) return;
 
-    const files = await FileSystem.readDirectoryAsync(backupDirPath);
-    const backupFiles = files
-      .filter(f => f.startsWith('auto_backup_') && f.endsWith('.json'))
+    const items = backupDir.list();
+    const backupFiles = items
+      .filter(item => item instanceof File && item.name.startsWith('auto_backup_') && item.name.endsWith('.json'))
+      .map(item => item.name)
       .sort()
       .reverse();
 
     if (backupFiles.length > keepCount) {
       const toDelete = backupFiles.slice(keepCount);
-      for (const f of toDelete) {
+      for (const name of toDelete) {
         try {
-          await FileSystem.deleteAsync(`${backupDirPath}/${f}`);
+          const f = new File(backupDir, name);
+          f.delete();
         } catch (e) {
-          console.warn('[AutoBackup] Failed to delete old backup:', f, e);
+          console.warn('[AutoBackup] Failed to delete old backup:', name, e);
         }
       }
     }
@@ -114,18 +114,16 @@ async function cleanupOldBackups() {
 // 获取所有自动备份文件列表
 export async function listAutoBackups() {
   try {
-    const dirInfo = await FileSystem.getInfoAsync(backupDirPath);
-    if (!dirInfo.exists) return [];
+    if (!backupDir.exists) return [];
 
-    const files = await FileSystem.readDirectoryAsync(backupDirPath);
+    const items = backupDir.list();
     const backups = [];
-    for (const f of files) {
-      if (f.startsWith('auto_backup_') && f.endsWith('.json')) {
-        const fileInfo = await FileSystem.getInfoAsync(`${backupDirPath}/${f}`);
+    for (const item of items) {
+      if (item instanceof File && item.name.startsWith('auto_backup_') && item.name.endsWith('.json')) {
         backups.push({
-          name: f,
-          size: fileInfo.size,
-          uri: fileInfo.uri,
+          name: item.name,
+          size: item.size,
+          uri: item.uri,
         });
       }
     }
@@ -139,7 +137,8 @@ export async function listAutoBackups() {
 // 从备份恢复数据
 export async function restoreFromBackup(backupUri) {
   try {
-    const content = await FileSystem.readAsStringAsync(backupUri);
+    const file = new File(backupUri);
+    const content = file.text();
     const data = JSON.parse(content);
 
     if (!data.transactions && !data.books && !data.budgets) {
@@ -157,7 +156,8 @@ export async function restoreFromBackup(backupUri) {
 // 删除指定备份
 export async function deleteBackup(fileName) {
   try {
-    await FileSystem.deleteAsync(`${backupDirPath}/${fileName}`);
+    const file = new File(backupDir, fileName);
+    file.delete();
     return { success: true };
   } catch (e) {
     return { success: false, reason: e.message };
