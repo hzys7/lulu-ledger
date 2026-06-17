@@ -16,7 +16,6 @@ import RecurringModal from "./settings/RecurringModal";
 import { styles } from "./settings/styles";
 import BudgetSection from "./settings/BudgetSection";
 import AppearanceSection from "./settings/AppearanceSection";
-import UpdateSection from "./settings/UpdateSection";
 import RecurringSection from "./settings/RecurringSection";
 import DataSection from "./settings/DataSection";
 import AiSection from "./settings/AiSection";
@@ -91,18 +90,12 @@ export default function SettingsScreen({ navigation }) {
   useEffect(() => () => { mountedRef.current = false; }, []);
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = React.useState(null);
-  // handleCheckNow: trigger UpdatePrompt to run a check, then poll
-  // getLastUpdateCheck every 250ms until the status moves out of
-  // \'checking\'. This is much simpler than wiring up a manual
-  // DeviceEventEmitter subscription, and the polling cleanup is
-  // automatic via the isChecking useEffect.
   const handleCheckNow = () => {
     if (isChecking) return;
     setIsChecking(true);
     setCheckResult(null);
     try { triggerUpdateCheck(true); } catch (e) { console.warn('[Settings] trigger failed:', e?.message || e); }
   };
-  // Poll the module-level _lastCheck while isChecking is true.
   useEffect(() => {
     if (!isChecking) return;
     let cancelled = false;
@@ -185,18 +178,11 @@ export default function SettingsScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xxl },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.xxl + 40 },
         ]}
       >
         <BudgetSection onNavigate={() => navigation.navigate("Budget")} />
         <AppearanceSection onToggleTheme={handleToggleTheme} />
-        <UpdateSection
-          isChecking={isChecking}
-          checkResult={checkResult}
-          checkResultText={checkResultText}
-          onToggleAutoCheck={handleToggleAutoCheck}
-          onCheckNow={handleCheckNow}
-        />
         <RecurringSection
           recurring={recurring}
           onAdd={() => setShowRecurringModal(true)}
@@ -208,7 +194,13 @@ export default function SettingsScreen({ navigation }) {
           onOpenImportModal={() => setShowImportModal(true)}
         />
         <AiSection onOpenModal={() => setShowAiModal(true)} />
-        <AboutSection />
+        <AboutSection
+          isChecking={isChecking}
+          checkResult={checkResult}
+          checkResultText={checkResultText}
+          onToggleAutoCheck={handleToggleAutoCheck}
+          onCheckNow={handleCheckNow}
+        />
       </ScrollView>
 
       <AiSettingsScreen visible={showAiModal} onClose={() => setShowAiModal(false)} />

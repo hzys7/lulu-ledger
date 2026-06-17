@@ -1,21 +1,16 @@
-// AiSection: AI 智能（可折叠）
+// AiSection: AI 智能 - 简单行
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
 import { getThemeColors } from '../../theme';
-import { ActionRow } from './Section';
-import CollapsibleSection from './CollapsibleSection';
+import { Section, ActionRow } from './Section';
 
 function AiSection({ onOpenModal }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
 
   return (
-    <CollapsibleSection
-      title="AI 智能"
-      icon="sparkles"
-      iconColor="#AF52DE"
-    >
+    <Section title="AI 智能">
       <ActionRow
         icon="sparkles"
         iconColor="#AF52DE"
@@ -24,7 +19,7 @@ function AiSection({ onOpenModal }) {
         onPress={onOpenModal}
         rightIcon="chevron-forward"
       />
-    </CollapsibleSection>
+    </Section>
   );
 }
 

@@ -1,4 +1,4 @@
-﻿// 数据导出工具 - 支持CSV和JSON导出
+// 数据导出工具 - 支持CSV和JSON导出
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getCurrencySymbol } from './currency';
@@ -181,9 +181,18 @@ export async function pickImportFile() {
     const result = await File.pickFileAsync({
       mimeTypes: ['text/csv', 'text/comma-separated-values', 'application/json', 'application/octet-stream', '*/*'],
     });
+    
+    // 新 API 返回 { result: File, canceled: boolean }
     if (result.canceled || !result.result) return null;
-    const text = await result.result.text();
-    return { name: result.result.name, text };
+    
+    const file = result.result;
+    const text = await file.text();
+    
+    // 从 URI 中提取文件名
+    const uriParts = file.uri.split('/');
+    const name = uriParts[uriParts.length - 1] || 'backup.json';
+    
+    return { name, text };
   } catch (e) {
     // 取消选择不抛错
     if (e && /cancel/i.test(String(e.message || e))) return null;

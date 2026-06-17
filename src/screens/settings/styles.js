@@ -1,11 +1,10 @@
 // Shared StyleSheet for SettingsScreen and its section slices.
-// 1:1 extraction from the old 1081-line SettingsScreen.js (no visual change).
 import { StyleSheet } from 'react-native';
 import { spacing, borderRadius, fontSize, fontWeight } from '../../theme';
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: spacing.base, paddingBottom: spacing.xxxl },
+  scrollContent: { paddingHorizontal: spacing.base, paddingBottom: 40 },
 
   headerRow: { paddingBottom: spacing.lg },
 
@@ -31,6 +30,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     minHeight: 56,
+    marginBottom: spacing.sm,
   },
   listIcon: {
     width: 36,
