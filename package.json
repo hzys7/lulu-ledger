@@ -1,6 +1,6 @@
 {
   "name": "lulu-ledger",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "小璐记账 - 现代化极简的记账APP",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "expo-sharing": "~56.0.17",
     "react": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-gifted-charts": "^1.4.77",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.18.0",
     "react-native-svg": "15.15.5",

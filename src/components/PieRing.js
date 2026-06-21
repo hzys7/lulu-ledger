@@ -1,33 +1,8 @@
-// 手画环形图
-// props: data = [{ value, color }], size, thickness, center (React node)
-//         selectedIndex, onSegmentPress (支持点击高亮)
+// 基于 GiftedCharts 的环形图
 import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, G, Circle } from 'react-native-svg';
+import { PieChart } from 'react-native-gifted-charts';
 import { fontSize } from '../theme';
-
-function polarToCartesian(cx, cy, r, angleDeg) {
-  const angleRad = ((angleDeg - 90) * Math.PI) / 180;
-  return {
-    x: cx + r * Math.cos(angleRad),
-    y: cy + r * Math.sin(angleRad),
-  };
-}
-
-function arcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
-  const startOuter = polarToCartesian(cx, cy, rOuter, startAngle);
-  const endOuter = polarToCartesian(cx, cy, rOuter, endAngle);
-  const startInner = polarToCartesian(cx, cy, rInner, endAngle);
-  const endInner = polarToCartesian(cx, cy, rInner, startAngle);
-  const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-  return [
-    'M', startOuter.x, startOuter.y,
-    'A', rOuter, rOuter, 0, largeArcFlag, 1, endOuter.x, endOuter.y,
-    'L', startInner.x, startInner.y,
-    'A', rInner, rInner, 0, largeArcFlag, 0, endInner.x, endInner.y,
-    'Z',
-  ].join(' ');
-}
 
 const PieRing = memo(function PieRing({
   data,
@@ -47,81 +22,36 @@ const PieRing = memo(function PieRing({
     );
   }
 
-  const cx = size / 2;
-  const cy = size / 2;
-  const rOuter = size / 2 - 2;
-  const rInner = rOuter - thickness;
-  const trackR = rOuter - thickness / 2;
+  const radius = size / 2 - 2;
+  const innerRadius = Math.max(radius - thickness, 0);
 
-  const hasMultiple = data.length > 1;
-  const gapDeg = hasMultiple ? 2.5 : 0;
-
-  let cursor = 0;
-  const arcs = data.map((d, i) => {
-    const pct = d.value / total;
-    const sweep = pct * 360;
-    const startAngle = cursor + gapDeg / 2;
-    const endAngle = cursor + sweep - gapDeg / 2;
-    cursor += sweep;
-    return { d, startAngle, endAngle, key: i, index: i };
-  });
+  const pieData = data.map((d) => ({
+    value: d.value,
+    color: d.color,
+  }));
 
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
-      <Svg width={size} height={size}>
-        {hasMultiple && (
-          <Circle
-            cx={cx}
-            cy={cy}
-            r={trackR}
-            fill="none"
-            stroke="rgba(128,128,128,0.07)"
-            strokeWidth={thickness + 2}
-          />
-        )}
-        {arcs.map(({ d, startAngle, endAngle, key, index }) => {
-          if (endAngle - startAngle <= 0) return null;
-
-          const isSelected = selectedIndex === index;
-          const isDimmed = selectedIndex !== null && !isSelected;
-
-          const glowAmt = isSelected ? Math.min(thickness * 0.12, 3) : 0;
-          const rOuterAdj = rOuter + glowAmt;
-          const rInnerAdj = rInner - glowAmt;
-
-          const path = arcPath(cx, cy, rOuterAdj, rInnerAdj, startAngle, endAngle);
-
-          return (
-            <G key={key}>
-              {isSelected && (
-                <Path
-                  d={arcPath(cx, cy, rOuter + 3, rInner - 3, startAngle, endAngle)}
-                  fill={d.color}
-                  opacity={0.25}
-                  stroke="none"
-                />
-              )}
-              <Path
-                d={path}
-                fill={d.color}
-                stroke="rgba(0,0,0,0.08)"
-                strokeWidth={0.5}
-                opacity={isDimmed ? 0.3 : 1}
-                onPress={() => onSegmentPress?.(index)}
-              />
-            </G>
-          );
-        })}
-      </Svg>
-
-      {center ? (
+      <PieChart
+        data={pieData}
+        donut
+        radius={radius}
+        innerRadius={innerRadius}
+        innerCircleColor="transparent"
+        showText={false}
+        selectedIndex={selectedIndex}
+        onPress={(_item, index) => onSegmentPress?.(index)}
+        backgroundColor="transparent"
+        strokeWidth={0}
+      />
+      {center && (
         <View
           style={[styles.center, { width: size, height: size }]}
           pointerEvents="none"
         >
           {center}
         </View>
-      ) : null}
+      )}
     </View>
   );
 });

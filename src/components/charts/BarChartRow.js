@@ -1,83 +1,65 @@
-// 小璐记账 · 柱状图对比行组件
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { spacing, fontSize, fontWeight } from '../../theme';
+// 基于 GiftedCharts 的柱状图对比行组件
+import React, { useMemo } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { BarChart } from 'react-native-gifted-charts';
+import { spacing } from '../../theme';
 
 export default function BarChartRow({ items, accent, muted, divider, textMuted, text, selectedKey, onSelect }) {
-  const values = items.map(i => i.value);
-  const max = Math.max(...values, 1);
+  const chartData = useMemo(() => {
+    return items.map(d => {
+      const key = d.year + '_' + (d.month || '');
+      const isSelected = key === selectedKey;
+      return {
+        value: d.value,
+        label: d.label || '',
+        frontColor: isSelected ? accent : (accent + '88'),
+        key,
+        originalItem: d,
+      };
+    });
+  }, [items, accent, selectedKey]);
+
+  const maxValue = useMemo(() => {
+    const max = Math.max(...items.map(d => d.value), 1);
+    return Math.ceil(max * 1.15);
+  }, [items]);
+
+  if (!items || items.length === 0) return null;
+
   return (
-    <View style={styles.barChartRow}>
-      {items.map((d, i) => {
-        const key = d.year + '_' + (d.month || '');
-        const isSelected = selectedKey === key;
-        const heightPct = max > 0 ? (d.value / max) * 100 : 0;
-        return (
-          <TouchableOpacity
-            key={key}
-            activeOpacity={0.7}
-            style={styles.barCol}
-            onPress={() => onSelect && onSelect(d)}
-          >
-            <Text style={[styles.barValue, { color: isSelected ? text : textMuted }]}>
-              {d.value > 0 ? (d.value >= 1000 ? (Math.round(d.value / 100) / 10 + 'k') : Math.round(d.value)) : ''}
-            </Text>
-            {d.value > 0 ? (
-              <View
-                style={[styles.bar, {
-                  height: Math.max(heightPct * 0.8, 8),
-                  backgroundColor: accent,
-                  opacity: isSelected ? 1 : 0.35,
-                  borderRadius: isSelected ? 4 : 3,
-                }]}
-              />
-            ) : (
-              <View style={[styles.barEmpty, { backgroundColor: divider }]} />
-            )}
-            <Text style={[styles.barLabel, { color: isSelected ? text : muted, fontWeight: isSelected ? '600' : '400' }]}>
-              {d.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+    <View style={styles.wrap}>
+      <BarChart
+        data={chartData}
+        width={300}
+        height={150}
+        maxValue={maxValue}
+        noOfSections={3}
+        barWidth={Math.min(32, Math.max(20, (280 - items.length * 6) / items.length))}
+        spacing={items.length > 6 ? 6 : 10}
+        initialSpacing={10}
+        yAxisThickness={0}
+        xAxisThickness={0}
+        hideYAxisText
+        hideRules
+        isAnimated
+        animationDuration={500}
+        barBorderRadius={4}
+        showValuesAsTopLabel
+        topLabelTextStyle={{
+          color: textMuted,
+          fontSize: 9,
+          fontWeight: '500',
+        }}
+        onPress={(item) => {
+          if (item && item.originalItem && onSelect) {
+            onSelect(item.originalItem);
+          }
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  barChartRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: 140,
-    paddingTop: spacing.md,
-  },
-  barCol: {
-    flex: 1,
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'flex-end',
-  },
-  bar: {
-    width: '60%',
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
-  barEmpty: {
-    width: '60%',
-    height: 2,
-    borderRadius: 1,
-    opacity: 0.3,
-  },
-  barValue: {
-    fontSize: 9,
-    fontWeight: fontWeight.semibold,
-    marginBottom: 4,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.1,
-  },
-  barLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    fontVariant: ['tabular-nums'],
-  },
+  wrap: {},
 });
