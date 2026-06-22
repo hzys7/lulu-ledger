@@ -108,6 +108,19 @@ jobs:
           unset ANDROID_SDK_ROOT
           node tools/patch-build-gradle.js
 
+      - name: Patch proguard-rules.pro for expo-av
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+        run: |
+          set -euo pipefail
+          unset ANDROID_SDK_ROOT
+          node tools/patch-proguard.js
+          if ! grep -q "lulu-ledger expo-av patch" android/app/proguard-rules.pro; then
+            echo "::error::proguard patch sentinel not found"
+            exit 1
+          fi
+
       - name: Verify signing config injected
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
