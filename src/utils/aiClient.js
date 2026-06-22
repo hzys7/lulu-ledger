@@ -1,6 +1,6 @@
 // 小璐记账 · 统一 AI API 客户端
 // 封装 OpenAI 兼容的 chat/completions 调用、配置校验、错误处理。
-// 所有 AI 模块统一走这里，消除 6 个文件中的重复 fetch 代码。
+// 所有 AI 模块统一走这里，消除多个文件中的重复 fetch 代码。
 import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
 
 /**
@@ -9,12 +9,13 @@ import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
  * @param {Object} options
  * @param {string} [options.system] - System prompt（与 messages 二选一）
  * @param {Array}  [options.messages] - 完整消息数组 [{role, content}]（与 system 二选一）
- * @param {string} options.userMessage - 用户消息（与 messages 二选一）
+ * @param {string} [options.userMessage] - 用户消息（与 messages 二选一）
  * @param {number} [options.temperature=0.5]
  * @param {number} [options.maxTokens=500]
+ * @param {(fullText: string) => void} [options.onChunk] - 流式回调，提供后启用 SSE 流式输出
  * @returns {Promise<{ ok: true, content: string } | { ok: false, error: string }>}
  */
-export async function callAiApi({ system, messages, userMessage, temperature, maxTokens }) {
+export async function callAiApi({ system, messages, userMessage, temperature, maxTokens, onChunk }) {
   const config = await loadAiConfig();
   if (!config.apiKey) return { ok: false, error: '未配置 API Key' };
   if (!config.enabled) return { ok: false, error: 'AI 功能未启用' };
@@ -25,7 +26,7 @@ export async function callAiApi({ system, messages, userMessage, temperature, ma
   const model = config.model === '__custom__' ? config.customModel : config.model;
   if (!model) return { ok: false, error: '模型未配置' };
 
-  // 构建消息列表：优先用完整 messages 数组，否则组装 system + userMessage
+  // 构建消息列表
   const msgList = messages || [
     ...(system ? [{ role: 'system', content: system }] : []),
     ...(userMessage ? [{ role: 'user', content: userMessage }] : []),
@@ -44,17 +45,16 @@ export async function callAiApi({ system, messages, userMessage, temperature, ma
         messages: msgList,
         temperature: temperature ?? 0.5,
         max_tokens: maxTokens ?? 500,
+        stream: !!onChunk,
       }),
     });
 
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      if (res.status === 401) return { ok: false, error: 'API Key 无效（401）' };
-      if (res.status === 402) return { ok: false, error: '余额不足（402）' };
-      if (res.status === 403) return { ok: false, error: 'API Key 无权限（403）' };
-      if (res.status === 404) return { ok: false, error: '接口地址不正确（404）' };
-      if (res.status === 429) return { ok: false, error: '请求过快（429）' };
-      return { ok: false, error: 'HTTP ' + res.status + (errText ? '：' + errText.substring(0, 120) : '') };
+    if (!res.ok) return mapHttpError(res);
+
+    if (onChunk) {
+      // 流式 SSE 读取
+      const fullContent = await readStream(res, onChunk);
+      return { ok: true, content: fullContent };
     }
 
     const json = await res.json();
@@ -64,4 +64,49 @@ export async function callAiApi({ system, messages, userMessage, temperature, ma
   } catch (e) {
     return { ok: false, error: '网络错误：' + (e?.message || String(e)).substring(0, 120) };
   }
+}
+
+// ─── 内部工具 ─────────────────────────────────────────
+
+async function mapHttpError(res) {
+  const errText = await res.text().catch(() => '');
+  if (res.status === 401) return { ok: false, error: 'API Key 无效（401）' };
+  if (res.status === 402) return { ok: false, error: '余额不足（402）' };
+  if (res.status === 403) return { ok: false, error: 'API Key 无权限（403）' };
+  if (res.status === 404) return { ok: false, error: '接口地址不正确（404）' };
+  if (res.status === 429) return { ok: false, error: '请求过快（429）' };
+  return { ok: false, error: 'HTTP ' + res.status + (errText ? '：' + errText.substring(0, 120) : '') };
+}
+
+async function readStream(res, onChunk) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullContent = '';
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta?.content;
+          if (delta) {
+            fullContent += delta;
+            if (onChunk) onChunk(fullContent);
+          }
+        } catch { /* skip malformed SSE payload */ }
+      }
+    }
+  }
+
+  return fullContent;
 }

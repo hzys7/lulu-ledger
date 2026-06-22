@@ -65,6 +65,30 @@ const EMPTY_DATA = {
 // a JSON.parse on every getter call.
 let cache = null;
 
+// Simple mutex for write serialisation. Because all write operations go
+// through ensureLoaded() + direct cache mutation + persist(), two concurrent
+// async flows can both call ensureLoaded(), get the same cache reference,
+// mutate it, then persist() in sequence — the second persist() will overwrite
+// the first mutation. The mutex queues persist() calls so they never interleave
+// with a read-then-write from another async flow.
+let _writeLock = Promise.resolve();
+
+async function withLock(fn) {
+  // Wait for the previous lock holder to finish, then acquire.
+  // Using promise chaining (not await / release pattern) to avoid
+  // the "unhandled promise" footgun if fn throws.
+  let release;
+  const next = new Promise((resolve) => { release = resolve; });
+  const prev = _writeLock;
+  _writeLock = next;
+  await prev;
+  try {
+    return await fn();
+  } finally {
+    release();
+  }
+}
+
 // --------------- low-level helpers ---------------
 
 async function rawGet(key) {
@@ -204,7 +228,7 @@ async function ensureLoaded() {
 
 async function persist() {
   if (cache === null) return false;
-  return await rawSet(STORAGE_KEYS.SCHEMA, cache);
+  return await withLock(() => rawSet(STORAGE_KEYS.SCHEMA, cache));
 }
 
 // Reset the in-memory cache (useful for tests or after clearAllData).
@@ -431,6 +455,28 @@ export async function adjustAccountBalance(id, delta) {
   return all;
 }
 
+// --------------- batch operations (atomic) ---------------
+
+/**
+ * 批量调整多个账户余额，单次 persist，保证原子性。
+ * @param {Array<{ id: string, delta: number }>} adjustments
+ * @returns {Promise<Array>} 全部账户列表
+ */
+export async function batchAdjustAccountBalances(adjustments) {
+  if (!adjustments || adjustments.length === 0) return [];
+  const env = await ensureLoaded();
+  const all = env.data.accounts || [];
+  for (const { id, delta } of adjustments) {
+    const index = all.findIndex(a => a && a.id === id);
+    if (index !== -1) {
+      const cur = toNumber(all[index].balance);
+      all[index] = { ...all[index], balance: cur + toNumber(delta) };
+    }
+  }
+  await persist();
+  return all;
+}
+
 // --------------- import / export ---------------
 
 export async function exportAllData() {
@@ -449,14 +495,16 @@ export async function importData(data, mode = 'merge') {
 
   if (hasFullBackup) {
     if (mode === 'replace') {
-      // 替换模式：直接写入，不需要合并
-      if (data.transactions) await writeField('transactions', data.transactions);
-      if (data.books) await writeField('books', data.books);
-      if (data.budgets) await writeField('budgets', data.budgets);
-      if (data.settings) await writeField('settings', data.settings);
-      if (data.accounts) await writeField('accounts', data.accounts);
-      if (data.recurring) await writeField('recurring', data.recurring);
-      if (data.currentBookId) await writeField('currentBookId', data.currentBookId);
+      // 替换模式：单次 persist 保证原子性（而非逐个 writeField）
+      const env = await ensureLoaded();
+      if (data.transactions !== undefined) env.data.transactions = data.transactions;
+      if (data.books !== undefined) env.data.books = data.books;
+      if (data.budgets !== undefined) env.data.budgets = data.budgets;
+      if (data.settings !== undefined) env.data.settings = data.settings;
+      if (data.accounts !== undefined) env.data.accounts = data.accounts;
+      if (data.recurring !== undefined) env.data.recurring = data.recurring;
+      if (data.currentBookId !== undefined) env.data.currentBookId = data.currentBookId;
+      await persist();
       return { format: 'json', mode: 'replace', total: (data.transactions || []).length };
     } else {
       // 合并模式：追加并去重

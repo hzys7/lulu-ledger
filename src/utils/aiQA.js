@@ -328,74 +328,7 @@ export async function askFinanceQuestionStream({ userMessage, history = [], cont
     { role: 'user', content: userMessage },
   ];
 
-  const config = await (await import('./aiConfig')).loadAiConfig();
-  if (!config.apiKey) return { ok: false, error: '未配置 API Key' };
-  if (!config.enabled) return { ok: false, error: 'AI 功能未启用' };
-
-  const baseURL = (config.baseURL || '').replace(/\/+$/, '');
-  if (!baseURL) return { ok: false, error: '接口地址未配置' };
-
-  const model = config.model === '__custom__' ? config.customModel : config.model;
-  if (!model) return { ok: false, error: '模型未配置' };
-
-  try {
-    const res = await fetch(baseURL + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + config.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.5,
-        max_tokens: 600,
-        stream: true,
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      if (res.status === 401) return { ok: false, error: 'API Key 无效（401）' };
-      if (res.status === 402) return { ok: false, error: '余额不足（402）' };
-      if (res.status === 429) return { ok: false, error: '请求过快（429）' };
-      return { ok: false, error: 'HTTP ' + res.status };
-    }
-
-    // 读取流式响应
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let fullContent = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              fullContent += delta;
-              if (onChunk) onChunk(fullContent);
-            }
-          } catch (e) {
-            // 解析失败跳过
-          }
-        }
-      }
-    }
-
-    return { ok: true, reply: fullContent };
-  } catch (e) {
-    return { ok: false, error: '网络错误：' + (e?.message || String(e)).substring(0, 120) };
-  }
+  const result = await callAiApi({ messages, temperature: 0.5, maxTokens: 600, onChunk });
+  if (!result.ok) return result;
+  return { ok: true, reply: result.content };
 }

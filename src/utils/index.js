@@ -58,6 +58,7 @@ export {
   updateAccount,
   deleteAccount,
   adjustAccountBalance,
+  batchAdjustAccountBalances,
   exportAllData,
   importData,
   importTransactionsFromCSV,

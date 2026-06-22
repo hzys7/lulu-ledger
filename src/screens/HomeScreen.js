@@ -101,6 +101,12 @@ export default function HomeScreen({ navigation }) {
     return () => { alive = false; };
   }, [anomalyTxCount, anomalyDismissed]);
 
+  // 账本切换时重置异常提醒状态
+  useEffect(() => {
+    setAnomalyDismissed(false);
+    setAnomalyAlert(null);
+  }, [currentBookId]);
+
   const onRefresh = useCallback(async () => { setRefreshing(true); await reload(); setRefreshing(false); }, [reload]);
 
   const currentBook = books.find(b => b.id === currentBookId) || books[0];

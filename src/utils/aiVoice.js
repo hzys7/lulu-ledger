@@ -110,6 +110,20 @@ export async function stopRecording(recording) {
 // ─── Whisper 语音转文字 ───────────────────────────────
 
 /**
+ * Web 平台：将 uri 转成 Blob 用于 FormData 上传。
+ */
+async function createWebFileBlob(uri, mimeType, _fileName) {
+  try {
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    return blob;
+  } catch {
+    // 如果 fetch blob 失败（跨域等），返回空 blob 让 API 报错
+    return new Blob([], { type: mimeType });
+  }
+}
+
+/**
  * 调用 OpenAI Whisper 兼容 API 将音频转为文字。
  *
  * POST {baseURL}/audio/transcriptions
@@ -143,11 +157,10 @@ async function transcribeWithWhisper(audioUri) {
 
   // 构建 multipart/form-data
   const formData = new FormData();
-  formData.append('file', {
-    uri: audioUri,
-    type: mimeType,
-    name: fileName,
-  });
+  const fileField = Platform.OS === 'web'
+    ? await createWebFileBlob(audioUri, mimeType, fileName)
+    : { uri: audioUri, type: mimeType, name: fileName };
+  formData.append('file', fileField);
   formData.append('model', 'whisper-1');
 
   try {

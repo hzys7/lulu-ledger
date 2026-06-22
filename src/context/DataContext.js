@@ -106,22 +106,39 @@ export function DataProvider({ children }) {
     setTransactions(sanitizeTransactions(updated.filter(t => t.bookId === currentBookId)));
     if (old) {
       const oldAccountId = old.accountId
-        || (accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id);
-      const oldDelta = old.type === 'income' ? -toNumber(old.amount) : toNumber(old.amount);
-      let allAccounts = accounts;
-      if (oldAccountId) {
-        const r = await storage.adjustAccountBalance(oldAccountId, oldDelta);
-        allAccounts = sanitizeAccounts(r.filter(a => a.bookId === currentBookId));
-      }
+        || (accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id)
+        || null;
+      const newAccountId = updates.accountId !== undefined
+        ? updates.accountId
+        : oldAccountId;
+
+      const oldDelta = old.type === 'income' ? toNumber(old.amount) : -toNumber(old.amount);
       const newType = updates.type || old.type;
       const newAmount = updates.amount !== undefined ? toNumber(updates.amount) : toNumber(old.amount);
-      const newAccountId = updates.accountId
-        || old.accountId
-        || (allAccounts.find(a => a.isDefault)?.id);
       const newDelta = newType === 'income' ? newAmount : -newAmount;
-      if (newAccountId) {
-        const r2 = await storage.adjustAccountBalance(newAccountId, newDelta);
-        allAccounts = sanitizeAccounts(r2.filter(a => a.bookId === currentBookId));
+
+      // 构建批量调账列表：如果是同一账户，合并为一个 delta
+      const adjustments = [];
+      if (oldAccountId && oldAccountId === newAccountId) {
+        // 同一账户：净 delta
+        const netDelta = newDelta - oldDelta; // newDelta 是正向的，oldDelta 是反向的
+        // 实际上: oldDelta = income ? +amount : -amount  (已反转)
+        // 不对，让我重新算：oldDelta = type==='income' ? -amount : +amount (因为要恢复)
+        // 不对，看原始代码: oldDelta = old.type === 'income' ? -toNumber(old.amount) : toNumber(old.amount);
+        // 所以 oldDelta 是反向的。newDelta = newType === 'income' ? newAmount : -newAmount;
+        // 净变化 = newDelta + oldDelta (oldDelta已经是反向的，加上去就抵消了旧值)
+        if (netDelta !== 0) {
+          adjustments.push({ id: oldAccountId, delta: netDelta });
+        }
+      } else {
+        if (oldAccountId) adjustments.push({ id: oldAccountId, delta: oldDelta });
+        if (newAccountId) adjustments.push({ id: newAccountId, delta: newDelta });
+      }
+
+      let allAccounts = accounts;
+      if (adjustments.length > 0) {
+        const r = await storage.batchAdjustAccountBalances(adjustments);
+        allAccounts = sanitizeAccounts(r.filter(a => a.bookId === currentBookId));
       }
       setAccounts(allAccounts);
     }
