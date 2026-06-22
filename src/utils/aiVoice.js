@@ -1,9 +1,20 @@
 // 小璐记账 · 语音记账模块
 // 录音 → Whisper STT → AI 解析 → 结构化账目
-import { Audio } from 'expo-av';
+// expo-av 使用动态 require 避免模块加载时闪退
 import { Platform } from 'react-native';
 import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
 import { parseTransactionFromText } from './aiParser';
+
+// ─── expo-av lazy loader ──────────────────────────────
+
+let _Audio = null;
+function getAudio() {
+  if (_Audio === undefined) {
+    _Audio = null;
+    try { _Audio = require('expo-av').Audio; } catch {}
+  }
+  return _Audio;
+}
 
 // ─── 权限 ────────────────────────────────────────────
 
@@ -11,6 +22,8 @@ let _permissionGranted = null;
 
 export async function ensureAudioPermission() {
   if (_permissionGranted) return true;
+  const Audio = getAudio();
+  if (!Audio) return false;
   try {
     const { status } = await Audio.requestPermissionsAsync();
     _permissionGranted = status === 'granted';
@@ -27,6 +40,9 @@ export async function ensureAudioPermission() {
  * 调用方需要在组件卸载时停止录音。
  */
 export async function startRecording() {
+  const Audio = getAudio();
+  if (!Audio) throw new Error('expo-av 模块未加载');
+
   const ok = await ensureAudioPermission();
   if (!ok) throw new Error('麦克风权限未授权');
 
