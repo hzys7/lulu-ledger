@@ -6,14 +6,23 @@ import { loadAiConfig, AI_PROVIDERS } from './aiConfig';
 import { parseTransactionFromText } from './aiParser';
 
 // ─── expo-av lazy loader ──────────────────────────────
+// 使用异步 import() 而非同步 require()，避免模块加载时的
+// requireNativeModule('ExponentAV') 异常传播到主线程。
+// 同步 require() 即使包 try-catch 也可能被 Metro 缓存机制放大。
 
-let _Audio = null;
-function getAudio() {
-  if (_Audio === undefined) {
-    _Audio = null;
-    try { _Audio = require('expo-av').Audio; } catch {}
-  }
-  return _Audio;
+let _audioPromise = null;
+
+async function getAudioAsync() {
+  if (_audioPromise) return _audioPromise;
+  _audioPromise = (async () => {
+    try {
+      const AV = await import('expo-av');
+      return AV.Audio;
+    } catch {
+      return null;
+    }
+  })();
+  return _audioPromise;
 }
 
 // ─── 权限 ────────────────────────────────────────────
@@ -22,7 +31,7 @@ let _permissionGranted = null;
 
 export async function ensureAudioPermission() {
   if (_permissionGranted) return true;
-  const Audio = getAudio();
+  const Audio = await getAudioAsync();
   if (!Audio) return false;
   try {
     const { status } = await Audio.requestPermissionsAsync();
@@ -40,7 +49,7 @@ export async function ensureAudioPermission() {
  * 调用方需要在组件卸载时停止录音。
  */
 export async function startRecording() {
-  const Audio = getAudio();
+  const Audio = await getAudioAsync();
   if (!Audio) throw new Error('expo-av 模块未加载');
 
   const ok = await ensureAudioPermission();
