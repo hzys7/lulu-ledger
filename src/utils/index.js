@@ -137,3 +137,11 @@ export {
   fetchLatestRelease,
   checkForUpdate,
 } from './updateChecker';
+
+// --- 语音记账
+export {
+  ensureAudioPermission,
+  startRecording,
+  stopRecording,
+  voiceToTransaction,
+} from './aiVoice';

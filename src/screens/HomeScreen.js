@@ -19,7 +19,7 @@ import { useFinance } from '../context/FinanceContext';
 import { formatMoney } from '../utils/currency';
 import { loadAiConfig } from '../utils/aiConfig';
 import { ACCOUNT_TYPES, typeInfo } from '../utils/accountTypes';
-import AiChatScreen from './AiChatScreen';
+import VoiceRecordModal from '../components/VoiceRecordModal';
 import AiQAScreen from './AiQAScreen';
 import AnomalyAlert from '../components/AnomalyAlert';
 import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
@@ -42,7 +42,7 @@ export default function HomeScreen({ navigation }) {
 
   // AI 配置
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [showAiChat, setShowAiChat] = useState(false);
+  const [showVoiceRecord, setShowVoiceRecord] = useState(false);
   const [showAiQA, setShowAiQA] = useState(false);
   // 异常消费提醒
   const [anomalyAlert, setAnomalyAlert] = useState(null); // { message, anomalies }
@@ -282,17 +282,17 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.aiCardEmoji}>✨</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.aiCardTitle, { color: tc.text }]}>AI 助手</Text>
-                    <Text style={[styles.aiCardHint, { color: tc.textMuted }]}>一句话记账 · 问答分析</Text>
+                    <Text style={[styles.aiCardHint, { color: tc.textMuted }]}>语音记账 · 问答分析</Text>
                   </View>
                 </View>
                 <View style={styles.aiCardBtns}>
                   <TouchableOpacity
                     style={[styles.aiCardBtn, { backgroundColor: tc.primary }]}
-                    onPress={() => setShowAiChat(true)}
+                    onPress={() => setShowVoiceRecord(true)}
                     activeOpacity={0.85}
                   >
-                    <Ionicons name="sparkles" size={16} color={tc.primaryOn} />
-                    <Text style={[styles.aiCardBtnText, { color: tc.primaryOn }]}>记账</Text>
+                    <Ionicons name="mic" size={16} color={tc.primaryOn} />
+                    <Text style={[styles.aiCardBtnText, { color: tc.primaryOn }]}>语音记</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.aiCardBtn, { backgroundColor: tc.accent }]}
@@ -310,10 +310,10 @@ export default function HomeScreen({ navigation }) {
 
       </ScrollView>
 
-      <AiChatScreen
-        visible={showAiChat}
-        onClose={() => setShowAiChat(false)}
-        onSaved={() => { setShowAiChat(false); reload(); }}
+      <VoiceRecordModal
+        visible={showVoiceRecord}
+        onClose={() => setShowVoiceRecord(false)}
+        onSaved={() => { setShowVoiceRecord(false); reload(); }}
       />
 
       <AiQAScreen
