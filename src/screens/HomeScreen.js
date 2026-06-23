@@ -26,6 +26,7 @@ import AnomalyAlert from '../components/AnomalyAlert';
 import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
 import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
+import { AiAvatar } from '../components/AiAvatar';
 
 // 有效的Ionicons图标列表（用于验证）
 const VALID_ICONS = ['chatbubbles', 'wallet', 'card', 'cash', 'ellipsis-horizontal-circle', 'logo-wechat', 'logo-alipay', 'logo-paypal'];
@@ -276,9 +277,7 @@ export default function HomeScreen({ navigation }) {
               <DecoStar style={styles.starAi1} size={10} color="#DDD6FE" />
 
               <View style={styles.aiCardLeft}>
-            <View style={[styles.aiIconWarp, { backgroundColor: tc.iconBg }]}>
-                  <Ionicons name="sparkles" size={20} color={tc.primary} />
-                </View>
+                <AiAvatar size={44} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.aiTitle, { color: tc.text }]}>AI 助手</Text>
                   <Text style={[styles.aiHint, { color: tc.primary }]}>一句话记账 · 问答分析</Text>
