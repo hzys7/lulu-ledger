@@ -63,6 +63,7 @@ export default function SettingsScreen({ navigation }) {
     frequency: 'monthly',
     note: '',
     type: 'expense',
+    startDate: '',
   });
 
   const handleExportCSV = async () => {
@@ -131,9 +132,10 @@ export default function SettingsScreen({ navigation }) {
       note: recurringForm.note,
       type: recurringForm.type,
       currency: settings.currency,
+      startDate: recurringForm.startDate,
     });
     setShowRecurringModal(false);
-    setRecurringForm({ category: '', amount: '', frequency: 'monthly', note: '', type: 'expense' });
+    setRecurringForm({ category: '', amount: '', frequency: 'monthly', note: '', type: 'expense', startDate: '' });
   };
   const handleDeleteRecurring = (id) => {
     Alert.alert('删除周期交易', '确定删除这条周期性交易吗?', [

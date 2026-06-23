@@ -132,6 +132,24 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
             />
           </View>
 
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: tc.textMuted }]}>生效日期 (选填，默认下个月1号)</Text>
+            <TouchableOpacity
+              style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+              onPress={() => {
+                // 打开日期选择器
+                const input = document.createElement('input');
+                input.type = 'date';
+                input.value = recurringForm.startDate || '';
+                input.onchange = (e) => setRecurringForm({ ...recurringForm, startDate: e.target.value });
+                input.click();
+              }}
+            >
+              <Text style={[styles.textInput, { color: recurringForm.startDate ? tc.text : tc.textSubtle, textAlign: 'left' }]}>{recurringForm.startDate || '选择日期'}</Text>
+              <Ionicons name="calendar-outline" size={18} color={tc.textSubtle} />
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
             style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
             onPress={onSave}

@@ -662,6 +662,21 @@ export async function processRecurring(currentBookId) {
     const lastDate = item.lastProcessedDate ? new Date(item.lastProcessedDate) : null;
     let shouldProcess = false;
 
+    // 如果设置了生效日期，且当前日期尚未到达生效日期，则不处理
+    if (item.startDate) {
+      // 将 startDate 解析为本地日期（忽略时区），与今天比较
+      const startParts = item.startDate.split('-');
+      const startYear = parseInt(startParts[0], 10);
+      const startMonth = parseInt(startParts[1], 10) - 1;
+      const startDate = new Date(startYear, startMonth, startParts[2]);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (today < startDate) {
+        remaining.push(item);
+        return;
+      }
+    }
+
     if (!lastDate) {
       shouldProcess = true;
     } else {
