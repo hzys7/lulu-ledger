@@ -120,18 +120,14 @@ export function DataProvider({ children }) {
       // 构建批量调账列表：如果是同一账户，合并为一个 delta
       const adjustments = [];
       if (oldAccountId && oldAccountId === newAccountId) {
-        // 同一账户：净 delta
-        const netDelta = newDelta - oldDelta; // newDelta 是正向的，oldDelta 是反向的
-        // 实际上: oldDelta = income ? +amount : -amount  (已反转)
-        // 不对，让我重新算：oldDelta = type==='income' ? -amount : +amount (因为要恢复)
-        // 不对，看原始代码: oldDelta = old.type === 'income' ? -toNumber(old.amount) : toNumber(old.amount);
-        // 所以 oldDelta 是反向的。newDelta = newType === 'income' ? newAmount : -newAmount;
-        // 净变化 = newDelta + oldDelta (oldDelta已经是反向的，加上去就抵消了旧值)
+        // 同一账户：净 delta = 新正向 - 旧正向 = 撤销旧值 + 应用新值
+        const netDelta = newDelta - oldDelta;
         if (netDelta !== 0) {
           adjustments.push({ id: oldAccountId, delta: netDelta });
         }
       } else {
-        if (oldAccountId) adjustments.push({ id: oldAccountId, delta: oldDelta });
+        // 不同账户：oldDelta 是正向值，旧账户需要反向抵消
+        if (oldAccountId) adjustments.push({ id: oldAccountId, delta: -oldDelta });
         if (newAccountId) adjustments.push({ id: newAccountId, delta: newDelta });
       }
 
