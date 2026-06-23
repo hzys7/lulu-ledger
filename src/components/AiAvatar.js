@@ -8,7 +8,7 @@ export function AiAvatar({ size = 44, style }) {
   return (
     <View style={[styles.avatarContainer, { width: size, height: size }, style]}>
       <Image
-        source={require('../../assets/xiaolu-avatar.png')}
+        source={require('../../assets/xiaolu-avatar.jpg')}
         style={[styles.avatarImage, { width: size, height: size }]}
         resizeMode="cover"
       />
