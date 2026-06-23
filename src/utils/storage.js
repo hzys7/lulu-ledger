@@ -275,7 +275,10 @@ export async function addTransaction(transaction) {
   // (another deep copy + persist). Now: ensureLoaded → unshift → persist once.
   const env = await ensureLoaded();
   const all = env.data.transactions || [];
-  all.unshift(transaction);
+  all.unshift({
+    ...transaction,
+    id: transaction.id || `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  });
   await persist();
   return all;
 }
