@@ -11,6 +11,7 @@ import {
   Modal,
   Pressable,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -160,9 +161,14 @@ export default function HomeScreen({ navigation }) {
       >
         {/* ─── 问候 + 今日支出 + 账本切换 ──────────────── */}
         <View style={styles.header}>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.appIcon}
+            resizeMode="contain"
+          />
           <View style={{ flex: 1 }}>
             <Text style={[styles.greeting, { color: tc.text }]}>
-              {greeting.text}{'  '}<Text style={styles.greetingEmoji}>{greeting.emoji}</Text>
+              {greeting.text}
             </Text>
             <Text style={[styles.dateText, { color: tc.textMuted }]}>{fmtDate()}</Text>
             {todayExpense > 0 ? (
@@ -362,6 +368,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: spacing.base,
     paddingBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  appIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
   },
   greeting: {
     fontSize: fontSize.xxl,
