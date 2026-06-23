@@ -63,6 +63,18 @@ export default function HomeScreen({ navigation }) {
   const [newBookColor, setNewBookColor] = useState('#7C5CFF');
   const netWorth = getNetWorth();
 
+  // 今日支出
+  const todayExpense = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return transactions
+      .filter(t => {
+        const d = new Date(t.date);
+        return d >= todayStart && t.type === 'expense';
+      })
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
   // AI
   const [aiEnabled, setAiEnabled] = useState(false);
   const [showVoiceRecord, setShowVoiceRecord] = useState(false);
@@ -146,16 +158,26 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={{ paddingTop: insets.top + spacing.base, paddingBottom: insets.bottom + 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tc.text} />}
       >
-        {/* ─── 问候 + 账本切换 ──────────────────────── */}
+        {/* ─── 问候 + 今日支出 + 账本切换 ──────────────── */}
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.greeting, { color: tc.text }]}>
               {greeting.text}{'  '}<Text style={styles.greetingEmoji}>{greeting.emoji}</Text>
             </Text>
             <Text style={[styles.dateText, { color: tc.textMuted }]}>{fmtDate()}</Text>
+            {todayExpense > 0 ? (
+              <View style={styles.todayRow}>
+                <Text style={[styles.todayLabel, { color: tc.textSubtle }]}>今日支出</Text>
+                <Text style={[styles.todayAmount, { color: tc.primary }]}>
+                  -{formatMoney(todayExpense, settings.currency).replace(/[^0-9.,]/g, '')}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.todayNoop, { color: tc.textSubtle }]}>今天还没有记帐</Text>
+            )}
           </View>
           <TouchableOpacity
-            style={[styles.bookChip, { backgroundColor: tc.surfaceMuted }]}
+            style={[styles.bookChip, { backgroundColor: tc.primarySubtle }]}
             onPress={() => setBookPickerOpen(true)}
             activeOpacity={0.7}
           >
@@ -205,6 +227,41 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* ─── AI 助手 ───────────────────────────────── */}
+        {aiEnabled ? (
+          <View style={styles.section}>
+            <View style={[styles.card, styles.aiCard]}>
+              <View style={styles.aiCardLeft}>
+                <View style={[styles.aiIconWarp, { backgroundColor: tc.accentSubtle }]}>
+                  <Ionicons name="sparkles" size={18} color={tc.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.aiTitle, { color: tc.text }]}>AI 助手</Text>
+                  <Text style={[styles.aiHint, { color: tc.textMuted }]}>语音记账 · 问答分析</Text>
+                </View>
+              </View>
+              <View style={styles.aiBtns}>
+                <TouchableOpacity
+                  style={[styles.aiBtn, { backgroundColor: tc.primary }]}
+                  onPress={() => setShowVoiceRecord(true)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="mic" size={14} color={tc.primaryOn} />
+                  <Text style={[styles.aiBtnText, { color: tc.primaryOn }]}>语音记</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.aiBtn, { backgroundColor: tc.accent }]}
+                  onPress={() => setShowAiQA(true)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="chatbubbles" size={14} color="#fff" />
+                  <Text style={[styles.aiBtnText, { color: '#fff' }]}>问问</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         {/* ─── 异常提醒 ──────────────────────────────── */}
         {aiEnabled && anomalyAlert && !anomalyDismissed ? (
@@ -354,6 +411,26 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     letterSpacing: -0.1,
+    marginBottom: spacing.sm,
+  },
+  todayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  todayLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  todayAmount: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+  },
+  todayNoop: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
   },
   bookChip: {
     flexDirection: 'row',

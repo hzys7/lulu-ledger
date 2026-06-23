@@ -3,15 +3,15 @@
 // 原则：单一品牌强调色 + 中性灰阶 + 大量留白 + 细腻字间距
 
 export const colors = {
-  // 品牌强调色（仅用于 CTA / 进度 / 选中态）
-  primary: '#111827',          // 近黑 - 主色（按钮、强调文字、tabBar 选中）
-  primaryHover: '#1F2937',
-  primarySubtle: '#F3F4F6',
+  // 品牌主色（CTA / 进度 / 选中态）
+  primary: '#7C5CFF',          // 紫色 - 主色（按钮、强调文字、tabBar 选中）
+  primaryHover: '#6B4FE8',
+  primarySubtle: '#F1ECFF',
   primaryOn: '#FFFFFF',
 
-  // 品牌辅色（仅用于品牌身份点，如 logo / splash）
-  accent: '#7C5CFF',
-  accentSubtle: '#F1ECFF',
+  // 品牌辅色（用于次要操作 / 辅助标识）
+  accent: '#0891B2',           // 青色 - 辅色
+  accentSubtle: '#ECFEFF',
 
   // 功能色
   success: '#059669',
@@ -25,14 +25,14 @@ export const colors = {
 
   // 8 色克制分类色板（用于图表 / 分类）
   palette: [
-    '#111827',
     '#7C5CFF',
+    '#0891B2',
     '#10B981',
     '#F59E0B',
     '#EF4444',
     '#EC4899',
-    '#0EA5E9',
     '#64748B',
+    '#111827',
   ],
 
   // 分类颜色
@@ -164,13 +164,13 @@ export const shadows = {
 };
 
 export const darkColors = {
-  primary: '#F8FAFC',
-  primaryHover: '#E2E8F0',
-  primarySubtle: '#1F2937',
+  primary: '#A78BFA',          // 亮紫 - 暗色主色
+  primaryHover: '#C4B5FD',
+  primarySubtle: '#2E1065',
   primaryOn: '#0B0B12',
 
-  accent: '#A78BFA',
-  accentSubtle: '#1E1B4B',
+  accent: '#22D3EE',           // 青色 - 暗色辅色
+  accentSubtle: '#083344',
 
   success: '#34D399',
   successSubtle: '#064E3B',
@@ -181,14 +181,14 @@ export const darkColors = {
   info: '#60A5FA',
   infoSubtle: '#1E3A5F',
   palette: [
-    '#F8FAFC',
     '#A78BFA',
+    '#22D3EE',
     '#34D399',
     '#FBBF24',
     '#F87171',
     '#F472B6',
-    '#38BDF8',
     '#94A3B8',
+    '#F8FAFC',
   ],
   categories: {
     '餐饮': '#FB923C',
