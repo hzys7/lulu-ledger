@@ -27,6 +27,7 @@ import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedA
 import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 import { AiAvatar } from '../components/AiAvatar';
+import { AccountIcon } from '../components/AccountIcon';
 
 // 有效的Ionicons图标列表（用于验证）
 const VALID_ICONS = ['chatbubbles', 'wallet', 'card', 'cash', 'ellipsis-horizontal-circle', 'logo-wechat', 'logo-alipay', 'logo-paypal'];
@@ -350,9 +351,7 @@ export default function HomeScreen({ navigation }) {
                     activeOpacity={0.6}
                     onPress={() => navigation.navigate('NetWorth')}
                   >
-                    <View style={[styles.accountIcon, { backgroundColor: (acc.color || meta.color) + '20' }]}>
-                      <Ionicons name={getValidIcon(acc.icon, meta.icon)} size={20} color={acc.color || meta.color} />
-                    </View>
+                    <AccountIcon type={acc.type} size={42} color={acc.color || meta.color} />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.accountName, { color: tc.text }]} numberOfLines={1}>{acc.name}</Text>
                       <Text style={[styles.accountType, { color: tc.textSubtle }]}>{meta.name}</Text>
@@ -360,7 +359,7 @@ export default function HomeScreen({ navigation }) {
                     <Text style={[styles.accountBalance, { color: tc.text }]}>
                       {formatMoney(acc.balance, settings.currency)}
                     </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#DDD6FE" />
+                    <Ionicons name="chevron-forward" size={16} color={tc.starColorLight} />
                   </TouchableOpacity>
                 );
               })}
