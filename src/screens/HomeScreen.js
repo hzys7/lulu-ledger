@@ -1,5 +1,5 @@
 // 小璐记账 · 首页（仪表盘）
-// v1.5.0 统一间距和字体大小，优化整体版本
+// v1.6.0 紫色渐变风格美化
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
@@ -47,6 +47,14 @@ function fmtDate() {
   const day = d.getDate();
   const wd = weekDays[d.getDay()];
   return `${m}月${day}日 ${wd}`;
+}
+
+// ─── 装饰星星组件 ──────────────────────────────────────
+
+function DecoStar({ style, size = 12, color = '#C4B5FD' }) {
+  return (
+    <Ionicons name="star" size={size} color={color} style={style} />
+  );
 }
 
 // ─── 主组件 ────────────────────────────────────────────
@@ -153,7 +161,7 @@ export default function HomeScreen({ navigation }) {
   // ─── 渲染 ─────────────────────────────────────────────
 
   return (
-    <View style={[styles.container, { backgroundColor: tc.background }]}>
+    <View style={[styles.container, { backgroundColor: '#F5F3FF' }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top + spacing.base, paddingBottom: insets.bottom + 100 }}
@@ -161,11 +169,14 @@ export default function HomeScreen({ navigation }) {
       >
         {/* ─── 问候 + 今日支出 + 账本切换 ──────────────── */}
         <View style={styles.header}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.appIcon}
-            resizeMode="contain"
-          />
+          <View style={styles.appIconWrap}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.appIcon}
+              resizeMode="contain"
+            />
+            <DecoStar style={styles.starTopRight} size={10} color="#A78BFA" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.greeting, { color: tc.text }]}>
               {greeting.text}
@@ -173,7 +184,9 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.dateText, { color: tc.textMuted }]}>{fmtDate()}</Text>
             {todayExpense > 0 ? (
               <View style={styles.todayRow}>
-                <Text style={[styles.todayLabel, { color: tc.textSubtle }]}>今日支出</Text>
+                <View style={styles.todayBadge}>
+                  <Text style={styles.todayBadgeText}>今日支出</Text>
+                </View>
                 <Text style={[styles.todayAmount, { color: tc.primary }]}>
                   -{formatMoney(todayExpense, settings.currency).replace(/[^0-9.,]/g, '')}
                 </Text>
@@ -183,7 +196,7 @@ export default function HomeScreen({ navigation }) {
             )}
           </View>
           <TouchableOpacity
-            style={[styles.bookChip, { backgroundColor: tc.primarySubtle }]}
+            style={[styles.bookChip, { backgroundColor: '#FFFFFF' }]}
             onPress={() => setBookPickerOpen(true)}
             activeOpacity={0.7}
           >
@@ -195,40 +208,57 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ─── 净资产 ────────────────────────────────── */}
+        {/* ─── 净资产卡片 ────────────────────────────── */}
         <View style={styles.netWorthArea}>
           {accounts.length === 0 ? (
             <TouchableOpacity
-              style={[styles.card, { backgroundColor: tc.surface }]}
+              style={styles.netWorthCard}
               onPress={() => navigation.navigate('NetWorth')}
               activeOpacity={0.7}
             >
               <View style={styles.netWorthEmptyRow}>
-                <View style={[styles.netWorthEmptyIcon, { backgroundColor: tc.primarySubtle }]}>
-                  <Ionicons name="wallet-outline" size={22} color={tc.primary} />
+                <View style={styles.netWorthEmptyIcon}>
+                  <Ionicons name="wallet-outline" size={22} color="#7C5CFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.netWorthLabel, { color: tc.textMuted }]}>净资产</Text>
-                  <Text style={[styles.netWorthEmptyTitle, { color: tc.text }]}>还没有账户</Text>
+                  <Text style={styles.netWorthLabel}>净资产</Text>
+                  <Text style={styles.netWorthEmptyTitle}>还没有账户</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={tc.textMuted} />
+                <Ionicons name="chevron-forward" size={16} color="#C4B5FD" />
               </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.card, { backgroundColor: tc.surface }]}
+              style={styles.netWorthCard}
               onPress={() => navigation.navigate('NetWorth')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.netWorthLabel, { color: tc.textMuted }]}>净资产</Text>
-              <Text style={[styles.netWorthAmount, { color: tc.text }]}>
+              {/* 装饰元素 */}
+              <DecoStar style={styles.starNetWorth1} size={14} color="#DDD6FE" />
+              <DecoStar style={styles.starNetWorth2} size={10} color="#C4B5FD" />
+
+              <Text style={styles.netWorthLabel}>
+                <Ionicons name="layers-outline" size={13} color="#7C5CFF" /> 净资产
+              </Text>
+              <Text style={styles.netWorthAmount}>
                 {formatMoney(netWorth, settings.currency)}
               </Text>
               <View style={styles.netWorthMeta}>
-                <Text style={[styles.netWorthHint, { color: tc.textSubtle }]}>
+                <Text style={styles.netWorthHint}>
                   {accounts.length} 个账户
                 </Text>
-                <Ionicons name="chevron-forward" size={14} color={tc.textMuted} />
+                <View style={styles.netWorthArrow}>
+                  <Ionicons name="chevron-forward" size={16} color="#7C5CFF" />
+                </View>
+              </View>
+
+              {/* 右侧装饰图标 */}
+              <View style={styles.netWorthDecoWrap}>
+                <View style={styles.netWorthDecoCircle}>
+                  <Ionicons name="wallet" size={28} color="#DDD6FE" />
+                </View>
+                <Ionicons name="cash-outline" size={20} color="#C4B5FD" style={{ position: 'absolute', top: 8, right: 12 }} />
+                <Ionicons name="card-outline" size={16} color="#DDD6FE" style={{ position: 'absolute', bottom: 12, right: 20 }} />
               </View>
             </TouchableOpacity>
           )}
@@ -237,32 +267,36 @@ export default function HomeScreen({ navigation }) {
         {/* ─── AI 助手 ───────────────────────────────── */}
         {aiEnabled ? (
           <View style={styles.section}>
-            <View style={[styles.card, styles.aiCard, { backgroundColor: tc.background }]}>
+            <View style={styles.aiCard}>
+              {/* 装饰星星 */}
+              <DecoStar style={styles.starAi1} size={10} color="#DDD6FE" />
+
               <View style={styles.aiCardLeft}>
-                <View style={[styles.aiIconWarp, { backgroundColor: tc.accentSubtle }]}>
-                  <Ionicons name="sparkles" size={18} color={tc.accent} />
+                <View style={styles.aiIconWarp}>
+                  <Ionicons name="sparkles" size={20} color="#7C5CFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.aiTitle, { color: tc.text }]}>AI 助手</Text>
-                  <Text style={[styles.aiHint, { color: tc.textMuted }]}>一句话记账 · 问答分析</Text>
+                  <Text style={styles.aiTitle}>AI 助手</Text>
+                  <Text style={styles.aiHint}>一句话记账 · 问答分析</Text>
+                  <View style={styles.aiUnderline} />
                 </View>
               </View>
               <View style={styles.aiBtns}>
                 <TouchableOpacity
-                  style={[styles.aiBtn, { backgroundColor: tc.primary }]}
+                  style={styles.aiBtnPrimary}
                   onPress={() => setShowAiChat(true)}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="sparkles" size={14} color={tc.primaryOn} />
-                  <Text style={[styles.aiBtnText, { color: tc.primaryOn }]}>记账</Text>
+                  <Ionicons name="sparkles" size={14} color="#FFFFFF" />
+                  <Text style={styles.aiBtnPrimaryText}>记账</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.aiBtn, { backgroundColor: tc.accent }]}
+                  style={styles.aiBtnAccent}
                   onPress={() => setShowAiQA(true)}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="chatbubbles" size={14} color="#fff" />
-                  <Text style={[styles.aiBtnText, { color: '#fff' }]}>问问</Text>
+                  <Ionicons name="chatbubbles" size={14} color="#FFFFFF" />
+                  <Text style={styles.aiBtnAccentText}>问问</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -298,23 +332,29 @@ export default function HomeScreen({ navigation }) {
               <Text style={[styles.emptyHint, { color: tc.textSubtle }]}>添加微信/支付宝/银行卡</Text>
             </View>
           ) : (
-            <View style={[styles.card, styles.accountList, { backgroundColor: tc.background }]}>
+            <View style={styles.accountCard}>
               {accounts.map((acc, i) => {
                 const meta = typeInfo(acc.type);
                 const isLast = i === accounts.length - 1;
                 return (
-                  <View key={acc.id} style={[styles.accountRow, !isLast && { borderBottomColor: tc.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-                    <View style={[styles.accountIcon, { backgroundColor: (acc.color || meta.color) + '1A' }]}>
-                      <Ionicons name={acc.icon || meta.icon} size={17} color={acc.color || meta.color} />
+                  <TouchableOpacity
+                    key={acc.id}
+                    style={[styles.accountRow, !isLast && styles.accountRowBorder]}
+                    activeOpacity={0.6}
+                    onPress={() => navigation.navigate('NetWorth')}
+                  >
+                    <View style={[styles.accountIcon, { backgroundColor: (acc.color || meta.color) + '20' }]}>
+                      <Ionicons name={acc.icon || meta.icon} size={20} color={acc.color || meta.color} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.accountName, { color: tc.text }]} numberOfLines={1}>{acc.name}</Text>
-                      <Text style={[styles.accountType, { color: tc.textSubtle }]}>{meta.name}</Text>
+                      <Text style={styles.accountName} numberOfLines={1}>{acc.name}</Text>
+                      <Text style={styles.accountType}>{meta.name}</Text>
                     </View>
-                    <Text style={[styles.accountBalance, { color: tc.text }]}>
+                    <Text style={styles.accountBalance}>
                       {formatMoney(acc.balance, settings.currency)}
                     </Text>
-                  </View>
+                    <Ionicons name="chevron-forward" size={16} color="#DDD6FE" />
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -329,24 +369,24 @@ export default function HomeScreen({ navigation }) {
       {/* 账本选择弹窗 */}
       <Modal visible={bookPickerOpen} transparent animationType="fade" onRequestClose={() => setBookPickerOpen(false)}>
         <Pressable style={styles.bookModalBackdrop} onPress={() => setBookPickerOpen(false)}>
-          <Pressable style={[styles.bookModalSheet, { backgroundColor: tc.surface }]} onPress={() => {}}>
-            <View style={[styles.bookModalHandle, { backgroundColor: tc.divider }]} />
-            <Text style={[styles.bookModalTitle, { color: tc.text }]}>选择账本</Text>
+          <Pressable style={[styles.bookModalSheet, { backgroundColor: '#FFFFFF' }]} onPress={() => {}}>
+            <View style={[styles.bookModalHandle, { backgroundColor: '#E5E7EB' }]} />
+            <Text style={[styles.bookModalTitle, { color: '#0F172A' }]}>选择账本</Text>
             {books.map((book) => {
               const active = book.id === currentBookId;
               return (
-                <TouchableOpacity key={book.id} style={[styles.bookModalItem, { borderBottomColor: tc.divider }]} onPress={() => { switchBook(book.id); setBookPickerOpen(false); }} onLongPress={() => { setBookPickerOpen(false); openEditBook(book); }} activeOpacity={0.7}>
+                <TouchableOpacity key={book.id} style={[styles.bookModalItem, { borderBottomColor: '#F1F5F9' }]} onPress={() => { switchBook(book.id); setBookPickerOpen(false); }} onLongPress={() => { setBookPickerOpen(false); openEditBook(book); }} activeOpacity={0.7}>
                   <View style={[styles.bookModalIcon, { backgroundColor: book.color + '22' }]}>
                     <Ionicons name={book.icon} size={16} color={book.color} />
                   </View>
-                  <Text style={[styles.bookModalItemText, { color: active ? tc.primary : tc.text }]}>{book.name}</Text>
-                  {active ? <Ionicons name="checkmark" size={18} color={tc.primary} /> : null}
+                  <Text style={[styles.bookModalItemText, { color: active ? '#7C5CFF' : '#0F172A' }]}>{book.name}</Text>
+                  {active ? <Ionicons name="checkmark" size={18} color="#7C5CFF" /> : null}
                 </TouchableOpacity>
               );
             })}
-            <TouchableOpacity style={[styles.bookModalAdd, { borderTopColor: tc.divider }]} onPress={() => { setBookPickerOpen(false); openAddBook(); }} activeOpacity={0.7}>
-              <Ionicons name="add-circle-outline" size={18} color={tc.primary} />
-              <Text style={[styles.bookModalAddText, { color: tc.primary }]}>新建账本</Text>
+            <TouchableOpacity style={[styles.bookModalAdd, { borderTopColor: '#F1F5F9' }]} onPress={() => { setBookPickerOpen(false); openAddBook(); }} activeOpacity={0.7}>
+              <Ionicons name="add-circle-outline" size={18} color="#7C5CFF" />
+              <Text style={[styles.bookModalAddText, { color: '#7C5CFF' }]}>新建账本</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -370,10 +410,18 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     gap: spacing.md,
   },
+  appIconWrap: {
+    position: 'relative',
+  },
   appIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+  },
+  starTopRight: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
   },
   greeting: {
     fontSize: fontSize.xxl,
@@ -381,26 +429,30 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
-  greetingEmoji: {
-    fontSize: fontSize.xl,
-  },
   dateText: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     letterSpacing: -0.1,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   todayRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  todayLabel: {
+  todayBadge: {
+    backgroundColor: '#F3F0FF',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  todayBadgeText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+    color: '#7C5CFF',
   },
   todayAmount: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
@@ -412,11 +464,12 @@ const styles = StyleSheet.create({
   bookChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm + 2,
+    paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.xs + 2,
     borderRadius: borderRadius.full,
     gap: spacing.xs,
     marginTop: spacing.xs,
+    ...shadows.sm,
   },
   bookChipText: {
     fontSize: fontSize.xs,
@@ -424,7 +477,7 @@ const styles = StyleSheet.create({
     maxWidth: 90,
   },
 
-  // 净资产
+  // 净资产卡片
   netWorthArea: {
     paddingHorizontal: spacing.base,
     paddingBottom: spacing.md,
@@ -434,18 +487,37 @@ const styles = StyleSheet.create({
     padding: spacing.base + 2,
     ...shadows.sm,
   },
+  netWorthCard: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.base + 4,
+    backgroundColor: '#FFFFFF',
+    position: 'relative',
+    overflow: 'hidden',
+    ...shadows.md,
+  },
+  starNetWorth1: {
+    position: 'absolute',
+    top: 16,
+    right: 80,
+  },
+  starNetWorth2: {
+    position: 'absolute',
+    top: 50,
+    right: 40,
+  },
   netWorthLabel: {
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    letterSpacing: 0.3,
-    marginBottom: spacing.xs + 2,
+    color: '#7C5CFF',
+    marginBottom: spacing.sm,
   },
   netWorthAmount: {
-    fontSize: 34,
+    fontSize: 38,
     fontWeight: fontWeight.bold,
     fontVariant: ['tabular-nums'],
-    letterSpacing: -1,
-    marginBottom: spacing.sm + 2,
+    letterSpacing: -1.5,
+    marginBottom: spacing.md,
+    color: '#0F172A',
   },
   netWorthMeta: {
     flexDirection: 'row',
@@ -453,7 +525,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   netWorthHint: {
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
+    color: '#94A3B8',
+  },
+  netWorthArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  netWorthDecoWrap: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
+    width: 80,
+    height: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  netWorthDecoCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F5F3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   netWorthEmptyRow: {
     flexDirection: 'row',
@@ -461,12 +559,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   netWorthEmptyIcon: {
-    width: 44, height: 44, borderRadius: 12,
+    width: 48, height: 48, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F5F3FF',
   },
   netWorthEmptyTitle: {
     fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2,
     marginTop: spacing.xxs,
+    color: '#0F172A',
   },
 
   // section
@@ -496,30 +596,106 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
 
-  // 账户列表
-  accountList: {
-    padding: 0,
+  // AI 卡片
+  aiCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: '#F5F3FF',
+    borderRadius: borderRadius.xl,
+    padding: spacing.base + 2,
+    position: 'relative',
     overflow: 'hidden',
-    backgroundColor: 'transparent',
+  },
+  starAi1: {
+    position: 'absolute',
+    top: 12,
+    right: 16,
+  },
+  aiCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  aiIconWarp: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#EDE9FE',
+  },
+  aiTitle: {
+    fontSize: fontSize.md, fontWeight: fontWeight.semibold,
+    marginBottom: spacing.xxs, letterSpacing: -0.2,
+    color: '#0F172A',
+  },
+  aiHint: {
+    fontSize: fontSize.xs, lineHeight: 16,
+    color: '#7C5CFF',
+  },
+  aiUnderline: {
+    width: 24,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#7C5CFF',
+    marginTop: spacing.xs,
+  },
+  aiBtns: {
+    flexDirection: 'row', gap: spacing.sm,
+  },
+  aiBtnPrimary: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 1,
+    borderRadius: borderRadius.full, gap: spacing.xs,
+    backgroundColor: '#7C5CFF',
+  },
+  aiBtnPrimaryText: {
+    fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
+    color: '#FFFFFF',
+  },
+  aiBtnAccent: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 1,
+    borderRadius: borderRadius.full, gap: spacing.xs,
+    backgroundColor: '#0891B2',
+  },
+  aiBtnAccentText: {
+    fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
+    color: '#FFFFFF',
+  },
+
+  // 账户列表
+  accountCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    ...shadows.sm,
   },
   accountRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.base, paddingVertical: spacing.md, gap: spacing.md,
+    paddingHorizontal: spacing.base, paddingVertical: spacing.md + 2, gap: spacing.md,
+  },
+  accountRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#F1F5F9',
   },
   accountIcon: {
-    width: 38, height: 38, borderRadius: borderRadius.sm,
+    width: 42, height: 42, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
   },
   accountName: {
     fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.1,
     marginBottom: spacing.xxs,
+    color: '#0F172A',
   },
   accountType: {
     fontSize: fontSize.xs,
+    color: '#94A3B8',
   },
   accountBalance: {
     fontSize: fontSize.md, fontWeight: fontWeight.semibold,
     fontVariant: ['tabular-nums'],
+    marginRight: spacing.xs,
+    color: '#0F172A',
   },
 
   // 空状态
@@ -536,43 +712,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
   },
 
-  // AI 卡片
-  aiCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: 'transparent',
-  },
-  aiCardLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  aiIconWarp: {
-    width: 38, height: 38, borderRadius: borderRadius.sm,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  aiTitle: {
-    fontSize: fontSize.md, fontWeight: fontWeight.semibold,
-    marginBottom: spacing.xxs, letterSpacing: -0.2,
-  },
-  aiHint: {
-    fontSize: fontSize.xs, lineHeight: 16,
-  },
-  aiBtns: {
-    flexDirection: 'row', gap: spacing.sm,
-  },
-  aiBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 3,
-    borderRadius: borderRadius.full, gap: spacing.xs,
-  },
-  aiBtnText: {
-    fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
-  },
-
-  // 账本弹窗（不动）
+  // 账本弹窗
   bookModalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   bookModalSheet: {
     borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: spacing.sm, paddingBottom: spacing.xl,
