@@ -31,7 +31,7 @@ if (Platform.OS === 'web') {
 // them into the new envelope under version 1.
 // Any future change to the shape of `data` should bump SCHEMA_VERSION and
 // add a migration step in runMigrations().
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 const LEGACY_MIGRATION_FLAG = '@@lulu_migrated_legacy_v0';
 
 const STORAGE_KEYS = {
@@ -191,11 +191,49 @@ async function migrateV0ToV1() {
 // Append-only migration runner. Each step takes a parsed envelope, mutates
 // it in place, and returns the (possibly bumped) version. This is a no-op
 // for v0 -> v1 because that work happens in migrateV0ToV1 above.
+function genId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function runMigrations(envelope) {
   let v = envelope.version || 0;
   const data = envelope.data;
-  // Example for a future bump:
-  //   if (v === 1) { v = 2; ...transform data... }
+
+  // v1 → v2: assign stable ids to all entities that are missing them
+  if (v === 1) {
+    v = 2;
+    if (Array.isArray(data.transactions)) {
+      data.transactions = data.transactions.filter(t => t && typeof t === 'object').map(t => {
+        if (!t.id) t.id = genId('tx');
+        return t;
+      });
+    }
+    if (Array.isArray(data.recurring)) {
+      data.recurring = data.recurring.filter(r => r && typeof r === 'object').map(r => {
+        if (!r.id) r.id = genId('rc');
+        return r;
+      });
+    }
+    if (Array.isArray(data.accounts)) {
+      data.accounts = data.accounts.filter(a => a && typeof a === 'object').map(a => {
+        if (!a.id) a.id = genId('acc');
+        return a;
+      });
+    }
+    if (Array.isArray(data.books)) {
+      data.books = data.books.filter(b => b && typeof b === 'object').map(b => {
+        if (!b.id) b.id = genId('book');
+        return b;
+      });
+    }
+    if (Array.isArray(data.budgets)) {
+      data.budgets = data.budgets.filter(b => b && typeof b === 'object').map(b => {
+        if (!b.id) b.id = genId('budget');
+        return b;
+      });
+    }
+  }
+
   return { version: v, data };
 }
 
@@ -205,7 +243,12 @@ async function loadEnvelope() {
 
   if (stored && typeof stored === 'object' && typeof stored.version === 'number') {
     // Apply any in-envelope migrations (cheap in-memory).
-    return runMigrations(stored);
+    const migrated = runMigrations(stored);
+    // 如果版本号变了，说明执行了迁移，立即持久化以固化稳定的 id
+    if (migrated.version !== stored.version) {
+      await rawSet(STORAGE_KEYS.SCHEMA, migrated);
+    }
+    return migrated;
   }
 
   // No envelope yet: try the v0 -> v1 path.
