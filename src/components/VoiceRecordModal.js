@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
-import { startRecording, stopRecording, voiceToTransaction, ensureAudioPermission } from '../utils/aiVoice';
+import { startRecording, stopRecording, voiceToTransaction } from '../utils/aiVoice';
 import {
   spacing,
   borderRadius,
@@ -111,12 +111,6 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
     if (stage !== 'idle') return;
     setError('');
     vibrateTap();
-
-    const permOk = await ensureAudioPermission();
-    if (!permOk) {
-      setError('麦克风权限未授权，请在系统设置中开启');
-      return;
-    }
 
     try {
       const rec = await startRecording();

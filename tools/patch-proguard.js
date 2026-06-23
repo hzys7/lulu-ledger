@@ -45,7 +45,6 @@ const patchBlock = [
   '',
   SENTINEL,
   '-keep class expo.modules.** { *; }',
-  '-dontwarn expo.modules.**',
   END_SENTINEL,
   '',
 ].join('\n');
@@ -57,7 +56,7 @@ console.log('[patch-proguard] OK. Patched:', proguardPath);
 // Echo patched lines
 const out = src.split('\n');
 out.forEach((line, idx) => {
-  if (line.includes(SENTINEL) || line.includes(END_SENTINEL) || line.includes('-keep class expo') || line.includes('-dontwarn expo')) {
+  if (line.includes(SENTINEL) || line.includes(END_SENTINEL) || line.includes('-keep class expo')) {
     console.log('  line ' + (idx + 1) + ': ' + line);
   }
 });
