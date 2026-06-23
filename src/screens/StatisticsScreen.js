@@ -628,7 +628,7 @@ export default function StatisticsScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: tc.background }]}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
@@ -661,21 +661,21 @@ export default function StatisticsScreen({ navigation }) {
           {period === 'month' ? (
             <>
               <TouchableOpacity onPress={goPrevMonth} hitSlop={8}>
-                <Ionicons name="chevron-back" size={18} color={tc.textMuted} />
+                <Ionicons name="chevron-back" size={18} color="#94A3B8" />
               </TouchableOpacity>
-              <Text style={[styles.navText, { color: tc.text }]}>
+              <Text style={[styles.navText, { color: '#0F172A' }]}>
                 {selectedYear}.{String(selectedMonth + 1).padStart(2, '0')}
               </Text>
               <TouchableOpacity onPress={goNextMonth} disabled={!canGoNext} hitSlop={8}>
-                <Ionicons name="chevron-forward" size={18} color={canGoNext ? tc.textMuted : tc.divider} />
+                <Ionicons name="chevron-forward" size={18} color={canGoNext ? '#94A3B8' : '#E5E7EB'} />
               </TouchableOpacity>
             </>
           ) : period === 'week' ? (
             <>
               <TouchableOpacity onPress={() => setWeekOffset(w => w - 1)} hitSlop={8}>
-                <Ionicons name="chevron-back" size={18} color={tc.textMuted} />
+                <Ionicons name="chevron-back" size={18} color="#94A3B8" />
               </TouchableOpacity>
-              <Text style={[styles.navText, { color: tc.text }]}>{getWeekLabel(weekStart)}</Text>
+              <Text style={[styles.navText, { color: '#0F172A' }]}>{getWeekLabel(weekStart)}</Text>
               <TouchableOpacity
                 onPress={() => setWeekOffset(w => w + 1)}
                 disabled={isSameWeek(new Date(), weekStart)}
@@ -684,16 +684,16 @@ export default function StatisticsScreen({ navigation }) {
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color={isSameWeek(new Date(), weekStart) ? tc.divider : tc.textMuted}
+                  color={isSameWeek(new Date(), weekStart) ? '#E5E7EB' : '#94A3B8'}
                 />
               </TouchableOpacity>
             </>
           ) : (
             <>
               <TouchableOpacity onPress={() => setYearOffset(y => y - 1)} hitSlop={8}>
-                <Ionicons name="chevron-back" size={18} color={tc.textMuted} />
+                <Ionicons name="chevron-back" size={18} color="#94A3B8" />
               </TouchableOpacity>
-              <Text style={[styles.navText, { color: tc.text }]}>{reportYear}年</Text>
+              <Text style={[styles.navText, { color: '#0F172A' }]}>{reportYear}年</Text>
               <TouchableOpacity
                 onPress={() => setYearOffset(y => y + 1)}
                 disabled={reportYear >= currentYear}
@@ -702,7 +702,7 @@ export default function StatisticsScreen({ navigation }) {
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color={reportYear >= currentYear ? tc.divider : tc.textMuted}
+                  color={reportYear >= currentYear ? '#E5E7EB' : '#94A3B8'}
                 />
               </TouchableOpacity>
             </>
@@ -710,18 +710,18 @@ export default function StatisticsScreen({ navigation }) {
 
           <View style={[styles.segment, { backgroundColor: tc.surfaceMuted }]}>
             <TouchableOpacity
-              style={[styles.segmentItem, dataType === 'expense' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
+              style={[styles.segmentItem, dataType === 'expense' && styles.segmentItemActive]}
               onPress={() => { setDataType('expense'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.segmentText, { color: dataType === 'expense' ? tc.text : tc.textMuted }]}>支出</Text>
+              <Text style={[styles.segmentText, { color: dataType === 'expense' ? '#FFFFFF' : '#94A3B8' }]}>支出</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segmentItem, dataType === 'income' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
+              style={[styles.segmentItem, dataType === 'income' && styles.segmentItemActive]}
               onPress={() => { setDataType('income'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.segmentText, { color: dataType === 'income' ? tc.text : tc.textMuted }]}>收入</Text>
+              <Text style={[styles.segmentText, { color: dataType === 'income' ? '#FFFFFF' : '#94A3B8' }]}>收入</Text>
             </TouchableOpacity>
           </View>
 
@@ -732,7 +732,7 @@ export default function StatisticsScreen({ navigation }) {
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="share-outline" size={15} color={tc.textMuted} />
+            <Ionicons name="share-outline" size={15} color="#7C5CFF" />
           </TouchableOpacity>
         </View>
 
@@ -908,20 +908,20 @@ export default function StatisticsScreen({ navigation }) {
               <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
                 <View style={styles.cardHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <View style={[styles.aiIconWrap, { backgroundColor: tc.accentSubtle }]}>
-                      <Ionicons name="sparkles" size={14} color={tc.accent} />
+                    <View style={[styles.aiIconWrap, { backgroundColor: '#EDE9FE' }]}>
+                      <Ionicons name="sparkles" size={14} color="#7C5CFF" />
                     </View>
                     <Text style={[styles.cardTitle, { color: tc.text }]}>心情分析</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <Text style={[styles.cardSubtitle, { color: tc.textMuted }]}>{moodStats.total}笔</Text>
+                    <Text style={[styles.cardSubtitle, { color: '#94A3B8' }]}>{moodStats.total}笔</Text>
                     <TouchableOpacity
                       onPress={handleRefreshMoodAnalysis}
                       disabled={moodAnalysisLoading}
-                      style={[styles.refreshBtn, { backgroundColor: tc.surfaceMuted }]}
+                      style={styles.refreshBtn}
                       hitSlop={8}
                     >
-                      <Ionicons name="refresh" size={13} color={moodAnalysisLoading ? tc.textSubtle : tc.textMuted} />
+                      <Ionicons name="refresh" size={13} color={moodAnalysisLoading ? '#DDD6FE' : '#7C5CFF'} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -966,8 +966,8 @@ export default function StatisticsScreen({ navigation }) {
               <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
                 <View style={styles.cardHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <View style={[styles.aiIconWrap, { backgroundColor: tc.warningSubtle }]}>
-                      <Ionicons name="brain" size={14} color={tc.warning} />
+                    <View style={[styles.aiIconWrap, { backgroundColor: '#FEF3C7' }]}>
+                      <Ionicons name="help-circle" size={14} color="#F59E0B" />
                     </View>
                     <Text style={[styles.cardTitle, { color: tc.text }]}>消费心理</Text>
                   </View>
@@ -1119,13 +1119,14 @@ export default function StatisticsScreen({ navigation }) {
 //  Styles
 // ============================================================
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#F5F3FF' },
   scrollContent: { paddingHorizontal: 0, paddingBottom: spacing.xl },
 
   shareIconBtn: {
     width: 32, height: 32, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
     marginLeft: spacing.sm,
+    backgroundColor: '#FFFFFF',
   },
 
   // 档期选择器
@@ -1134,8 +1135,9 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.base,
     marginBottom: spacing.sm,
     borderRadius: borderRadius.full,
-    backgroundColor: 'transparent',
+    backgroundColor: '#E9E5F5',
     gap: 0,
+    padding: 3,
   },
   periodTab: {
     flex: 1,
@@ -1144,11 +1146,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   periodTabActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: '#7C5CFF',
+    shadowColor: '#7C5CFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   periodTabText: {
     fontSize: fontSize.md,
@@ -1157,6 +1160,7 @@ const styles = StyleSheet.create({
   },
   periodTabTextActive: {
     fontWeight: fontWeight.semibold,
+    color: '#FFFFFF',
   },
 
   controlsRow: {
@@ -1166,34 +1170,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
   },
-  navText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2, paddingHorizontal: spacing.sm },
+  navText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2, paddingHorizontal: spacing.sm, color: '#0F172A' },
 
-  segment: { flexDirection: 'row', borderRadius: borderRadius.full, padding: 3 },
-  segmentItem: { paddingVertical: 6, paddingHorizontal: spacing.md, borderRadius: borderRadius.full },
-  segmentItemActive: {},
-  segmentText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, letterSpacing: -0.2 },
+  segment: {
+    flexDirection: 'row',
+    borderRadius: borderRadius.full,
+    padding: 3,
+    backgroundColor: '#FFFFFF',
+    ...shadows.sm,
+  },
+  segmentItem: {
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+  },
+  segmentItemActive: {
+    backgroundColor: '#7C5CFF',
+  },
+  segmentText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    letterSpacing: -0.2,
+  },
 
   // AI 卡片
   aiCard: {
     flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginBottom: spacing.base,
-    padding: spacing.base, borderRadius: borderRadius.lg, gap: spacing.md,
+    padding: spacing.base, borderRadius: borderRadius.xl, gap: spacing.md,
   },
   aiIconWrap: {
-    width: 40, height: 40, borderRadius: borderRadius.sm,
+    width: 40, height: 40, borderRadius: borderRadius.md,
     alignItems: 'center', justifyContent: 'center',
   },
   aiTextWrap: { flex: 1 },
-  aiTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
-  aiSubtitle: { fontSize: fontSize.xs, marginTop: 3, letterSpacing: -0.1 },
+  aiTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2, color: '#0F172A' },
+  aiSubtitle: { fontSize: fontSize.xs, marginTop: 3, letterSpacing: -0.1, color: '#94A3B8' },
 
   // 通用卡片
-  card: { marginHorizontal: spacing.base, marginBottom: spacing.base, padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
-  cardUnit: { fontSize: fontSize.xs },
+  card: {
+    marginHorizontal: spacing.base, marginBottom: spacing.base,
+    padding: spacing.md, borderRadius: borderRadius.xl,
+    backgroundColor: '#FFFFFF',
+    ...shadows.sm,
+  },
+  cardHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, letterSpacing: -0.3, color: '#0F172A' },
+  cardUnit: { fontSize: fontSize.xs, color: '#94A3B8' },
 
   dayHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xs, marginBottom: 4 },
-  dayHintText: { fontSize: fontSize.xs, letterSpacing: -0.1, fontVariant: ['tabular-nums'] },
+  dayHintText: { fontSize: fontSize.xs, letterSpacing: -0.1, fontVariant: ['tabular-nums'], color: '#94A3B8' },
 
   // Pie
   pieRow: { alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs, marginBottom: spacing.sm, position: 'relative' },
@@ -1201,7 +1229,7 @@ const styles = StyleSheet.create({
   pieCenterLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
   pieCenterAmount: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginTop: 3, fontVariant: ['tabular-nums'] },
 
-  cardSubtitle: { fontSize: fontSize.xs },
+  cardSubtitle: { fontSize: fontSize.xs, color: '#94A3B8' },
 
   // 心情标签云
   moodTagRow: {
@@ -1212,17 +1240,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
     borderRadius: borderRadius.full, gap: 4,
+    backgroundColor: '#F5F3FF',
   },
   moodTagEmoji: { fontSize: fontSize.sm },
-  moodTagLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
-  moodTagCount: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
+  moodTagLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, color: '#64748B' },
+  moodTagCount: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, color: '#7C5CFF' },
 
   // 心情分析文本
   moodAnalysisText: {
-    fontSize: fontSize.sm, lineHeight: 22, letterSpacing: -0.1,
+    fontSize: fontSize.sm, lineHeight: 22, letterSpacing: -0.1, color: '#0F172A',
   },
   moodPlaceholderText: {
-    fontSize: fontSize.sm, lineHeight: 20, fontStyle: 'italic',
+    fontSize: fontSize.sm, lineHeight: 20, fontStyle: 'italic', color: '#94A3B8',
   },
   moodLoadingWrap: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm,
@@ -1235,6 +1264,7 @@ const styles = StyleSheet.create({
   refreshBtn: {
     width: 24, height: 24, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F5F3FF',
   },
 
   // 排行
@@ -1242,7 +1272,8 @@ const styles = StyleSheet.create({
   rankRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.sm, marginBottom: spacing.xs, gap: spacing.md,
+    borderRadius: borderRadius.md, marginBottom: spacing.xs, gap: spacing.md,
+    backgroundColor: '#FAFAFE',
   },
   rankIndex: {
     width: 20, height: 20, borderRadius: 10,
@@ -1250,20 +1281,21 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs, fontWeight: fontWeight.semibold,
   },
   colorDot: { width: 10, height: 10, borderRadius: 5 },
-  rankName: { fontSize: fontSize.md, fontWeight: fontWeight.medium, flex: 0, minWidth: 50, letterSpacing: -0.2 },
-  rankPercent: { fontSize: fontSize.xs, width: 40, textAlign: 'right' },
-  rankAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, flex: 1, textAlign: 'right', fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
+  rankName: { fontSize: fontSize.md, fontWeight: fontWeight.medium, flex: 0, minWidth: 50, letterSpacing: -0.2, color: '#0F172A' },
+  rankPercent: { fontSize: fontSize.xs, width: 40, textAlign: 'right', color: '#94A3B8' },
+  rankAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, flex: 1, textAlign: 'right', fontVariant: ['tabular-nums'], letterSpacing: -0.2, color: '#0F172A' },
 
   // 交易排行
   txRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: spacing.md, paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.sm, marginBottom: spacing.xs, gap: spacing.md,
+    borderRadius: borderRadius.md, marginBottom: spacing.xs, gap: spacing.md,
+    backgroundColor: '#FAFAFE',
   },
   txInfo: { flex: 1 },
-  txCategory: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
-  txNote: { fontSize: fontSize.xs, marginTop: 3, letterSpacing: -0.1, opacity: 0.7 },
-  txAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
+  txCategory: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2, color: '#0F172A' },
+  txNote: { fontSize: fontSize.xs, marginTop: 3, letterSpacing: -0.1, color: '#94A3B8' },
+  txAmount: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], letterSpacing: -0.2, color: '#0F172A' },
 
   emptyWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.xl },
 });
