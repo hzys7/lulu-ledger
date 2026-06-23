@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 
 # Expo / Metro
@@ -55,6 +55,10 @@ nul
 dist_check/
 tools/__pycache__/
 *.pyc
+.reasonix/
+tmp/
+xiaolu-books/
+小璐记账/
 
 # Icon generation scratch + verification extracts
 assets/icon-gen/apk-extract*/
