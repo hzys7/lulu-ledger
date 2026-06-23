@@ -265,7 +265,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="cash-outline" size={20} color="#C4B5FD" style={{ position: 'absolute', top: 8, right: 12 }} />
                 <Ionicons name="card-outline" size={16} color="#DDD6FE" style={{ position: 'absolute', bottom: 12, right: 20 }} />
               </View>
-            </TouchableOpacity>
+            </View>
           )}
         </View>
 
