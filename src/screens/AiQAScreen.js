@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { spacing, borderRadius, fontSize, fontWeight, getThemeColors } from '../theme';
+import { AiAvatar } from '../components/AiAvatar';
 import {
   buildFinancialContext,
   generateQuickQuestions,
@@ -253,7 +254,7 @@ export default function AiQAScreen({ visible, onClose }) {
               >
                 {messages.length === 0 ? (
                   <View style={styles.welcomeWrap}>
-                    <Text style={[styles.welcomeEmoji]}>🤖</Text>
+                    <AiAvatar size={80} />
                     <Text style={[styles.welcomeTitle, { color: tc.text }]}>你好，我是小璐</Text>
                     <Text style={[styles.welcomeDesc, { color: tc.textMuted }]}>
                       可以问我关于你账目的任何问题
