@@ -236,8 +236,10 @@ function ThemedApp() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary><FinanceProvider><ThemedApp /></FinanceProvider></ErrorBoundary>
-    </SafeAreaProvider>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <SafeAreaProvider>
+        <ErrorBoundary><FinanceProvider><ThemedApp /></FinanceProvider></ErrorBoundary>
+      </SafeAreaProvider>
+    </View>
   );
 }
