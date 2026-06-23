@@ -129,7 +129,7 @@ export default function RecordsScreen({ navigation }) {
         if (minAmount !== null && t.amount < minAmount) return false;
         if (maxAmount !== null && t.amount > maxAmount) return false;
         if (keywords.length > 0) {
-          const acctName = (t.account || '').toLowerCase();
+          const acctName = ((accounts?.find(a => a.id === t.accountId)?.name) || '').toLowerCase();
           const catName = (t.category || '').toLowerCase();
           const noteText = (t.note || '').toLowerCase();
           const amountStr = String(t.amount);
@@ -143,7 +143,7 @@ export default function RecordsScreen({ navigation }) {
       });
     }
     return list;
-  }, [transactions, searchQuery, monthFilter]);
+  }, [transactions, searchQuery, monthFilter, accounts]);
 
   const monthLabel = monthFilter
     ? (monthFilter.year + '年' + (monthFilter.month + 1) + '月')

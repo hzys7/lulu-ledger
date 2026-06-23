@@ -42,13 +42,15 @@ export function DataProvider({ children }) {
 
   const initFromStorage = useCallback(async () => {
     if (!currentBookId) return;
-    const [txData, budgetData, recurringData, accountsData, dueItems] = await Promise.all([
+    // processRecurring 会更新 lastProcessedDate，所以必须在其之后读取 recurring，
+    // 避免 Promise.all 并行导致 setRecurring 拿到过期数据
+    const [txData, budgetData, accountsData, dueItems] = await Promise.all([
       storage.getTransactions(currentBookId),
       storage.getBudgets(currentBookId),
-      storage.getRecurring(),
       storage.getAccounts(currentBookId),
       storage.processRecurring(currentBookId),
     ]);
+    const recurringData = await storage.getRecurring();
     setTransactions(sanitizeTransactions(txData));
     setBudgets(sanitizeBudgets(budgetData));
     setRecurring(sanitizeRecurring(recurringData));

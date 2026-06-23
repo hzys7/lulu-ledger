@@ -84,7 +84,7 @@ function detectColumns(headerCells) {
     amount: find(['金额', 'amount', 'money', 'value', '数额']),
     note: find(['备注', 'note', 'memo', 'description', '说明']),
     currency: find(['货币', 'currency']),
-    book: find(['账本', 'book', '账户', 'account']),
+    book: find(['账本', 'book name', 'book', '账户', 'account']),
   };
 }
 

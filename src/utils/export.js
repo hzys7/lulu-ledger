@@ -6,16 +6,18 @@ import { parseCSVToTransactions as _parseCSV } from './csvParser';
 
 // ============ CSV 导出 ============
 
-export async function exportTransactionsToCSV(transactions, currencyCode = 'CNY') {
+export async function exportTransactionsToCSV(transactions, currencyCode = 'CNY', accounts = []) {
   const symbol = getCurrencySymbol(currencyCode);
-  const header = '日期,类型,分类,金额,货币,账本,备注\n';
+  const acctMap = Object.fromEntries(accounts.map(a => [a.id, a.name]));
+  const header = '日期,类型,分类,金额,货币,账户,账本,备注\n';
   
   const rows = transactions.map(t => {
     const date = new Date(t.date).toLocaleDateString('zh-CN');
     const type = t.type === 'income' ? '收入' : '支出';
     const amount = t.type === 'income' ? t.amount : -t.amount;
     const note = (t.note || '').replace(/,/g, '，').replace(/\n/g, ' ');
-    return `${date},${type},${t.category},${symbol}${Math.abs(amount).toFixed(2)},${t.currency || currencyCode},${t.bookName || ''},${note}`;
+    const acctName = (t.accountId && acctMap[t.accountId]) || '';
+    return `${date},${type},${t.category},${symbol}${Math.abs(amount).toFixed(2)},${t.currency || currencyCode},${acctName},${t.bookName || ''},${note}`;
   }).join('\n');
 
   // 添加BOM以便Excel正确识别UTF-8编码

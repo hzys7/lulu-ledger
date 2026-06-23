@@ -47,6 +47,8 @@ export default function SettingsScreen({ navigation }) {
     removeRecurringItem,
     updateAppSettings,
     reload,
+    books,
+    currentBookId,
   } = useFinance();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
@@ -65,7 +67,7 @@ export default function SettingsScreen({ navigation }) {
 
   const handleExportCSV = async () => {
     try {
-      await exportTransactionsToCSV(transactions, settings.currency);
+      await exportTransactionsToCSV(transactions, settings.currency, accounts);
     } catch (e) {
       Alert.alert('导出失败', e.message);
     }
@@ -147,6 +149,14 @@ export default function SettingsScreen({ navigation }) {
     }
     try {
       const parsed = parseImportText(importJson);
+      // 对 CSV 导入的交易，根据 bookName 匹配正确的 bookId
+      if (parsed.format === 'csv' && Array.isArray(parsed.transactions)) {
+        const bookMap = Object.fromEntries((books || []).map(b => [b.name, b.id]));
+        parsed.transactions.forEach(t => {
+          const matchedId = t.bookName && bookMap[t.bookName];
+          t.bookId = matchedId || currentBookId;
+        });
+      }
       const result = await importData(parsed.format === "json" ? parsed.fullData : parsed.transactions);
       await reload();
       setShowImportModal(false);
