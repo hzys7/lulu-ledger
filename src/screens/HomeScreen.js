@@ -19,7 +19,7 @@ import { useFinance } from '../context/FinanceContext';
 import { formatMoney } from '../utils/currency';
 import { loadAiConfig } from '../utils/aiConfig';
 import { typeInfo } from '../utils/accountTypes';
-import VoiceRecordModal from '../components/VoiceRecordModal';
+import AiChatScreen from './AiChatScreen';
 import AiQAScreen from './AiQAScreen';
 import AnomalyAlert from '../components/AnomalyAlert';
 import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
@@ -77,7 +77,7 @@ export default function HomeScreen({ navigation }) {
 
   // AI
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [showVoiceRecord, setShowVoiceRecord] = useState(false);
+  const [showAiChat, setShowAiChat] = useState(false);
   const [showAiQA, setShowAiQA] = useState(false);
   const [anomalyAlert, setAnomalyAlert] = useState(null);
   const [anomalyDismissed, setAnomalyDismissed] = useState(false);
@@ -238,17 +238,17 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.aiTitle, { color: tc.text }]}>AI 助手</Text>
-                  <Text style={[styles.aiHint, { color: tc.textMuted }]}>语音记账 · 问答分析</Text>
+                  <Text style={[styles.aiHint, { color: tc.textMuted }]}>一句话记账 · 问答分析</Text>
                 </View>
               </View>
               <View style={styles.aiBtns}>
                 <TouchableOpacity
                   style={[styles.aiBtn, { backgroundColor: tc.primary }]}
-                  onPress={() => setShowVoiceRecord(true)}
+                  onPress={() => setShowAiChat(true)}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="mic" size={14} color={tc.primaryOn} />
-                  <Text style={[styles.aiBtnText, { color: tc.primaryOn }]}>语音记</Text>
+                  <Ionicons name="sparkles" size={14} color={tc.primaryOn} />
+                  <Text style={[styles.aiBtnText, { color: tc.primaryOn }]}>记账</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.aiBtn, { backgroundColor: tc.accent }]}
@@ -315,44 +315,9 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
-        {/* ─── AI 助手 ───────────────────────────────── */}
-        {aiEnabled ? (
-          <View style={styles.section}>
-            <View style={[styles.card, styles.aiCard]}>
-              <View style={styles.aiCardLeft}>
-                <View style={[styles.aiIconWarp, { backgroundColor: tc.accentSubtle }]}>
-                  <Ionicons name="sparkles" size={18} color={tc.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.aiTitle, { color: tc.text }]}>AI 助手</Text>
-                  <Text style={[styles.aiHint, { color: tc.textMuted }]}>语音记账 · 问答分析</Text>
-                </View>
-              </View>
-              <View style={styles.aiBtns}>
-                <TouchableOpacity
-                  style={[styles.aiBtn, { backgroundColor: tc.primary }]}
-                  onPress={() => setShowVoiceRecord(true)}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="mic" size={14} color={tc.primaryOn} />
-                  <Text style={[styles.aiBtnText, { color: tc.primaryOn }]}>语音记</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.aiBtn, { backgroundColor: tc.accent }]}
-                  onPress={() => setShowAiQA(true)}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="chatbubbles" size={14} color="#fff" />
-                  <Text style={[styles.aiBtnText, { color: '#fff' }]}>问问</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        ) : null}
-
       </ScrollView>
 
-      <VoiceRecordModal visible={showVoiceRecord} onClose={() => setShowVoiceRecord(false)} onSaved={() => { setShowVoiceRecord(false); reload(); }} />
+      <AiChatScreen visible={showAiChat} onClose={() => setShowAiChat(false)} onSaved={() => { setShowAiChat(false); reload(); }} />
       <AiQAScreen visible={showAiQA} onClose={() => setShowAiQA(false)} />
 
       {/* 账本选择弹窗 */}
