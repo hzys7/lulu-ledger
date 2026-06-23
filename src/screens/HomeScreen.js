@@ -178,7 +178,7 @@ export default function HomeScreen({ navigation }) {
       >
         {/* ─── 问候 + 今日支出 + 账本切换 ──────────────── */}
         <View style={styles.header}>
-          <View style={styles.appIconWrap}>
+          <View style={[styles.appIconWrap, { backgroundColor: tc.card, borderRadius: 16, padding: 4 }]}>
             <Image
               source={require('../../assets/icon.png')}
               style={styles.appIcon}
@@ -237,7 +237,11 @@ export default function HomeScreen({ navigation }) {
               </View>
             </TouchableOpacity>
           ) : (
-            <View style={[styles.netWorthCard, { backgroundColor: tc.card }]}>
+            <TouchableOpacity
+              style={[styles.netWorthCard, { backgroundColor: tc.card }]}
+              onPress={() => navigation.navigate('NetWorth')}
+              activeOpacity={0.7}
+            >
               {/* 装饰元素 */}
               <DecoStar style={styles.starNetWorth1} size={14} color={tc.starColorLight} />
               <DecoStar style={styles.starNetWorth2} size={10} color={tc.starColor} />
@@ -259,13 +263,13 @@ export default function HomeScreen({ navigation }) {
 
               {/* 右侧装饰图标 */}
               <View style={styles.netWorthDecoWrap}>
-                <View style={styles.netWorthDecoCircle}>
-                  <Ionicons name="wallet" size={28} color="#DDD6FE" />
+                <View style={[styles.netWorthDecoCircle, { backgroundColor: tc.iconBg }]}>
+                  <Ionicons name="wallet" size={28} color={tc.starColorLight} />
                 </View>
-                <Ionicons name="cash-outline" size={20} color="#C4B5FD" style={{ position: 'absolute', top: 8, right: 12 }} />
-                <Ionicons name="card-outline" size={16} color="#DDD6FE" style={{ position: 'absolute', bottom: 12, right: 20 }} />
+                <Ionicons name="cash-outline" size={20} color={tc.starColor} style={{ position: 'absolute', top: 8, right: 12 }} />
+                <Ionicons name="card-outline" size={16} color={tc.starColorLight} style={{ position: 'absolute', bottom: 12, right: 20 }} />
               </View>
-            </View>
+            </TouchableOpacity>
           )}
         </View>
 
