@@ -1,5 +1,5 @@
 // 小璐记账 · 首页（仪表盘）
-// v1.4.4 优化：移除AI助手和资金账户灰色背景，优化整体版本
+// v1.5.0 统一间距和字体大小，优化整体版本
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
     letterSpacing: -0.5,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   greetingEmoji: {
     fontSize: fontSize.xl,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     letterSpacing: -0.1,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   todayRow: {
     flexDirection: 'row',
@@ -413,10 +413,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 6,
+    paddingVertical: spacing.xs + 2,
     borderRadius: borderRadius.full,
-    gap: 5,
-    marginTop: 4,
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   bookChipText: {
     fontSize: fontSize.xs,
@@ -438,14 +438,14 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     letterSpacing: 0.3,
-    marginBottom: 6,
+    marginBottom: spacing.xs + 2,
   },
   netWorthAmount: {
     fontSize: 34,
     fontWeight: fontWeight.bold,
     fontVariant: ['tabular-nums'],
     letterSpacing: -1,
-    marginBottom: 8,
+    marginBottom: spacing.sm + 2,
   },
   netWorthMeta: {
     flexDirection: 'row',
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   },
   netWorthEmptyTitle: {
     fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
 
   // section
@@ -507,12 +507,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base, paddingVertical: spacing.md, gap: spacing.md,
   },
   accountIcon: {
-    width: 36, height: 36, borderRadius: 10,
+    width: 38, height: 38, borderRadius: borderRadius.sm,
     alignItems: 'center', justifyContent: 'center',
   },
   accountName: {
     fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.1,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   accountType: {
     fontSize: fontSize.xs,
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   emptyCard: {
     alignItems: 'center',
     paddingVertical: spacing.xl + spacing.sm,
-    gap: 6,
+    gap: spacing.xs,
   },
   emptyText: {
     fontSize: fontSize.md, fontWeight: fontWeight.medium,
@@ -550,12 +550,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   aiIconWarp: {
-    width: 36, height: 36, borderRadius: 10,
+    width: 38, height: 38, borderRadius: borderRadius.sm,
     alignItems: 'center', justifyContent: 'center',
   },
   aiTitle: {
     fontSize: fontSize.md, fontWeight: fontWeight.semibold,
-    marginBottom: 1, letterSpacing: -0.2,
+    marginBottom: spacing.xxs, letterSpacing: -0.2,
   },
   aiHint: {
     fontSize: fontSize.xs, lineHeight: 16,
@@ -565,8 +565,8 @@ const styles = StyleSheet.create({
   },
   aiBtn: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingVertical: 7,
-    borderRadius: borderRadius.full, gap: 4,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 3,
+    borderRadius: borderRadius.full, gap: spacing.xs,
   },
   aiBtnText: {
     fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
