@@ -1,4 +1,4 @@
-// 小璐记账 · 汇总卡片组件（v1.6.2 紫色风格美化）
+// 小璐记账 · 汇总卡片组件（v1.6.4 修复图标遮挡）
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,19 +6,18 @@ import { spacing, borderRadius, fontSize, fontWeight, shadows } from '../../them
 
 const screenWidth = Dimensions.get('window').width;
 
-const ICONS = ['wallet', 'calculator', 'trending-down', 'card'];
-const ICON_COLORS = ['#7C5CFF', '#0891B2', '#34D399', '#EF4444'];
-
 export function SummaryCell({ tc, label, amount, amountColor, icon, iconBg, iconColor }) {
   return (
     <View style={styles.summaryCell}>
-      <Text style={styles.summaryLabel}>{label}</Text>
+      <View style={styles.summaryHeader}>
+        <Text style={styles.summaryLabel}>{label}</Text>
+        <View style={[styles.summaryIconWrap, { backgroundColor: iconBg || '#F5F3FF' }]}>
+          <Ionicons name={icon || 'wallet'} size={14} color={iconColor || '#7C5CFF'} />
+        </View>
+      </View>
       <Text style={[styles.summaryAmount, { color: amountColor || '#0F172A' }]} numberOfLines={1} adjustsFontSizeToFit>
         {amount}
       </Text>
-      <View style={[styles.summaryIconWrap, { backgroundColor: iconBg || '#F5F3FF' }]}>
-        <Ionicons name={icon || 'wallet'} size={20} color={iconColor || '#7C5CFF'} />
-      </View>
     </View>
   );
 }
@@ -123,30 +122,31 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     borderRadius: borderRadius.xl,
     backgroundColor: '#FFFFFF',
-    position: 'relative',
-    overflow: 'hidden',
     ...shadows.sm,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   summaryLabel: {
     fontSize: fontSize.xs,
     color: '#94A3B8',
     letterSpacing: -0.1,
+    flex: 1,
+  },
+  summaryIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   summaryAmount: {
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     letterSpacing: -0.6,
     fontVariant: ['tabular-nums'],
-  },
-  summaryIconWrap: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

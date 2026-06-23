@@ -27,6 +27,14 @@ import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedA
 import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 
+// 有效的Ionicons图标列表（用于验证）
+const VALID_ICONS = ['chatbubbles', 'wallet', 'card', 'cash', 'ellipsis-horizontal-circle', 'logo-wechat', 'logo-alipay', 'logo-paypal'];
+
+function getValidIcon(icon, fallback) {
+  if (icon && VALID_ICONS.includes(icon)) return icon;
+  return fallback;
+}
+
 // ─── 问候语 ────────────────────────────────────────────
 
 function getGreeting() {
@@ -344,7 +352,7 @@ export default function HomeScreen({ navigation }) {
                     onPress={() => navigation.navigate('NetWorth')}
                   >
                     <View style={[styles.accountIcon, { backgroundColor: (acc.color || meta.color) + '20' }]}>
-                      <Ionicons name={acc.icon || meta.icon} size={20} color={acc.color || meta.color} />
+                      <Ionicons name={getValidIcon(acc.icon, meta.icon)} size={20} color={acc.color || meta.color} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.accountName} numberOfLines={1}>{acc.name}</Text>
