@@ -1,5 +1,5 @@
 // 小璐记账 · 首页（仪表盘）
-// v1.5.2 重新设计：顶部问候 → 轻量账本切换 → 净资产 → 账户 → AI
+// v1.4.4 优化：移除AI助手和资金账户灰色背景，优化整体版本
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
@@ -237,7 +237,7 @@ export default function HomeScreen({ navigation }) {
         {/* ─── AI 助手 ───────────────────────────────── */}
         {aiEnabled ? (
           <View style={styles.section}>
-            <View style={[styles.card, styles.aiCard]}>
+            <View style={[styles.card, styles.aiCard, { backgroundColor: tc.background }]}>
               <View style={styles.aiCardLeft}>
                 <View style={[styles.aiIconWarp, { backgroundColor: tc.accentSubtle }]}>
                   <Ionicons name="sparkles" size={18} color={tc.accent} />
@@ -298,7 +298,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={[styles.emptyHint, { color: tc.textSubtle }]}>添加微信/支付宝/银行卡</Text>
             </View>
           ) : (
-            <View style={[styles.card, styles.accountList]}>
+            <View style={[styles.card, styles.accountList, { backgroundColor: tc.background }]}>
               {accounts.map((acc, i) => {
                 const meta = typeInfo(acc.type);
                 const isLast = i === accounts.length - 1;
@@ -500,6 +500,7 @@ const styles = StyleSheet.create({
   accountList: {
     padding: 0,
     overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   accountRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -540,6 +541,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    backgroundColor: 'transparent',
   },
   aiCardLeft: {
     flex: 1,
