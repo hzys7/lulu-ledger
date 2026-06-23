@@ -2,12 +2,12 @@
   "expo": {
     "name": "小璐记账",
     "slug": "lulu-ledger",
-    "version": "1.6.3",
+    "version": "1.6.4",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#F0F1F3"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
