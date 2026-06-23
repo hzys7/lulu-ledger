@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CategoryIcon } from './CategoryIcon';
 import { spacing, fontSize, fontWeight } from '../theme';
 import { formatMoney } from '../utils/currency';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 function timeLabel(iso) {
   const d = new Date(iso);
@@ -23,31 +24,32 @@ function timeLabel(iso) {
 }
 
 export const TransactionItem = memo(function TransactionItem({ transaction, onPress, currency = 'CNY', isLast }) {
+  const tc = useThemeColors();
   const isExpense = transaction.type === 'expense';
   const prefix = isExpense ? '-' : '+';
 
   return (
     <TouchableOpacity
-      style={[styles.row, !isLast && styles.rowBorder]}
+      style={[styles.row, !isLast && { borderBottomColor: tc.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
       onPress={onPress}
       activeOpacity={0.6}
     >
       <CategoryIcon category={transaction.category} type={transaction.type} size={42} />
       <View style={styles.info}>
-        <Text style={styles.category} numberOfLines={1}>
+        <Text style={[styles.category, { color: tc.text }]} numberOfLines={1}>
           {transaction.category}
         </Text>
         {transaction.note ? (
-          <Text style={styles.note} numberOfLines={1}>
+          <Text style={[styles.note, { color: tc.textMuted }]} numberOfLines={1}>
             {transaction.note}
           </Text>
         ) : null}
       </View>
       <View style={styles.right}>
-        <Text style={styles.amount}>
+        <Text style={[styles.amount, { color: tc.text }]}>
           {prefix}{formatMoney(transaction.amount, transaction.currency || currency)}
         </Text>
-        <Text style={styles.time}>{timeLabel(transaction.date)}</Text>
+        <Text style={[styles.time, { color: tc.textSubtle }]}>{timeLabel(transaction.date)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -60,11 +62,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.base,
     minHeight: 68,
-    backgroundColor: '#FFFFFF',
-  },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F1F5F9',
   },
   info: {
     flex: 1,
@@ -74,13 +71,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
     letterSpacing: -0.2,
-    color: '#0F172A',
   },
   note: {
     fontSize: fontSize.sm,
     marginTop: 2,
     letterSpacing: -0.1,
-    color: '#94A3B8',
   },
   right: {
     alignItems: 'flex-end',
@@ -90,12 +85,10 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: -0.2,
     fontVariant: ['tabular-nums'],
-    color: '#0F172A',
   },
   time: {
     fontSize: fontSize.xs,
     marginTop: 2,
     letterSpacing: -0.1,
-    color: '#94A3B8',
   },
 });

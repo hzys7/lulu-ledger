@@ -128,15 +128,21 @@ export default function BudgetPieChart({
 
   if (!chartData) {
     return (
-      <View style={styles.emptyCard}>
-        <View style={styles.emptyIconWrap}>
-          <Ionicons name="pie-chart-outline" size={32} color="#7C5CFF" />
+      <View style={[styles.emptyCard, { backgroundColor: tc.card }]}>
+        <View style={[styles.emptyIconWrap, { backgroundColor: tc.iconBg }]}>
+          <Ionicons name="pie-chart-outline" size={32} color={tc.primary} />
         </View>
-        <Text style={styles.emptyTitle}>暂无预算</Text>
-        <Text style={styles.emptyHint}>设置每月预算，掌控消费节奏</Text>
-        <TouchableOpacity style={styles.emptyBtn} onPress={onNavigateBudget} activeOpacity={0.85}>
+        <Text style={[styles.emptyTitle, { color: tc.text }]}>暂无预算</Text>
+        <Text style={[styles.emptyHint, { color: tc.textMuted }]}>
+          设置每月预算，掌控消费节奏
+        </Text>
+        <TouchableOpacity
+          style={[styles.emptyBtn, { backgroundColor: tc.primary }]}
+          onPress={onNavigateBudget}
+          activeOpacity={0.85}
+        >
           <Ionicons name="add-circle-outline" size={16} color="#fff" />
-          <Text style={styles.emptyBtnText}>去设置预算</Text>
+          <Text style={[styles.emptyBtnText, { color: '#fff' }]}>去设置预算</Text>
         </TouchableOpacity>
       </View>
     );

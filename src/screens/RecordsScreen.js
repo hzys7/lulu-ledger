@@ -188,7 +188,7 @@ export default function RecordsScreen({ navigation }) {
   }, [settings.currency, navigation, flatData]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: tc.pageBg }]}>
       {/* Sticky 顶栏 */}
       <Animated.View
         pointerEvents="box-none"
@@ -197,19 +197,19 @@ export default function RecordsScreen({ navigation }) {
           transform: [{ translateY: stickyTranslateY }],
         }}
       >
-        <View style={[styles.stickyBar, { paddingTop: insets.top }]}>
+        <View style={[styles.stickyBar, { backgroundColor: tc.pageBg, paddingTop: insets.top, borderBottomColor: tc.divider }]}>
           <TouchableOpacity
             style={styles.stickyLeft}
             activeOpacity={0.7}
             onPress={() => setMonthPickerOpen(true)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.stickyMonthText}>{monthLabel}</Text>
-            <Ionicons name="chevron-down" size={14} color="#94A3B8" />
+            <Text style={[styles.stickyMonthText, { color: tc.text }]}>{monthLabel}</Text>
+            <Ionicons name="chevron-down" size={14} color={tc.textMuted} />
           </TouchableOpacity>
           <View style={styles.stickyRight}>
-            <Text style={styles.stickyAmount}>支 {formatMoney(summary.expense, settings.currency)}</Text>
-            <Text style={styles.stickyAmountIncome}>收 {formatMoney(summary.income, settings.currency)}</Text>
+            <Text style={[styles.stickyAmount, { color: tc.text }]}>支 {formatMoney(summary.expense, settings.currency)}</Text>
+            <Text style={[styles.stickyAmountIncome, { color: tc.success }]}>收 {formatMoney(summary.income, settings.currency)}</Text>
           </View>
         </View>
       </Animated.View>
@@ -217,16 +217,16 @@ export default function RecordsScreen({ navigation }) {
       {/* 月份选择弹窗 */}
       <Modal visible={monthPickerOpen} transparent animationType="fade" onRequestClose={() => setMonthPickerOpen(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setMonthPickerOpen(false)}>
-          <Pressable style={styles.modalSheet} onPress={() => {}}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>选择月份</Text>
+          <Pressable style={[styles.modalSheet, { backgroundColor: tc.surface }]} onPress={() => {}}>
+            <View style={[styles.modalHandle, { backgroundColor: tc.divider }]} />
+            <Text style={[styles.modalTitle, { color: tc.text }]}>选择月份</Text>
             <TouchableOpacity
-              style={styles.modalItem}
+              style={[styles.modalItem, { borderBottomColor: tc.divider }]}
               onPress={() => { setMonthFilter(null); setMonthPickerOpen(false); }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.modalItemText, !monthFilter && styles.modalItemTextActive]}>全部月份</Text>
-              {!monthFilter ? <Ionicons name="checkmark" size={18} color="#7C5CFF" /> : null}
+              <Text style={[styles.modalItemText, { color: !monthFilter ? tc.primary : tc.text }]}>{!monthFilter && styles.modalItemTextActive}全部月份</Text>
+              {!monthFilter ? <Ionicons name="checkmark" size={18} color={tc.primary} /> : null}
             </TouchableOpacity>
             {(() => {
               const seen = new Set();
@@ -244,12 +244,12 @@ export default function RecordsScreen({ navigation }) {
                 return (
                   <TouchableOpacity
                     key={opt.year + '_' + opt.month}
-                    style={styles.modalItem}
+                    style={[styles.modalItem, { borderBottomColor: tc.divider }]}
                     onPress={() => { setMonthFilter({ year: opt.year, month: opt.month }); setMonthPickerOpen(false); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.modalItemText, active && styles.modalItemTextActive]}>{opt.year}年{opt.month + 1}月</Text>
-                    {active ? <Ionicons name="checkmark" size={18} color="#7C5CFF" /> : null}
+                    <Text style={[styles.modalItemText, { color: active ? tc.primary : tc.text }]}>{opt.year}年{opt.month + 1}月</Text>
+                    {active ? <Ionicons name="checkmark" size={18} color={tc.primary} /> : null}
                   </TouchableOpacity>
                 );
               });
@@ -282,12 +282,12 @@ export default function RecordsScreen({ navigation }) {
             </View>
             {/* 搜索框 */}
             <View style={styles.searchBarWrap}>
-              <View style={styles.searchBar}>
-                <Ionicons name="search" size={16} color="#94A3B8" />
+              <View style={[styles.searchBar, { backgroundColor: tc.card }]}>
+                <Ionicons name="search" size={16} color={tc.textSubtle} />
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { color: tc.text }]}
                   placeholder="搜索金额(如 大于100) · 关键词 · 账户"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={tc.textSubtle}
                   value={inputValue}
                   onChangeText={onChangeSearch}
                   autoCorrect={false}
@@ -297,17 +297,17 @@ export default function RecordsScreen({ navigation }) {
                 />
                 {inputValue.length > 0 ? (
                   <TouchableOpacity onPress={onClearSearch} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                    <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                    <Ionicons name="close-circle" size={16} color={tc.textMuted} />
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                    <Ionicons name="filter-outline" size={18} color="#7C5CFF" />
+                    <Ionicons name="filter-outline" size={18} color={tc.primary} />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
             <View style={styles.countRow}>
-              <Text style={styles.countText}>
+              <Text style={[styles.countText, { color: tc.textMuted }]}>
                 {searchQuery ? `匹配到 ${displayTransactions.length} 笔` : `共${displayTransactions.length}笔记录`}
               </Text>
               {!searchQuery ? (
@@ -319,24 +319,24 @@ export default function RecordsScreen({ navigation }) {
                   <Ionicons
                     name={showHint ? 'help-circle' : 'help-circle-outline'}
                     size={15}
-                    color={showHint ? '#7C5CFF' : '#94A3B8'}
+                    color={showHint ? tc.primary : tc.textSubtle}
                   />
                 </TouchableOpacity>
               ) : null}
             </View>
             {(showHint && !searchQuery) ? (
-              <View style={styles.hintBox}>
+              <View style={[styles.hintBox, { backgroundColor: tc.card }]}>
                 <View style={styles.hintRow}>
-                  <Text style={styles.hintLabel}>{'大于100'}</Text>
-                  <Text style={styles.hintDesc}>金额≥100</Text>
-                  <Text style={styles.hintLabel}>{'小于50'}</Text>
-                  <Text style={styles.hintDesc}>金额≤50</Text>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>{'大于100'}</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额≥100</Text>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>{'小于50'}</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额≤50</Text>
                 </View>
                 <View style={styles.hintRow}>
-                  <Text style={styles.hintLabel}>100到500</Text>
-                  <Text style={styles.hintDesc}>金额区间</Text>
-                  <Text style={styles.hintLabel}>88</Text>
-                  <Text style={styles.hintDesc}>金额包含88</Text>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>100到500</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额区间</Text>
+                  <Text style={[styles.hintLabel, { color: tc.primary }]}>88</Text>
+                  <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额包含88</Text>
                 </View>
                 <View style={styles.hintRow}>
                   <Text style={styles.hintLabel}>吃饭</Text>
@@ -401,43 +401,40 @@ const styles = StyleSheet.create({
   stickyBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.base, paddingBottom: spacing.sm,
-    backgroundColor: '#F5F3FF',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E9E5F5',
   },
   stickyLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   stickyRight: { flexDirection: 'row', alignItems: 'center' },
-  stickyMonthText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3, color: '#0F172A' },
-  stickyAmount: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, fontVariant: ['tabular-nums'], color: '#64748B' },
-  stickyAmountIncome: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, fontVariant: ['tabular-nums'], color: '#34D399', marginLeft: spacing.md },
+  stickyMonthText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
+  stickyAmount: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, fontVariant: ['tabular-nums'] },
+  stickyAmountIncome: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, fontVariant: ['tabular-nums'], marginLeft: spacing.md },
 
   budgetSection: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
 
   searchBarWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   searchBar: {
     flexDirection: 'row', alignItems: 'center', borderRadius: borderRadius.full,
-    backgroundColor: '#FFFFFF', paddingHorizontal: spacing.md, height: 42, gap: spacing.sm,
+    paddingHorizontal: spacing.md, height: 42, gap: spacing.sm,
     ...shadows.sm,
   },
-  searchInput: { flex: 1, fontSize: fontSize.md, paddingVertical: 0, letterSpacing: -0.1, color: '#0F172A' },
+  searchInput: { flex: 1, fontSize: fontSize.md, paddingVertical: 0, letterSpacing: -0.1 },
 
   countRow: {
     paddingHorizontal: spacing.base, paddingBottom: spacing.xs,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  countText: { fontSize: fontSize.xs, color: '#94A3B8', letterSpacing: -0.1 },
+  countText: { fontSize: fontSize.xs, letterSpacing: -0.1 },
 
   hintBox: {
     marginHorizontal: spacing.base, marginTop: spacing.xs, marginBottom: spacing.sm,
     borderRadius: borderRadius.sm,
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: 4,
     ...shadows.sm,
   },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  hintLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontFamily: 'monospace', color: '#7C5CFF', minWidth: 52 },
-  hintDesc: { fontSize: fontSize.xs, flex: 1, color: '#64748B' },
-  hintTip: { fontSize: fontSize.xs, lineHeight: 17, color: '#94A3B8' },
+  hintLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontFamily: 'monospace', minWidth: 52 },
+  hintDesc: { fontSize: fontSize.xs, flex: 1 },
+  hintTip: { fontSize: fontSize.xs, lineHeight: 17 },
 
   dateHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -446,21 +443,20 @@ const styles = StyleSheet.create({
   dateHeaderFirst: {
     paddingTop: spacing.sm,
   },
-  dateText: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, letterSpacing: -0.1, color: '#64748B' },
+  dateText: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, letterSpacing: -0.1 },
   dateSummary: { flexDirection: 'row', gap: spacing.md },
-  dateAmountIncome: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], color: '#34D399' },
-  dateAmountExpense: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], color: '#94A3B8' },
+  dateAmountIncome: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'] },
+  dateAmountExpense: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'] },
 
   emptyWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.xl },
 
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: {
     borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: spacing.sm, paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.base, backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.base,
   },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.md, backgroundColor: '#E5E7EB' },
-  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, marginBottom: spacing.sm, letterSpacing: -0.3, color: '#0F172A' },
-  modalItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.base, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F1F5F9' },
-  modalItemText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.2, color: '#0F172A' },
-  modalItemTextActive: { color: '#7C5CFF' },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.md },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, marginBottom: spacing.sm, letterSpacing: -0.3 },
+  modalItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.base, borderBottomWidth: StyleSheet.hairlineWidth },
+  modalItemText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.2 },
 });

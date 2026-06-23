@@ -78,6 +78,8 @@ export const colors = {
   surfaceMuted: '#F4F4F5',
   surfaceSubtle: '#F9FAFB',
   surfaceSection: '#F4F5F8',
+  card: '#FFFFFF',
+  cardSubtle: '#FAFAFE',
   text: '#0F172A',
   textSecondary: '#475569',
   textMuted: '#64748B',
@@ -90,6 +92,17 @@ export const colors = {
   black: '#000000',
   overlay: 'rgba(15, 23, 42, 0.45)',
   shadow: 'rgba(15, 23, 42, 0.06)',
+
+  // 专用色
+  pageBg: '#F5F3FF',
+  starColor: '#A78BFA',
+  starColorLight: '#DDD6FE',
+  chipBg: '#FFFFFF',
+  badgeBg: '#F3F0FF',
+  iconBg: '#F5F3FF',
+  iconBgAlt: '#F0FDFA',
+  iconBgDanger: '#FEF2F2',
+  iconBgWarning: '#FEF3C7',
 };
 
 export const spacing = {
@@ -231,6 +244,8 @@ export const darkColors = {
   surfaceMuted: '#1E1E29',
   surfaceSubtle: '#0F0F18',
   surfaceSection: '#101019',
+  card: '#16161F',
+  cardSubtle: '#1A1A24',
   text: '#E5E7EB',
   textSecondary: '#B7BCC8',
   textMuted: '#8B8F9A',
@@ -242,6 +257,17 @@ export const darkColors = {
   black: '#000000',
   overlay: 'rgba(0,0,0,0.7)',
   shadow: 'rgba(0, 0, 0, 0.5)',
+
+  // 专用色
+  pageBg: '#0A0A0F',
+  starColor: '#C4B5FD',
+  starColorLight: '#2E1065',
+  chipBg: '#16161F',
+  badgeBg: '#2E1065',
+  iconBg: '#2E1065',
+  iconBgAlt: '#064E3B',
+  iconBgDanger: '#450A0A',
+  iconBgWarning: '#451A03',
 };
 
 export function getThemeColors(theme = 'light') {
