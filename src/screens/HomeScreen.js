@@ -277,7 +277,7 @@ export default function HomeScreen({ navigation }) {
               <DecoStar style={styles.starAi1} size={10} color="#DDD6FE" />
 
               <View style={styles.aiCardLeft}>
-                <AiAvatar size={44} />
+                <AiAvatar size={50} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.aiTitle, { color: tc.text }]}>AI 助手</Text>
                   <Text style={[styles.aiHint, { color: tc.primary }]}>一句话记账 · 问答分析</Text>

@@ -254,7 +254,7 @@ export default function AiQAScreen({ visible, onClose }) {
               >
                 {messages.length === 0 ? (
                   <View style={styles.welcomeWrap}>
-                    <AiAvatar size={80} />
+                    <AiAvatar size={120} />
                     <Text style={[styles.welcomeTitle, { color: tc.text }]}>你好，我是小璐</Text>
                     <Text style={[styles.welcomeDesc, { color: tc.textMuted }]}>
                       可以问我关于你账目的任何问题

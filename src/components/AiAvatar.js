@@ -1,15 +1,14 @@
-// 小璐记账 · AI助手组件（使用真实头像）
+// 小璐记账 · AI助手组件（使用真实头像，高清）
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
+import { View, StyleSheet, Image } from 'react-native';
 
 export function AiAvatar({ size = 44, style }) {
+  const borderRadius = size / 2;
   return (
-    <View style={[styles.avatarContainer, { width: size, height: size }, style]}>
+    <View style={[styles.container, { width: size, height: size, borderRadius }, style]}>
       <Image
         source={require('../../assets/xiaolu-avatar.jpg')}
-        style={[styles.avatarImage, { width: size, height: size }]}
+        style={[styles.image, { width: size, height: size, borderRadius }]}
         resizeMode="cover"
       />
     </View>
@@ -17,11 +16,8 @@ export function AiAvatar({ size = 44, style }) {
 }
 
 const styles = StyleSheet.create({
-  avatarContainer: {
-    borderRadius: 22,
+  container: {
     overflow: 'hidden',
   },
-  avatarImage: {
-    borderRadius: 22,
-  },
+  image: {},
 });
