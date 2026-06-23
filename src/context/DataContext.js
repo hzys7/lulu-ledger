@@ -144,8 +144,8 @@ export function DataProvider({ children }) {
     }
   }, [currentBookId, transactions, accounts]);
 
-  const removeTx = useCallback(async (id) => {
-    const old = transactions.find(t => t.id === id);
+  const removeTx = useCallback(async (id, txObj) => {
+    const old = txObj || transactions.find(t => t.id === id);
     const updated = await storage.deleteTransaction(id);
     setTransactions(sanitizeTransactions(updated.filter(t => t.bookId === currentBookId)));
     let accId = null;
