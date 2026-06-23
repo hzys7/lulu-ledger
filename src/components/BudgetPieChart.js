@@ -151,16 +151,16 @@ export default function BudgetPieChart({
   const selected = selectedIndex !== null ? chartData.segments[selectedIndex] : null;
 
   return (
-    <Animated.View style={[styles.container, { opacity: animatedValue }]}>
+    <Animated.View style={[styles.container, { backgroundColor: tc.card, opacity: animatedValue }]}>
       {/* 装饰盾牌 */}
       <View style={styles.shieldDeco}>
-        <Ionicons name="shield-checkmark" size={48} color="#DDD6FE" />
+        <Ionicons name="shield-checkmark" size={48} color={tc.starColorLight} />
       </View>
 
       {/* 头部 */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>预算概览</Text>
+          <Text style={[styles.headerTitle, { color: tc.text }]}>预算概览</Text>
           {overviewSegments && (
             <View style={[styles.healthBadge, { backgroundColor: getHealthColor(overviewSegments.healthScore) + '20' }]}>
               <Text style={[styles.healthText, { color: getHealthColor(overviewSegments.healthScore) }]}>
@@ -318,7 +318,7 @@ export default function BudgetPieChart({
               )}
             </>
           ) : selected ? (
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: tc.cardSubtle }]}>
               <View style={[styles.statDot, { backgroundColor: selected.color }]} />
               <View style={styles.statInfo}>
                 <Text style={styles.statLabel}>预算</Text>
@@ -334,18 +334,18 @@ export default function BudgetPieChart({
             </View>
           ) : (
             <>
-              <View style={styles.statCard}>
-                <View style={[styles.statDot, { backgroundColor: '#7C5CFF' }]} />
+              <View style={[styles.statCard, { backgroundColor: tc.cardSubtle }]}>
+                <View style={[styles.statDot, { backgroundColor: tc.primary }]} />
                 <View style={styles.statInfo}>
-                  <Text style={styles.statLabel}>已用</Text>
-                  <Text style={styles.statValue}>{formatMoney(chartData.totalSpent, currency, 0)}</Text>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
+                  <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(chartData.totalSpent, currency, 0)}</Text>
                 </View>
               </View>
-              <View style={styles.statCard}>
-                <View style={[styles.statDot, { backgroundColor: '#34D399' }]} />
+              <View style={[styles.statCard, { backgroundColor: tc.cardSubtle }]}>
+                <View style={[styles.statDot, { backgroundColor: tc.success }]} />
                 <View style={styles.statInfo}>
-                  <Text style={styles.statLabel}>剩余</Text>
-                  <Text style={styles.statValue}>{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}</Text>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
+                  <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}</Text>
                 </View>
               </View>
             </>
@@ -401,9 +401,9 @@ export default function BudgetPieChart({
 
       {/* 底部按钮 */}
       <View style={styles.footerRow}>
-        <TouchableOpacity style={styles.footerBtn} onPress={onNavigateBudget} activeOpacity={0.7}>
-          <Ionicons name="settings-outline" size={14} color="#7C5CFF" />
-          <Text style={styles.footerBtnText}>管理预算</Text>
+        <TouchableOpacity style={[styles.footerBtn, { backgroundColor: tc.iconBg }]} onPress={onNavigateBudget} activeOpacity={0.7}>
+          <Ionicons name="settings-outline" size={14} color={tc.primary} />
+          <Text style={[styles.footerBtnText, { color: tc.primary }]}>管理预算</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -538,7 +538,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: borderRadius.md,
     gap: spacing.xs,
-    backgroundColor: '#FAFAFE',
   },
   statCardActive: {
     backgroundColor: '#F5F3FF',
