@@ -385,7 +385,7 @@ export default function RecordsScreen({ navigation }) {
           if (detailTx) {
             Alert.alert('删除交易', '确定删除这条记录吗？', [
               { text: '取消', style: 'cancel' },
-              { text: '删除', style: 'destructive', onPress: () => { removeTx(detailTx.id); setDetailTx(null); reload(); } },
+              { text: '删除', style: 'destructive', onPress: async () => { await removeTx(detailTx.id); setDetailTx(null); } },
             ]);
           }
         }}
