@@ -73,7 +73,7 @@ export const colors = {
   },
 
   // 中性色（9 级灰阶）
-  background: '#F0F1F3',
+  background: '#FFFFFF',
   surface: '#FFFFFF',
   surfaceMuted: '#F4F4F5',
   surfaceSubtle: '#F9FAFB',
