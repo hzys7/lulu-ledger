@@ -662,15 +662,64 @@ export async function processRecurring(currentBookId) {
     const lastDate = item.lastProcessedDate ? new Date(item.lastProcessedDate) : null;
     let shouldProcess = false;
 
-    // 如果设置了生效日期，且当前日期尚未到达生效日期，则不处理
+    // 生效日期逻辑：用户选哪天就从哪天开始生效
     if (item.startDate && !lastDate) {
       const startParts = item.startDate.split('-');
       const startYear = parseInt(startParts[0], 10);
       const startMonth = parseInt(startParts[1], 10) - 1;
-      const startDate = new Date(startYear, startMonth, startParts[2]);
+      const startDay = parseInt(startParts[2], 10);
+      const startDate = new Date(startYear, startMonth, startDay);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
+
       if (today < startDate) {
+        // 还没到生效日期 → 跳过
+        remaining.push(item);
+        return;
+      }
+
+      // 如果今天 >= 生效日期，计算第一个实际执行日期
+      let firstOccurrence = startDate;
+
+      // 如果生效日期已过，按频率推算下一个周期
+      if (today > startDate) {
+        switch (item.frequency) {
+          case 'daily':
+            // 每日：今天就是第一个执行日
+            firstOccurrence = today;
+            break;
+          case 'weekly': {
+            // 从生效日期开始，跳到今天所在的同一周几
+            const dayDiff = (today.getDay() - startDate.getDay() + 7) % 7;
+            firstOccurrence = new Date(startDate);
+            firstOccurrence.setDate(startDate.getDate() + dayDiff);
+            if (firstOccurrence < today) {
+              firstOccurrence.setDate(firstOccurrence.getDate() + 7);
+            }
+            break;
+          }
+          case 'monthly': {
+            // 每月同一天：如果本月该日已过，跳到下个月
+            firstOccurrence = new Date(today.getFullYear(), today.getMonth(), startDay);
+            if (firstOccurrence < today) {
+              firstOccurrence = new Date(today.getFullYear(), today.getMonth() + 1, startDay);
+            }
+            break;
+          }
+          case 'yearly': {
+            // 每年同一天
+            firstOccurrence = new Date(today.getFullYear(), startMonth, startDay);
+            if (firstOccurrence < today) {
+              firstOccurrence = new Date(today.getFullYear() + 1, startMonth, startDay);
+            }
+            break;
+          }
+        }
+      }
+
+      // 如果计算出的第一个执行日还没到 → 跳过
+      if (today < firstOccurrence) {
         remaining.push(item);
         return;
       }
