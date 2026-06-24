@@ -662,7 +662,7 @@ export async function processRecurring(currentBookId) {
     const lastDate = item.lastProcessedDate ? new Date(item.lastProcessedDate) : null;
     let shouldProcess = false;
 
-    // 如果设置了生效日期，且从未处理过，需要计算下一个周期日期
+    // 如果设置了生效日期，且当前日期尚未到达生效日期，则不处理
     if (item.startDate && !lastDate) {
       const startParts = item.startDate.split('-');
       const startYear = parseInt(startParts[0], 10);
@@ -670,54 +670,7 @@ export async function processRecurring(currentBookId) {
       const startDate = new Date(startYear, startMonth, startParts[2]);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
-      // 计算从 startDate 开始的下一个周期日期
-      let nextOccurrence = new Date(startDate);
-      if (today > startDate) {
-        // 如果今天已过生效日期，计算下一个周期
-        switch (item.frequency) {
-          case 'daily':
-            // 每天都发生，如果今天已过生效日期，则从生效日期开始每天处理
-            shouldProcess = true;
-            break;
-          case 'weekly':
-            // 每周同一天
-            nextOccurrence.setDate(startDate.getDate() + Math.ceil((today.getDate() - startDate.getDate()) / 7) * 7);
-            shouldProcess = today >= nextOccurrence;
-            break;
-          case 'monthly':
-            // 每月同一天
-            const dayOfMonth = startDate.getDate();
-            // 计算当前年月
-            let nextYear = today.getFullYear();
-            let nextMonth = today.getMonth();
-            // 如果本月日期已过，下个月
-            if (today.getDate() > dayOfMonth) {
-              nextMonth += 1;
-            }
-            // 处理跨年
-            if (nextMonth > 11) {
-              nextMonth = 0;
-              nextYear += 1;
-            }
-            nextOccurrence = new Date(nextYear, nextMonth, dayOfMonth);
-            shouldProcess = today >= nextOccurrence;
-            break;
-          case 'yearly':
-            // 每年同一天
-            let nextYearly = today.getFullYear();
-            if (today.getMonth() > startDate.getMonth() ||
-                (today.getMonth() === startDate.getMonth() && today.getDate() > startDate.getDate())) {
-              nextYearly += 1;
-            }
-            nextOccurrence = new Date(nextYearly, startDate.getMonth(), startDate.getDate());
-            shouldProcess = today >= nextOccurrence;
-            break;
-          default:
-            shouldProcess = true;
-        }
-      } else {
-        // 今天还没到生效日期，不处理
+      if (today < startDate) {
         remaining.push(item);
         return;
       }
