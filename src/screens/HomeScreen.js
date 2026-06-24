@@ -243,10 +243,6 @@ export default function HomeScreen({ navigation }) {
               onPress={() => navigation.navigate('NetWorth')}
               activeOpacity={0.7}
             >
-              {/* 装饰元素 */}
-              <DecoStar style={styles.starNetWorth1} size={14} color={tc.starColorLight} />
-              <DecoStar style={styles.starNetWorth2} size={10} color={tc.starColor} />
-
               <Text style={[styles.netWorthLabel, { color: tc.primary }]}>
                 <Ionicons name="layers-outline" size={13} color={tc.primary} /> 净资产
               </Text>
@@ -260,15 +256,6 @@ export default function HomeScreen({ navigation }) {
                 <View style={[styles.netWorthArrow, { backgroundColor: tc.iconBg }]}>
                   <Ionicons name="chevron-forward" size={16} color={tc.primary} />
                 </View>
-              </View>
-
-              {/* 右侧装饰图标 */}
-              <View style={styles.netWorthDecoWrap}>
-                <View style={[styles.netWorthDecoCircle, { backgroundColor: tc.iconBg }]}>
-                  <Ionicons name="wallet" size={28} color={tc.starColorLight} />
-                </View>
-                <Ionicons name="cash-outline" size={20} color={tc.starColor} style={{ position: 'absolute', top: 8, right: 12 }} />
-                <Ionicons name="card-outline" size={16} color={tc.starColorLight} style={{ position: 'absolute', bottom: 12, right: 20 }} />
               </View>
             </TouchableOpacity>
           )}
@@ -501,16 +488,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.md,
   },
-  starNetWorth1: {
-    position: 'absolute',
-    top: 16,
-    right: 80,
-  },
-  starNetWorth2: {
-    position: 'absolute',
-    top: 50,
-    right: 40,
-  },
   netWorthLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
@@ -538,23 +515,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F5F3FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  netWorthDecoWrap: {
-    position: 'absolute',
-    right: 20,
-    top: 20,
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  netWorthDecoCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
     backgroundColor: '#F5F3FF',
     alignItems: 'center',
     justifyContent: 'center',
