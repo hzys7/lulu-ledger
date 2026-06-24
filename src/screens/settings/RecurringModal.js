@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,27 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+
+  const handleOpenDatePicker = () => {
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      setRecurringForm({ ...recurringForm, startDate: `${year}-${month}-${day}` });
+    }
+  };
+
+  const handleClearDate = (e) => {
+    e.stopPropagation();
+    setRecurringForm({ ...recurringForm, startDate: '' });
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -133,20 +155,20 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: tc.textMuted }]}>生效日期 (选填，默认下个月1号)</Text>
+            <Text style={[styles.inputLabel, { color: tc.textMuted }]}>生效日期 (选填)</Text>
             <TouchableOpacity
               style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
-              onPress={() => {
-                // 打开日期选择器
-                const input = document.createElement('input');
-                input.type = 'date';
-                input.value = recurringForm.startDate || '';
-                input.onchange = (e) => setRecurringForm({ ...recurringForm, startDate: e.target.value });
-                input.click();
-              }}
+              onPress={handleOpenDatePicker}
             >
               <Text style={[styles.textInput, { color: recurringForm.startDate ? tc.text : tc.textSubtle, textAlign: 'left' }]}>{recurringForm.startDate || '选择日期'}</Text>
-              <Ionicons name="calendar-outline" size={18} color={tc.textSubtle} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                {recurringForm.startDate && (
+                  <TouchableOpacity onPress={handleClearDate} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+                    <Ionicons name="close-circle" size={16} color={tc.textSubtle} />
+                  </TouchableOpacity>
+                )}
+                <Ionicons name="calendar-outline" size={18} color={tc.textSubtle} />
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -159,6 +181,18 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* 日期选择器放在 overlay 层，避免被 modal content 截断 */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={recurringForm.startDate ? new Date(recurringForm.startDate) : new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          textColor={tc.text}
+          style={{ backgroundColor: tc.surface, borderRadius: 8, overflow: 'hidden' }}
+        />
+      )}
     </Modal>
   );
 }
