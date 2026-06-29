@@ -58,6 +58,7 @@ export function DataProvider({ children }) {
 
     if (Array.isArray(dueItems) && dueItems.length > 0) {
       for (const item of dueItems) {
+        const targetAccountId = accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id || null;
         const tx = {
           id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           type: item.type,
@@ -68,12 +69,20 @@ export function DataProvider({ children }) {
           currency: item.currency || settings.currency,
           bookId: currentBookId,
           bookName: books.find(b => b.id === currentBookId)?.name || '',
+          accountId: targetAccountId,
           createdAt: new Date().toISOString(),
         };
         await storage.addTransaction(tx);
+        // 同步调整默认账户余额
+        if (targetAccountId) {
+          const delta = tx.type === 'income' ? toNumber(tx.amount) : -toNumber(tx.amount);
+          await storage.adjustAccountBalance(targetAccountId, delta);
+        }
       }
       const refreshed = await storage.getTransactions(currentBookId);
+      const refreshedAccounts = await storage.getAccounts(currentBookId);
       setTransactions(sanitizeTransactions(refreshed));
+      setAccounts(sanitizeAccounts(refreshedAccounts.filter(a => a.bookId === currentBookId)));
     }
     setLoaded(true);
   }, [currentBookId, books, settings.currency]);
