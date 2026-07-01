@@ -83,6 +83,8 @@ export function DataProvider({ children }) {
       const refreshedAccounts = await storage.getAccounts(currentBookId);
       setTransactions(sanitizeTransactions(refreshed));
       setAccounts(sanitizeAccounts(refreshedAccounts.filter(a => a.bookId === currentBookId)));
+      // 所有交易创建成功后才更新 lastProcessedDate，防止崩溃导致交易丢失
+      await storage.markRecurringProcessed(dueItems);
     }
     setLoaded(true);
   }, [currentBookId, books, settings.currency]);
@@ -170,7 +172,7 @@ export function DataProvider({ children }) {
     // Show undo toast for 5 seconds
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
     undoDataRef.current = old ? { deletedTx: old, accId, accDelta } : null;
-    setUndoInfo(old ? { deletedTx: old, accId, accDelta } : { deletedTx: null });
+    setUndoInfo(old ? { deletedTx: old, accId, accDelta } : null);
     undoTimeoutRef.current = setTimeout(() => {
       undoDataRef.current = null;
       setUndoInfo(null);

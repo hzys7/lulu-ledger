@@ -43,6 +43,7 @@ export default function SettingsScreen({ navigation }) {
     transactions,
     settings,
     recurring,
+    accounts,
     addRecurringItem,
     removeRecurringItem,
     updateAppSettings,

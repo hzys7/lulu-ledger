@@ -746,7 +746,7 @@ export async function processRecurring(currentBookId) {
 
     if (shouldProcess) {
       toProcess.push({ ...item, lastProcessedDate: now.toISOString() });
-      remaining.push({ ...item, lastProcessedDate: now.toISOString() });
+      remaining.push(item);  // 保留原始状态，等交易创建成功后统一更新
     } else {
       remaining.push(item);
     }
@@ -754,8 +754,23 @@ export async function processRecurring(currentBookId) {
 
   if (toProcess.length > 0) {
     env.data.recurring = remaining;
-    await persist();
+    // 不在 processRecurring 中 persist，交给 initFromStorage 在交易创建成功后统一更新
   }
 
   return toProcess;
+}
+
+// 在成功创建周期性交易后更新 lastProcessedDate，防止崩溃导致重复处理
+export async function markRecurringProcessed(items) {
+  if (!items || items.length === 0) return;
+  const env = await ensureLoaded();
+  const all = env.data.recurring || [];
+  const processedIds = new Set(items.map(i => i.id));
+  env.data.recurring = all.map(item => {
+    if (item && processedIds.has(item.id)) {
+      return items.find(i => i.id === item.id);
+    }
+    return item;
+  });
+  await persist();
 }
