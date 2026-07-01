@@ -9,19 +9,22 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getThemeColors, fontSize, spacing } from '../../theme';
+import { getThemeColors, fontSize, spacing, borderRadius } from '../../theme';
+import { formatMoney } from '../../utils/currency';
 import { styles } from './styles';
 
-function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onSave }) {
+function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onSave, accounts = [] }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
   const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const [showAccountPicker, setShowAccountPicker] = React.useState(false);
 
   const handleOpenDatePicker = () => {
     setShowDatePicker(true);
@@ -41,6 +44,9 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
     e.stopPropagation();
     setRecurringForm({ ...recurringForm, startDate: '' });
   };
+
+  const selectedAccount = accounts.find(a => a.id === recurringForm.accountId);
+  const clearAccount = () => setRecurringForm({ ...recurringForm, accountId: '' });
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -170,6 +176,50 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
                 <Ionicons name="calendar-outline" size={18} color={tc.textSubtle} />
               </View>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: tc.textMuted }]}>扣款账户 (选填)</Text>
+            <TouchableOpacity
+              style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+              onPress={() => setShowAccountPicker(!showAccountPicker)}
+            >
+              <Text style={[styles.textInput, { color: selectedAccount ? tc.text : tc.textSubtle, textAlign: 'left' }]}>
+                {selectedAccount ? selectedAccount.name : '选择账户'}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                {recurringForm.accountId && (
+                  <TouchableOpacity onPress={clearAccount} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+                    <Ionicons name="close-circle" size={16} color={tc.textSubtle} />
+                  </TouchableOpacity>
+                )}
+                <Ionicons name="wallet-outline" size={18} color={tc.textSubtle} />
+              </View>
+            </TouchableOpacity>
+            {showAccountPicker && accounts.length > 0 && (
+              <View style={{ marginTop: spacing.xs, borderRadius: borderRadius.md, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: tc.border }}>
+                {accounts.map(a => (
+                  <TouchableOpacity
+                    key={a.id}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                      padding: spacing.md, backgroundColor: tc.surface,
+                      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tc.border,
+                    }}
+                    onPress={() => { setRecurringForm({ ...recurringForm, accountId: a.id }); setShowAccountPicker(false); }}
+                  >
+                    <Ionicons name={a.type === 'wechat' ? 'logo-wechat' : a.type === 'alipay' ? 'logo-alipay' : 'wallet'} size={16} color={tc.text} />
+                    <Text style={{ flex: 1, fontSize: fontSize.md, color: tc.text }}>{a.name}</Text>
+                    <Text style={{ fontSize: fontSize.sm, color: tc.textMuted }}>
+                      {formatMoney(a.balance, settings.currency)}
+                    </Text>
+                    {recurringForm.accountId === a.id && (
+                      <Ionicons name="checkmark" size={16} color={tc.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           <TouchableOpacity

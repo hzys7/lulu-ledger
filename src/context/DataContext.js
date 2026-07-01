@@ -58,7 +58,9 @@ export function DataProvider({ children }) {
 
     if (Array.isArray(dueItems) && dueItems.length > 0) {
       for (const item of dueItems) {
-        const targetAccountId = accountsData.find(a => a.isDefault && a.bookId === currentBookId)?.id || null;
+        const targetAccountId = item.accountId
+  || (accountsData.find(a => a.isDefault && a.bookId === currentBookId)?.id)
+  || null;
         const tx = {
           id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           type: item.type,
