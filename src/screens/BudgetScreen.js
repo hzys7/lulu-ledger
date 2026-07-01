@@ -1,4 +1,5 @@
 // 小璐记账 · 预算
+// v1.6.12 紫色风格美化
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
@@ -32,11 +33,16 @@ function hexAlpha(hex, a) {
   return hex + Math.round(a * 255).toString(16).padStart(2, '0');
 }
 
+function DecoStar({ style, size = 12, color = '#C4B5FD' }) {
+  return (
+    <Ionicons name="star" size={size} color={color} style={style} />
+  );
+}
+
 export default function BudgetScreen({ route }) {
   const { budgets, transactions, settings, updateBudget, removeBudget, checkBudgetAlerts } = useFinance();
 
   // 路由参数：可选 month（格式 'YYYY-MM'），传入时初始化当前选中月
-  // RecordsScreen 的预算模块会传对应筛选月份过来
   const initialMonth = (() => {
     const m = route?.params?.month;
     if (typeof m !== 'string') return null;
@@ -127,7 +133,6 @@ export default function BudgetScreen({ route }) {
 
     // 如果设置了总预算，校验分类预算总和不超过总预算
     if (editingCategory !== '__total__' && totalBudgetItem) {
-      // 计算当前所有分类预算之和（排除正在编辑的分类的旧值）
       const otherSum = budgetItems
         .filter(b => b.category !== editingCategory)
         .reduce((sum, b) => sum + b.amount, 0);
@@ -164,19 +169,25 @@ export default function BudgetScreen({ route }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: tc.background }]}>
+    <View style={[styles.container, { backgroundColor: tc.pageBg }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xxl },
+          { paddingTop: insets.top + spacing.base, paddingBottom: insets.bottom + 100 },
         ]}
       >
-        <View style={[styles.headerRow, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }]}>
-          <Text style={[styles.title, { color: tc.text }]}>预算</Text>
+        {/* ─── 头部 ──────────────────────────────── */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={[styles.title, { color: tc.text }]}>预算</Text>
+            <Text style={[styles.subtitle, { color: tc.textMuted }]}>管理每月开支计划</Text>
+          </View>
+          <DecoStar style={styles.starTopRight} size={12} color={tc.starColor} />
         </View>
 
-        <View style={styles.monthBar}>
+        {/* ─── 月份导航 ──────────────────────────── */}
+        <View style={[styles.monthBar, { backgroundColor: tc.card, borderColor: tc.border }]}>
           <TouchableOpacity
             onPress={() => {
               if (selectedMonth === 0) {
@@ -186,9 +197,10 @@ export default function BudgetScreen({ route }) {
                 setSelectedMonth(selectedMonth - 1);
               }
             }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={[styles.monthArrow, { backgroundColor: tc.surfaceMuted }]}
           >
-            <Ionicons name="chevron-back" size={20} color={tc.text} />
+            <Ionicons name="chevron-back" size={18} color={tc.text} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -199,13 +211,12 @@ export default function BudgetScreen({ route }) {
                 setSelectedMonth(selectedMonth - 1);
               }
             }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={styles.yearNav}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.monthLabel}
           >
             <Text style={[styles.monthText, { color: tc.text }]}>
               {selectedYear} 年 {selectedMonth + 1} 月
             </Text>
-            <Ionicons name="chevron-down" size={14} color={tc.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -216,17 +227,23 @@ export default function BudgetScreen({ route }) {
                 setSelectedMonth(selectedMonth + 1);
               }
             }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={[styles.monthArrow, { backgroundColor: tc.surfaceMuted }]}
           >
-            <Ionicons name="chevron-forward" size={20} color={tc.text} />
+            <Ionicons name="chevron-forward" size={18} color={tc.text} />
           </TouchableOpacity>
         </View>
 
+        {/* ─── 总预算卡片 ────────────────────────── */}
         <View style={styles.totalWrap}>
-          <View style={[styles.totalCard, { backgroundColor: tc.surface, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth, ...shadows.sm }]}>
+          <View style={[styles.totalCard, { backgroundColor: tc.card, borderColor: tc.border, ...shadows.md }]}>
+            <DecoStar style={styles.starTotal1} size={10} color={tc.starColorLight} />
+            <DecoStar style={styles.starTotal2} size={8} color={tc.starColor} />
             <View style={styles.totalTopRow}>
               <View>
-                <Text style={[styles.totalLabel, { color: tc.textMuted }]}>本月总预算</Text>
+                <Text style={[styles.totalLabel, { color: tc.primary }]}>
+                  <Ionicons name="wallet-outline" size={13} color={tc.primary} /> 本月总预算
+                </Text>
                 <Text style={[styles.totalAmount, { color: tc.text }]}>
                   {formatMoney(totalBudgetAmount, settings.currency)}
                 </Text>
@@ -254,30 +271,36 @@ export default function BudgetScreen({ route }) {
               <View style={{ flexDirection: 'row', height: '100%' }}>
                 <View style={{
                   width: `${Math.min(totalPercent, 100)}%`,
-                  backgroundColor: totalIsOver ? tc.danger : tc.text,
+                  backgroundColor: totalIsOver ? tc.danger : tc.primary,
                   height: '100%',
-                  borderTopLeftRadius: 3,
-                  borderBottomLeftRadius: 3,
-                  borderTopRightRadius: totalIsOver ? 0 : 3,
-                  borderBottomRightRadius: totalIsOver ? 0 : 3,
+                  borderTopLeftRadius: 4,
+                  borderBottomLeftRadius: 4,
+                  borderTopRightRadius: totalIsOver ? 0 : 4,
+                  borderBottomRightRadius: totalIsOver ? 0 : 4,
                 }} />
                 {totalIsOver && (
                   <View style={{
                     width: `${Math.min(totalPercent - 100, 100)}%`,
                     backgroundColor: tc.danger,
                     height: '100%',
-                    borderTopRightRadius: 3,
-                    borderBottomRightRadius: 3,
+                    borderTopRightRadius: 4,
+                    borderBottomRightRadius: 4,
                   }} />
                 )}
               </View>
             </View>
-            <Text style={[styles.percentText, { color: tc.textSecondary }]}>
-              {totalPercent.toFixed(0)}%
-            </Text>
+            <View style={styles.totalPercentRow}>
+              <Text style={[styles.percentText, { color: totalIsOver ? tc.danger : tc.textSecondary }]}>
+                {totalPercent.toFixed(0)}%
+              </Text>
+              <Text style={[styles.percentLabel, { color: tc.textSubtle }]}>
+                {totalIsOver ? '已超支' : '已使用'}
+              </Text>
+            </View>
           </View>
         </View>
 
+        {/* ─── 超支提醒 ──────────────────────────── */}
         {budgetAlerts.length > 0 ? (
           <View style={styles.alertsWrap}>
             {budgetAlerts.map((alert, index) => (
@@ -291,17 +314,22 @@ export default function BudgetScreen({ route }) {
           </View>
         ) : null}
 
+        {/* ─── 添加分类预算按钮 ──────────────────── */}
         <TouchableOpacity
-          style={[styles.addBtn, { borderColor: tc.border, backgroundColor: tc.surface }]}
+          style={[styles.addBtn, { borderColor: tc.border, backgroundColor: tc.card }]}
           onPress={() => openAddModal()}
           activeOpacity={0.7}
         >
-          <Ionicons name="add" size={18} color={tc.text} />
+          <View style={[styles.addBtnIcon, { backgroundColor: tc.primary + '18' }]}>
+            <Ionicons name="add" size={18} color={tc.primary} />
+          </View>
           <Text style={[styles.addBtnText, { color: tc.text }]}>添加分类预算</Text>
         </TouchableOpacity>
 
+        {/* ─── 分类预算列表 ──────────────────────── */}
         {budgetItems.length > 0 ? (
           <View style={styles.listWrap}>
+            <Text style={[styles.sectionTitle, { color: tc.text }]}>分类预算</Text>
             {budgetItems.map((item) => {
               const tint = statusColor(item);
               const cat = categoryConfig.expense.find((c) => c.name === item.category);
@@ -309,7 +337,7 @@ export default function BudgetScreen({ route }) {
               return (
                 <TouchableOpacity
                   key={item.category}
-                  style={[styles.budgetCard, { backgroundColor: tc.surface, borderColor: tc.border }]}
+                  style={[styles.budgetCard, { backgroundColor: tc.card, borderColor: tc.border, ...shadows.sm }]}
                   onPress={() => openAddModal(item.category)}
                   onLongPress={() => handleDeleteBudget(item.category)}
                   activeOpacity={0.7}
@@ -341,27 +369,35 @@ export default function BudgetScreen({ route }) {
                         width: `${Math.min(item.percent, 100)}%`,
                         backgroundColor: tint,
                         height: '100%',
-                        borderTopLeftRadius: 3,
-                        borderBottomLeftRadius: 3,
-                        borderTopRightRadius: item.isOver ? 0 : 3,
-                        borderBottomRightRadius: item.isOver ? 0 : 3,
+                        borderTopLeftRadius: 4,
+                        borderBottomLeftRadius: 4,
+                        borderTopRightRadius: item.isOver ? 0 : 4,
+                        borderBottomRightRadius: item.isOver ? 0 : 4,
                       }} />
                       {item.isOver && (
                         <View style={{
                           width: `${Math.min(item.percent - 100, 100)}%`,
                           backgroundColor: tc.danger,
                           height: '100%',
-                          borderTopRightRadius: 3,
-                          borderBottomRightRadius: 3,
+                          borderTopRightRadius: 4,
+                          borderBottomRightRadius: 4,
                         }} />
                       )}
                     </View>
                   </View>
                   {item.remaining < 0 ? (
                     <Text style={[styles.overText, { color: tc.danger }]}>
-                      已超支 {formatMoney(Math.abs(item.remaining), settings.currency)}
+                      <Ionicons name="alert-circle" size={12} color={tc.danger} /> 已超支 {formatMoney(Math.abs(item.remaining), settings.currency)}
                     </Text>
-                  ) : null}
+                  ) : item.isWarning ? (
+                    <Text style={[styles.warningText, { color: tc.warning }]}>
+                      <Ionicons name="alert-circle-outline" size={12} color={tc.warning} /> 即将超支，剩余 {formatMoney(item.remaining, settings.currency)}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.remainText, { color: tc.textSubtle }]}>
+                      剩余 {formatMoney(item.remaining, settings.currency)}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -377,6 +413,7 @@ export default function BudgetScreen({ route }) {
         )}
       </ScrollView>
 
+      {/* ─── 弹窗 ──────────────────────────────── */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
         <KeyboardAvoidingView
           style={styles.modalOverlay}
@@ -384,7 +421,7 @@ export default function BudgetScreen({ route }) {
         >
           <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowModal(false)} />
           <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
-            <View style={[styles.handle, { backgroundColor: tc.divider }]} />
+            <View style={[styles.modalHandle, { backgroundColor: tc.divider }]} />
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: tc.text }]}>
                 {editingCategory === '__total__'
@@ -470,29 +507,96 @@ export default function BudgetScreen({ route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
   scrollContent: { paddingBottom: spacing.xxxl },
 
-  headerRow: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, letterSpacing: -0.6, marginTop: 2 },
+  // ── 头部 ──
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  title: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    letterSpacing: -0.6,
+    marginTop: 2,
+  },
+  subtitle: {
+    fontSize: fontSize.sm,
+    marginTop: spacing.xxs,
+    letterSpacing: -0.1,
+  },
+  starTopRight: {
+    position: 'absolute',
+    top: 4,
+    right: spacing.base,
+  },
 
+  // ── 月份导航 ──
   monthBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    gap: spacing.xl,
-  },
-  monthText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, textAlign: 'center', letterSpacing: -0.2 },
-  yearNav: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 110, justifyContent: 'center' },
-
-  totalWrap: { paddingHorizontal: spacing.base, marginBottom: spacing.base },
-  totalCard: {
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.base,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.sm,
   },
-  totalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  totalLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
+  monthArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthLabel: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  monthText: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.3,
+  },
+
+  // ── 总预算卡片 ──
+  totalWrap: {
+    paddingHorizontal: spacing.base,
+    marginBottom: spacing.base,
+  },
+  totalCard: {
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  starTotal1: {
+    position: 'absolute',
+    top: 16,
+    right: 80,
+  },
+  starTotal2: {
+    position: 'absolute',
+    top: 50,
+    right: 40,
+  },
+  totalTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  totalLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    letterSpacing: -0.1,
+  },
   totalAmount: {
     fontSize: 36,
     fontWeight: fontWeight.bold,
@@ -508,20 +612,51 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     gap: spacing.xs,
   },
-  iconBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, letterSpacing: -0.1 },
-  totalMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
-  totalMeta: { fontSize: fontSize.sm, fontVariant: ['tabular-nums'], letterSpacing: -0.1 },
+  iconBtnText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    letterSpacing: -0.1,
+  },
+  totalMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+  },
+  totalMeta: {
+    fontSize: fontSize.sm,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.1,
+  },
+  totalPercentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: spacing.xs,
+    gap: spacing.xs,
+  },
   percentText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
-    textAlign: 'right',
-    marginTop: spacing.xs,
+    letterSpacing: -0.1,
+  },
+  percentLabel: {
+    fontSize: fontSize.xs,
     letterSpacing: -0.1,
   },
 
-  progress: { height: 6, borderRadius: 3, marginTop: spacing.sm },
+  // ── 进度条 ──
+  progress: {
+    height: 8,
+    borderRadius: 4,
+    marginTop: spacing.sm,
+    overflow: 'hidden',
+  },
 
-  alertsWrap: { paddingHorizontal: spacing.base, marginBottom: spacing.base },
+  // ── 超支提醒 ──
+  alertsWrap: {
+    paddingHorizontal: spacing.base,
+    marginBottom: spacing.base,
+  },
   alertItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -530,8 +665,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     gap: spacing.sm,
   },
-  alertText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, flex: 1, letterSpacing: -0.2 },
+  alertText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    flex: 1,
+    letterSpacing: -0.2,
+  },
 
+  // ── 添加按钮 ──
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -539,34 +680,111 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     marginHorizontal: spacing.base,
     marginBottom: spacing.base,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.xl,
     borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.sm,
   },
-  addBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, letterSpacing: -0.2 },
+  addBtnIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addBtnText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    letterSpacing: -0.2,
+  },
 
-  listWrap: { paddingHorizontal: spacing.base },
+  // ── 分类预算列表 ──
+  listWrap: {
+    paddingHorizontal: spacing.base,
+  },
+  sectionTitle: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.2,
+    marginBottom: spacing.md,
+  },
   budgetCard: {
     padding: spacing.base,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
-    ...shadows.md,
   },
-  budgetTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  budgetLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
-  budgetIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  budgetName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
-  budgetDetail: { fontSize: fontSize.sm, marginTop: 2, fontVariant: ['tabular-nums'], letterSpacing: -0.1 },
-  budgetRight: { alignItems: 'flex-end', gap: 2 },
-  budgetPercent: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'], letterSpacing: -0.1 },
-  overText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginTop: spacing.sm, letterSpacing: -0.1 },
+  budgetTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  budgetLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  budgetIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  budgetName: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.2,
+  },
+  budgetDetail: {
+    fontSize: fontSize.sm,
+    marginTop: 2,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.1,
+  },
+  budgetRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  budgetPercent: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.1,
+  },
+  overText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.sm,
+    letterSpacing: -0.1,
+  },
+  warningText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.sm,
+    letterSpacing: -0.1,
+  },
+  remainText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.sm,
+    letterSpacing: -0.1,
+  },
 
-  emptyWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.xl },
+  emptyWrap: {
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.xl,
+  },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' },
+  // ── 弹窗 ──
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.45)',
+    justifyContent: 'flex-end',
+  },
   modalBackdrop: { ...StyleSheet.absoluteFillObject },
-  handle: {
+  modalHandle: {
     width: 36,
     height: 4,
     borderRadius: 2,
@@ -579,11 +797,30 @@ const styles = StyleSheet.create({
     borderTopRightRadius: borderRadius.xxl,
     padding: spacing.lg,
   },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, letterSpacing: -0.3 },
-  modalLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, marginBottom: spacing.sm, letterSpacing: -0.1 },
-  categorySelect: { marginBottom: spacing.base },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.3,
+  },
+  modalLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    marginBottom: spacing.sm,
+    letterSpacing: -0.1,
+  },
+  categorySelect: {
+    marginBottom: spacing.base,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   gridItem: {
     width: '25%',
     alignItems: 'center',
@@ -604,7 +841,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     textAlign: 'center',
   },
-  amountSection: { marginBottom: spacing.base },
+  amountSection: {
+    marginBottom: spacing.base,
+  },
   amountRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -612,7 +851,12 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.md,
   },
-  currency: { fontSize: fontSize.xl, fontWeight: fontWeight.semibold, marginRight: spacing.sm, letterSpacing: -0.3 },
+  currency: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    marginRight: spacing.sm,
+    letterSpacing: -0.3,
+  },
   amountInput: {
     flex: 1,
     fontSize: fontSize.xl,
