@@ -124,6 +124,22 @@ export default function BudgetScreen({ route }) {
       Alert.alert('提示', '请选择分类');
       return;
     }
+
+    // 如果设置了总预算，校验分类预算总和不超过总预算
+    if (editingCategory !== '__total__' && totalBudgetItem) {
+      // 计算当前所有分类预算之和（排除正在编辑的分类的旧值）
+      const otherSum = budgetItems
+        .filter(b => b.category !== editingCategory)
+        .reduce((sum, b) => sum + b.amount, 0);
+      if (otherSum + amount > totalBudgetAmount) {
+        Alert.alert(
+          '超出总预算',
+          `分类预算总和 (${formatMoney(otherSum + amount, settings.currency)}) 超过了总预算 (${formatMoney(totalBudgetAmount, settings.currency)})，请调整金额`
+        );
+        return;
+      }
+    }
+
     await updateBudget({ category: editingCategory, amount, month: currentMonth });
     setShowModal(false);
   };
@@ -175,7 +191,14 @@ export default function BudgetScreen({ route }) {
             <Ionicons name="chevron-back" size={20} color={tc.text} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setSelectedYear(selectedYear - 1)}
+            onPress={() => {
+              if (selectedMonth === 0) {
+                setSelectedYear(selectedYear - 1);
+                setSelectedMonth(11);
+              } else {
+                setSelectedMonth(selectedMonth - 1);
+              }
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.yearNav}
           >
@@ -287,6 +310,7 @@ export default function BudgetScreen({ route }) {
                 <TouchableOpacity
                   key={item.category}
                   style={[styles.budgetCard, { backgroundColor: tc.surface, borderColor: tc.border }]}
+                  onPress={() => openAddModal(item.category)}
                   onLongPress={() => handleDeleteBudget(item.category)}
                   activeOpacity={0.7}
                 >
