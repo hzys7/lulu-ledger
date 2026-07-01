@@ -198,26 +198,37 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
             </TouchableOpacity>
             {showAccountPicker && accounts.length > 0 && (
               <View style={{ marginTop: spacing.xs, borderRadius: borderRadius.md, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: tc.border }}>
-                {accounts.map(a => (
-                  <TouchableOpacity
-                    key={a.id}
-                    style={{
-                      flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-                      padding: spacing.md, backgroundColor: tc.surface,
-                      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tc.border,
-                    }}
-                    onPress={() => { setRecurringForm({ ...recurringForm, accountId: a.id }); setShowAccountPicker(false); }}
-                  >
-                    <Ionicons name={a.type === 'wechat' ? 'logo-wechat' : a.type === 'alipay' ? 'logo-alipay' : 'wallet'} size={16} color={tc.text} />
-                    <Text style={{ flex: 1, fontSize: fontSize.md, color: tc.text }}>{a.name}</Text>
-                    <Text style={{ fontSize: fontSize.sm, color: tc.textMuted }}>
-                      {formatMoney(a.balance, settings.currency)}
-                    </Text>
-                    {recurringForm.accountId === a.id && (
-                      <Ionicons name="checkmark" size={16} color={tc.primary} />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                {accounts.map(a => {
+                  const amount = parseFloat(recurringForm.amount) || 0;
+                  const isExpense = recurringForm.type === 'expense';
+                  const insufficient = isExpense && amount > 0 && a.balance < amount;
+                  return (
+                    <TouchableOpacity
+                      key={a.id}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                        padding: spacing.md, backgroundColor: tc.surface,
+                        borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tc.border,
+                        opacity: insufficient ? 0.4 : 1,
+                      }}
+                      onPress={() => {
+                        if (insufficient) return;
+                        setRecurringForm({ ...recurringForm, accountId: a.id });
+                        setShowAccountPicker(false);
+                      }}
+                      disabled={insufficient}
+                    >
+                      <Ionicons name={a.type === 'wechat' ? 'logo-wechat' : a.type === 'alipay' ? 'logo-alipay' : 'wallet'} size={16} color={tc.text} />
+                      <Text style={{ flex: 1, fontSize: fontSize.md, color: tc.text }}>{a.name}</Text>
+                      <Text style={{ fontSize: fontSize.sm, color: insufficient ? tc.danger : tc.textMuted }}>
+                        {insufficient ? '余额不足' : formatMoney(a.balance, settings.currency)}
+                      </Text>
+                      {recurringForm.accountId === a.id && (
+                        <Ionicons name="checkmark" size={16} color={tc.primary} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
           </View>

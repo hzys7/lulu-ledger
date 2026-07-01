@@ -11,6 +11,7 @@ import { triggerUpdateCheck, getLastUpdateCheck } from '../components/UpdateProm
 import AiSettingsScreen from './AiSettingsScreen';
 import { exportTransactionsToCSV, exportToJSON, parseImportText, pickImportFile } from '../utils/export';
 import { exportAllData, importData } from '../utils/storage';
+import { formatMoney } from '../utils/currency';
 import ImportModal from "./settings/ImportModal";
 import RecurringModal from "./settings/RecurringModal";
 import { styles } from "./settings/styles";
@@ -126,6 +127,15 @@ export default function SettingsScreen({ navigation }) {
     if (!recurringForm.category || !recurringForm.amount) {
       Alert.alert('提示', '请填写分类和金额');
       return;
+    }
+    const amount = parseFloat(recurringForm.amount);
+    // 选择扣款账户时校验余额是否充足
+    if (recurringForm.accountId && recurringForm.type === 'expense') {
+      const acct = accounts.find(a => a.id === recurringForm.accountId);
+      if (acct && acct.balance < amount) {
+        Alert.alert('余额不足', `${acct.name} 当前余额 ${formatMoney(acct.balance, settings.currency)}，不足以支付 ${formatMoney(amount, settings.currency)}，请选择其他账户`);
+        return;
+      }
     }
     await addRecurringItem({
       category: recurringForm.category,
