@@ -48,6 +48,14 @@ export default function BudgetPieChart({
     const validBudgets = budgets.filter((b) => b.category && b.category !== '__total__' && b.amount > 0);
     const allSpent = Object.values(byCategory || {}).reduce((s, v) => s + v, 0);
 
+    // 有总预算时优先使用总预算（不论是否有分类预算）
+    if (totalBudgetItem) {
+      const totalBudget = totalBudgetItem.amount;
+      const totalSpent = allSpent;
+      const totalRemaining = totalBudget - totalSpent;
+      return { segments: [], items: [], totalBudget, totalSpent, totalRemaining, isOver: totalSpent > totalBudget, isTotalOnly: true };
+    }
+
     if (validBudgets.length > 0) {
       const items = validBudgets.map((b) => {
         const spent = byCategory[b.category] || 0;
@@ -70,13 +78,6 @@ export default function BudgetPieChart({
         return { ...item, index, proportion, arcLength, rotation, startAngle: rotation, percent: Math.round(proportion * 100) };
       });
       return { segments, items, totalBudget, totalSpent, totalRemaining, isOver: totalSpent > totalBudget };
-    }
-
-    if (totalBudgetItem) {
-      const totalBudget = totalBudgetItem.amount;
-      const totalSpent = allSpent;
-      const totalRemaining = totalBudget - totalSpent;
-      return { segments: [], items: [], totalBudget, totalSpent, totalRemaining, isOver: totalSpent > totalBudget, isTotalOnly: true };
     }
 
     return null;
