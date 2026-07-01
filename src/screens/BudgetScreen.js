@@ -103,7 +103,7 @@ export default function BudgetScreen({ route }) {
   const totalBudgetAmount = totalBudgetItem
     ? totalBudgetItem.amount
     : budgetItems.reduce((sum, b) => sum + b.amount, 0);
-  const totalSpent = budgetItems.reduce((sum, b) => sum + b.spent, 0);
+  const totalSpent = Object.values(monthExpenseByCategory).reduce((sum, v) => sum + v, 0);
   const totalPercent = totalBudgetAmount > 0 ? (totalSpent / totalBudgetAmount) * 100 : 0;
   const totalIsOver = totalSpent > totalBudgetAmount;
 
