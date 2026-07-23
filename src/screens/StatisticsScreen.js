@@ -139,6 +139,30 @@ export default function StatisticsScreen({ navigation }) {
   );
   const chartPalette = tc.palette;
 
+  // ── 跳转分类明细 ──
+  const navigateToCategoryDetail = (item) => {
+    let periodParams;
+    let total;
+    if (period === 'week') {
+      periodParams = { weekStart: weekStart.toISOString(), weekEnd: weekEnd.toISOString() };
+      total = weekSummaryTotal;
+    } else if (period === 'month') {
+      periodParams = { year: selectedYear, month: selectedMonth };
+      total = monthTotalAmount;
+    } else {
+      periodParams = { year: reportYear };
+      total = yearSummaryTotal;
+    }
+    navigation.navigate('CategoryDetail', {
+      categoryName: item.name,
+      color: item.color,
+      period,
+      dataType,
+      periodParams,
+      totalAmount: total,
+    });
+  };
+
   const lastMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
   const lastMonthYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
   const lastMonthSummary = useMemo(
@@ -862,8 +886,13 @@ export default function StatisticsScreen({ navigation }) {
                 />
               </View>
               <View style={styles.rankList}>
-                {(period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).slice(0, 3).map((item, idx) => (
-                  <View key={item.name} style={[styles.rankRow, { backgroundColor: tc.surfaceMuted }]}>
+                {(period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).map((item, idx) => (
+                  <TouchableOpacity
+                    key={item.name}
+                    style={[styles.rankRow, { backgroundColor: tc.surfaceMuted }]}
+                    onPress={() => navigateToCategoryDetail(item)}
+                    activeOpacity={0.6}
+                  >
                     <View style={[styles.rankIndex, { backgroundColor: idx === 0 ? item.color : tc.surfaceSubtle }]}>
                       <Text style={{ color: idx === 0 ? '#fff' : tc.textMuted, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
                         {idx + 1}
@@ -875,7 +904,8 @@ export default function StatisticsScreen({ navigation }) {
                     <Text style={[styles.rankAmount, { color: tc.text }]} numberOfLines={1}>
                       -{formatMoney(item.amount, settings.currency).replace('¥', '')}
                     </Text>
-                  </View>
+                    <Ionicons name="chevron-forward" size={16} color={tc.textSubtle} style={{ marginLeft: spacing.xs }} />
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
