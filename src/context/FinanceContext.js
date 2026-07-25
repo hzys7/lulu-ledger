@@ -88,6 +88,7 @@ export function useFinance() {
     editAccount: data.editAccount,
     removeAccount: data.removeAccount,
     adjustAccount: data.adjustAccount,
+    transfer: data.transfer,
     setDefaultAccount: data.setDefaultAccount,
     getNetWorth: data.getNetWorth,
     // budget ops
@@ -105,7 +106,7 @@ export function useFinance() {
     books.switchBook, books.createBook, books.editBook, books.removeBook,
     data.transactions, data.budgets, data.accounts, data.recurring, data.loaded,
     data.addTx, data.editTx, data.removeTx, data.getMonthTransactions, data.getMonthSummary,
-    data.addAccount, data.editAccount, data.removeAccount, data.adjustAccount,
+    data.addAccount, data.editAccount, data.removeAccount, data.adjustAccount, data.transfer,
     data.setDefaultAccount, data.getNetWorth,
     data.updateBudget, data.removeBudget, data.checkBudgetAlerts,
     data.addRecurringItem, data.removeRecurringItem,

@@ -240,6 +240,63 @@ export function DataProvider({ children }) {
     setAccounts(sanitizeAccounts(updated.filter(a => a.bookId === currentBookId)));
   }, [currentBookId]);
 
+  // 转账：在两个账户之间转移资金
+  // 创建一对配对交易（源账户支出 + 目标账户收入），原子调整余额
+  const transfer = useCallback(async ({ fromAccountId, toAccountId, amount, note }) => {
+    const amt = toNumber(amount);
+    if (amt <= 0 || fromAccountId === toAccountId) return;
+
+    const transferId = `tf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date().toISOString();
+    const bookName = books.find(b => b.id === currentBookId)?.name || '';
+
+    // 源账户：支出
+    const txOut = {
+      id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'expense',
+      amount: amt,
+      category: '转账',
+      note: note || '',
+      date: now,
+      currency: settings.currency,
+      bookId: currentBookId,
+      bookName,
+      accountId: fromAccountId,
+      transferId,
+      createdAt: now,
+    };
+
+    // 目标账户：收入
+    const txIn = {
+      id: `tx_${Date.now() + 1}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'income',
+      amount: amt,
+      category: '转账',
+      note: note || '',
+      date: now,
+      currency: settings.currency,
+      bookId: currentBookId,
+      bookName,
+      accountId: toAccountId,
+      transferId,
+      createdAt: now,
+    };
+
+    // 原子调整两个账户余额
+    const updatedAccounts = await storage.batchAdjustAccountBalances([
+      { id: fromAccountId, delta: -amt },
+      { id: toAccountId, delta: amt },
+    ]);
+    setAccounts(sanitizeAccounts(updatedAccounts.filter(a => a.bookId === currentBookId)));
+
+    // 写入两笔交易
+    const afterFirst = await storage.addTransaction(txOut);
+    const afterSecond = await storage.addTransaction(txIn);
+    setTransactions(sanitizeTransactions(afterSecond.filter(t => t.bookId === currentBookId)));
+
+    return { txOut, txIn, transferId };
+  }, [currentBookId, books, settings.currency]);
+
   const setDefaultAccount = useCallback(async (id) => {
     const updated = await storage.updateAccount(id, { isDefault: true });
     setAccounts(sanitizeAccounts(updated.filter(a => a.bookId === currentBookId)));
@@ -317,7 +374,7 @@ export function DataProvider({ children }) {
   }, [transactions]);
 
   const getMonthSummary = useCallback((year, month) => {
-    const monthTx = getMonthTransactions(year, month);
+    const monthTx = getMonthTransactions(year, month).filter(t => !t.transferId);
     let income = 0, expense = 0;
     const expenseByCategory = {};
     const incomeByCategory = {};
@@ -362,6 +419,7 @@ export function DataProvider({ children }) {
     editAccount,
     removeAccount,
     adjustAccount,
+    transfer,
     setDefaultAccount,
     getNetWorth,
     updateBudget,
@@ -375,7 +433,7 @@ export function DataProvider({ children }) {
   }), [
     transactions, budgets, accounts, recurring, loaded,
     addTx, editTx, removeTx,
-    addAccount, editAccount, removeAccount, adjustAccount, setDefaultAccount, getNetWorth,
+    addAccount, editAccount, removeAccount, adjustAccount, transfer, setDefaultAccount, getNetWorth,
     updateBudget, removeBudget, checkBudgetAlerts,
     addRecurringItem, removeRecurringItem,
     getMonthTransactions, getMonthSummary,

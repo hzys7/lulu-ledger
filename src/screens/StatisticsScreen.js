@@ -181,7 +181,7 @@ export default function StatisticsScreen({ navigation }) {
   const filteredMonthTx = useMemo(() => {
     return transactions.filter(t => {
       const d = new Date(t.date);
-      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && t.type === dataType;
+      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && t.type === dataType && !t.transferId;
     });
   }, [transactions, selectedYear, selectedMonth, dataType]);
 
@@ -231,7 +231,7 @@ export default function StatisticsScreen({ navigation }) {
   const weekAllTx = useMemo(() => {
     return transactions.filter(t => {
       const d = new Date(t.date);
-      return d >= weekStart && d <= weekEnd;
+      return d >= weekStart && d <= weekEnd && !t.transferId;
     });
   }, [transactions, weekStart, weekEnd]);
 
@@ -286,7 +286,7 @@ export default function StatisticsScreen({ navigation }) {
 
   // 缓存年内所有交易，避免多个 useMemo 重复过滤
   const yearAllTx = useMemo(() => {
-    return transactions.filter(t => new Date(t.date).getFullYear() === reportYear);
+    return transactions.filter(t => new Date(t.date).getFullYear() === reportYear && !t.transferId);
   }, [transactions, reportYear]);
 
   // =============== 心情统计 & AI 分析 ===============

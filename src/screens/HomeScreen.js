@@ -28,6 +28,7 @@ import BookModal from './settings/BookModal';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 import { AiAvatar } from '../components/AiAvatar';
 import { AccountIcon } from '../components/AccountIcon';
+import TransferModal from '../components/TransferModal';
 
 // 有效的Ionicons图标列表（用于验证）
 const VALID_ICONS = ['chatbubbles', 'wallet', 'card', 'cash', 'ellipsis-horizontal-circle', 'logo-wechat', 'logo-alipay', 'logo-paypal'];
@@ -70,7 +71,7 @@ function DecoStar({ style, size = 12, color = '#C4B5FD' }) {
 // ─── 主组件 ────────────────────────────────────────────
 
 export default function HomeScreen({ navigation }) {
-  const { settings, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook, accounts, transactions, getMonthSummary } = useFinance();
+  const { settings, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook, accounts, transactions, getMonthSummary, transfer } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -98,6 +99,7 @@ export default function HomeScreen({ navigation }) {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [showAiChat, setShowAiChat] = useState(false);
   const [showAiQA, setShowAiQA] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [anomalyAlert, setAnomalyAlert] = useState(null);
   const [anomalyDismissed, setAnomalyDismissed] = useState(false);
 
@@ -314,10 +316,18 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: tc.text }]}>资金账户</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('NetWorth')} activeOpacity={0.7} style={styles.sectionAction}>
-              <Text style={[styles.sectionActionText, { color: tc.primary }]}>管理</Text>
-              <Ionicons name="chevron-forward" size={13} color={tc.primary} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              {accounts.length >= 2 && (
+                <TouchableOpacity onPress={() => setShowTransfer(true)} activeOpacity={0.7} style={styles.sectionAction}>
+                  <Ionicons name="swap-horizontal" size={13} color={tc.primary} />
+                  <Text style={[styles.sectionActionText, { color: tc.primary, marginLeft: 3 }]}>转账</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={() => navigation.navigate('NetWorth')} activeOpacity={0.7} style={styles.sectionAction}>
+                <Text style={[styles.sectionActionText, { color: tc.primary }]}>管理</Text>
+                <Ionicons name="chevron-forward" size={13} color={tc.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {accounts.length === 0 ? (
@@ -358,6 +368,15 @@ export default function HomeScreen({ navigation }) {
 
       <AiChatScreen visible={showAiChat} onClose={() => setShowAiChat(false)} onSaved={() => { setShowAiChat(false); reload(); }} />
       <AiQAScreen visible={showAiQA} onClose={() => setShowAiQA(false)} />
+
+      <TransferModal
+        visible={showTransfer}
+        accounts={accounts}
+        tc={tc}
+        currency={settings.currency}
+        onTransfer={async (params) => { await transfer(params); reload(); }}
+        onClose={() => setShowTransfer(false)}
+      />
 
       {/* 账本选择弹窗 */}
       <Modal visible={bookPickerOpen} transparent animationType="fade" onRequestClose={() => setBookPickerOpen(false)}>

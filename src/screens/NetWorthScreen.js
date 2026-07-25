@@ -17,6 +17,7 @@ import { useFinance } from '../context/FinanceContext';
 import { EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
 import { ACCOUNT_TYPES, typeInfo } from '../utils/accountTypes';
+import TransferModal from '../components/TransferModal';
 import {
   spacing,
   borderRadius,
@@ -27,7 +28,7 @@ import {
 } from '../theme';
 
 export default function NetWorthScreen() {
-  const { accounts, addAccount, editAccount, removeAccount, adjustAccount, setDefaultAccount, settings } = useFinance();
+  const { accounts, addAccount, editAccount, removeAccount, adjustAccount, setDefaultAccount, transfer, settings } = useFinance();
   const tc = getThemeColors(settings.theme);
   const insets = useSafeAreaInsets();
 
@@ -40,6 +41,8 @@ export default function NetWorthScreen() {
   const [adjustModalOpen, setAdjustModalOpen] = useState(false);
   const [adjusting, setAdjusting] = useState(null);
   const [adjustDelta, setAdjustDelta] = useState('');
+
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const totalNetWorth = useMemo(
     () => accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0),
@@ -144,14 +147,26 @@ export default function NetWorthScreen() {
         {/* 账户列表 */}
         <View style={styles.listHeader}>
           <Text style={[styles.listTitle, { color: tc.text }]}>我的账户</Text>
-          <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: tc.surfaceMuted }]}
-            onPress={openNew}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add" size={16} color={tc.text} />
-            <Text style={[styles.addBtnText, { color: tc.text }]}>新增</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            {accounts.length >= 2 && (
+              <TouchableOpacity
+                style={[styles.addBtn, { backgroundColor: tc.primarySubtle }]}
+                onPress={() => setTransferOpen(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="swap-horizontal" size={14} color={tc.primary} />
+                <Text style={[styles.addBtnText, { color: tc.primary }]}>转账</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.addBtn, { backgroundColor: tc.surfaceMuted }]}
+              onPress={openNew}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={16} color={tc.text} />
+              <Text style={[styles.addBtnText, { color: tc.text }]}>新增</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {accounts.length === 0 ? (
@@ -363,6 +378,16 @@ export default function NetWorthScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* 转账弹窗 */}
+      <TransferModal
+        visible={transferOpen}
+        accounts={accounts}
+        tc={tc}
+        currency={settings.currency}
+        onTransfer={transfer}
+        onClose={() => setTransferOpen(false)}
+      />
     </View>
   );
 }
