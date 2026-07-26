@@ -145,10 +145,40 @@ export default function RecordsScreen({ navigation }) {
     return list;
   }, [transactions, searchQuery, monthFilter, accounts]);
 
+  // 把有 transferId 的支出/收入配对合并为一条转账记录
+  const mergedTransactions = useMemo(() => {
+    const list = displayTransactions;
+    const transferMap = new Map();
+    const result = [];
+    for (const t of list) {
+      if (t.transferId) {
+        if (!transferMap.has(t.transferId)) {
+          transferMap.set(t.transferId, { ...t });
+        } else {
+          const existing = transferMap.get(t.transferId);
+          // 合并：支出记录作主记录，补充转入账户信息
+          const outTx = t.type === 'expense' ? t : existing;
+          const inTx = t.type === 'income' ? t : existing;
+          result.push({
+            ...outTx,
+            type: 'transfer',
+            toAccountId: inTx.accountId,
+            // 备注优先取支出方，否则取收入方
+            note: outTx.note || inTx.note || '',
+          });
+          transferMap.delete(t.transferId);
+        }
+      } else {
+        result.push(t);
+      }
+    }
+    return result;
+  }, [displayTransactions]);
+
   const monthLabel = monthFilter
     ? (monthFilter.year + '年' + (monthFilter.month + 1) + '月')
     : '全部月份';
-  const flatData = useMemo(() => buildFlatData(groupByDate(displayTransactions)), [displayTransactions]);
+  const flatData = useMemo(() => buildFlatData(groupByDate(mergedTransactions)), [mergedTransactions]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const HEADER_HEIGHT = 260;
@@ -177,15 +207,48 @@ export default function RecordsScreen({ navigation }) {
       );
     }
     const isLastInList = flatData[index + 1]?.type === 'header' || index === flatData.length - 1;
+    const tx = item.data;
+    if (tx.type === 'transfer') {
+      // 转账记录特殊渲染
+      const fromAcct = accounts?.find(a => a.id === tx.accountId);
+      const toAcct = accounts?.find(a => a.id === tx.toAccountId);
+      return (
+        <TouchableOpacity
+          style={[styles.transferRow, !isLastInList && { borderBottomColor: tc.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
+          onPress={() => setDetailTx(item.data)}
+          activeOpacity={0.6}
+        >
+          <View style={[styles.transferIcon, { backgroundColor: tc.primary + '15' }]}>
+            <Ionicons name="swap-horizontal" size={18} color={tc.primary} />
+          </View>
+          <View style={styles.transferInfo}>
+            <Text style={[styles.transferLabel, { color: tc.text }]} numberOfLines={1}>
+              {fromAcct?.name || '账户'} → {toAcct?.name || '账户'}
+            </Text>
+            {tx.note ? (
+              <Text style={[styles.transferNote, { color: tc.textMuted }]} numberOfLines={1}>
+                {tx.note}
+              </Text>
+            ) : null}
+          </View>
+          <View style={styles.transferRight}>
+            <Text style={[styles.transferAmount, { color: tc.text }]}>
+              {formatMoney(tx.amount, settings.currency)}
+            </Text>
+            <Text style={[styles.transferTime, { color: tc.textSubtle }]}>转账</Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
     return (
       <TransactionItem
-        transaction={item.data}
+        transaction={tx}
         currency={settings.currency}
-        onPress={() => setDetailTx(item.data)}
+        onPress={() => setDetailTx(tx)}
         isLast={isLastInList}
       />
     );
-  }, [settings.currency, navigation, flatData]);
+  }, [settings.currency, navigation, flatData, accounts, tc]);
 
   return (
     <View style={[styles.container, { backgroundColor: tc.pageBg }]}>
@@ -448,6 +511,22 @@ const styles = StyleSheet.create({
   dateSummary: { flexDirection: 'row', gap: spacing.md },
   dateAmountIncome: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'] },
   dateAmountExpense: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontVariant: ['tabular-nums'] },
+
+  // 转账记录
+  transferRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: spacing.md, paddingHorizontal: spacing.base, minHeight: 68,
+  },
+  transferIcon: {
+    width: 42, height: 42, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  transferInfo: { flex: 1, marginLeft: spacing.md },
+  transferLabel: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, letterSpacing: -0.2 },
+  transferNote: { fontSize: fontSize.sm, marginTop: 2, letterSpacing: -0.1 },
+  transferRight: { alignItems: 'flex-end' },
+  transferAmount: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, letterSpacing: -0.2, fontVariant: ['tabular-nums'] },
+  transferTime: { fontSize: fontSize.xs, marginTop: 2, letterSpacing: -0.1 },
 
   emptyWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.xl },
 
