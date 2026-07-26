@@ -336,7 +336,8 @@ export function DataProvider({ children }) {
       const d = new Date(t.date);
       return d.getFullYear() === now.getFullYear()
         && d.getMonth() === now.getMonth()
-        && t.type === 'expense';
+        && t.type === 'expense'
+        && !t.transferId;
     });
 
     const byCategory = {};
