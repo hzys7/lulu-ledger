@@ -19,6 +19,7 @@ export function sanitizeTransactions(list) {
       bookId: t.bookId || 'default',
       bookName: t.bookName || '',
       accountId: t.accountId || null,
+      transferId: t.transferId || null,
       createdAt: t.createdAt || new Date().toISOString(),
     }))
     .filter((t) => t.amount > 0);

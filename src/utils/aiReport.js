@@ -64,7 +64,7 @@ function buildReportPrompt({ year, month, currentTxs, lastTxs, summary, lastSumm
   const incomeSorted = Object.entries(incomeByCategory).sort((a, b) => b[1] - a[1]);
 
   const topExpense = [...currentTxs]
-    .filter((t) => t.type === 'expense')
+    .filter((t) => t.type === 'expense' && !t.transferId)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
 

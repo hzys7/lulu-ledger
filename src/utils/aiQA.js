@@ -139,7 +139,7 @@ export function buildFinancialContext({ transactions, summary, lastSummary, last
 
   // 支出 TOP5 单笔
   const topExp = (transactions || [])
-    .filter((t) => t.type === 'expense')
+    .filter((t) => t.type === 'expense' && !t.transferId)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
   if (topExp.length > 0) {

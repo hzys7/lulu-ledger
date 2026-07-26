@@ -90,7 +90,7 @@ export default function HomeScreen({ navigation }) {
     return transactions
       .filter(t => {
         const d = new Date(t.date);
-        return d >= todayStart && t.type === 'expense';
+        return d >= todayStart && t.type === 'expense' && !t.transferId;
       })
       .reduce((sum, t) => sum + t.amount, 0);
   }, [transactions]);

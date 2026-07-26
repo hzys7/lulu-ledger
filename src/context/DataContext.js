@@ -4,8 +4,10 @@
 // the value only changes when one of [transactions, budgets, accounts,
 // recurring, loaded] or one of the CRUD callbacks changes.
 import React, { createContext, useState, useContext, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Alert } from 'react-native';
 import * as storage from '../utils/storage';
 import { toNumber } from '../utils/safeNumber';
+import { formatMoney } from '../utils/currency';
 import {
   sanitizeTransactions,
   sanitizeBudgets,
@@ -244,7 +246,15 @@ export function DataProvider({ children }) {
   // 创建一对配对交易（源账户支出 + 目标账户收入），原子调整余额
   const transfer = useCallback(async ({ fromAccountId, toAccountId, amount, note }) => {
     const amt = toNumber(amount);
-    if (amt <= 0 || fromAccountId === toAccountId) return;
+    if (!amt || amt <= 0 || !Number.isFinite(amt) || fromAccountId === toAccountId) return;
+
+    // 校验源账户余额是否充足
+    const fromAccount = accounts.find(a => a.id === fromAccountId);
+    if (!fromAccount) return;
+    if (fromAccount.balance < amt) {
+      Alert.alert('余额不足', `${fromAccount.name} 当前余额 ${formatMoney(fromAccount.balance, settings.currency)}，不足以转出 ${formatMoney(amt, settings.currency)}`);
+      return;
+    }
 
     const transferId = `tf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = new Date().toISOString();
@@ -282,6 +292,11 @@ export function DataProvider({ children }) {
       createdAt: now,
     };
 
+    // 先批量写入两笔交易（单次 persist），再调整余额
+    // 这样即使余额调整失败，交易记录也不会丢失
+    const afterAdd = await storage.batchAddTransactions([txOut, txIn]);
+    setTransactions(sanitizeTransactions(afterAdd.filter(t => t.bookId === currentBookId)));
+
     // 原子调整两个账户余额
     const updatedAccounts = await storage.batchAdjustAccountBalances([
       { id: fromAccountId, delta: -amt },
@@ -289,13 +304,8 @@ export function DataProvider({ children }) {
     ]);
     setAccounts(sanitizeAccounts(updatedAccounts.filter(a => a.bookId === currentBookId)));
 
-    // 写入两笔交易
-    const afterFirst = await storage.addTransaction(txOut);
-    const afterSecond = await storage.addTransaction(txIn);
-    setTransactions(sanitizeTransactions(afterSecond.filter(t => t.bookId === currentBookId)));
-
     return { txOut, txIn, transferId };
-  }, [currentBookId, books, settings.currency]);
+  }, [currentBookId, books, settings.currency, accounts]);
 
   const setDefaultAccount = useCallback(async (id) => {
     const updated = await storage.updateAccount(id, { isDefault: true });

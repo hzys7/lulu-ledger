@@ -62,7 +62,7 @@ export async function analyzeMindset({
     }
   }
 
-  const expenseTxs = transactions.filter(t => t.type === 'expense');
+  const expenseTxs = transactions.filter(t => t.type === 'expense' && !t.transferId);
   const totalExpense = expenseTxs.reduce((s, t) => s + t.amount, 0);
 
   // 分析心情与消费的关系

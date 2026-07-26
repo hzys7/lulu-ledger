@@ -326,6 +326,21 @@ export async function addTransaction(transaction) {
   return all;
 }
 
+// 批量添加多笔交易，单次 persist 保证原子性
+export async function batchAddTransactions(transactions) {
+  if (!transactions || transactions.length === 0) return [];
+  const env = await ensureLoaded();
+  const all = env.data.transactions || [];
+  for (const tx of transactions) {
+    all.unshift({
+      ...tx,
+      id: tx.id || `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    });
+  }
+  await persist();
+  return all;
+}
+
 export async function updateTransaction(id, updates) {
   const env = await ensureLoaded();
   const all = env.data.transactions || [];

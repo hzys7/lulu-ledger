@@ -255,7 +255,7 @@ export default function StatisticsScreen({ navigation }) {
     return transactions
       .filter(t => {
         const d = new Date(t.date);
-        return d >= lastWeekStart && d <= lastWeekEnd && t.type === dataType;
+        return d >= lastWeekStart && d <= lastWeekEnd && t.type === dataType && !t.transferId;
       })
       .reduce((s, t) => s + t.amount, 0);
   }, [transactions, lastWeekStart, lastWeekEnd, dataType]);
@@ -297,17 +297,17 @@ export default function StatisticsScreen({ navigation }) {
     if (period === 'week') {
       txs = transactions.filter(t => {
         const d = new Date(t.date);
-        return d >= weekStart && d <= weekEnd && t.type === 'expense';
+        return d >= weekStart && d <= weekEnd && t.type === 'expense' && !t.transferId;
       });
     } else if (period === 'month') {
       txs = transactions.filter(t => {
         const d = new Date(t.date);
-        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && t.type === 'expense';
+        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && t.type === 'expense' && !t.transferId;
       });
     } else {
       txs = transactions.filter(t => {
         const d = new Date(t.date);
-        return d.getFullYear() === reportYear && t.type === 'expense';
+        return d.getFullYear() === reportYear && t.type === 'expense' && !t.transferId;
       });
     }
     const counts = {};
@@ -557,7 +557,7 @@ export default function StatisticsScreen({ navigation }) {
     return transactions
       .filter(t => {
         const d = new Date(t.date);
-        return d.getFullYear() === reportYear - 1 && t.type === dataType;
+        return d.getFullYear() === reportYear - 1 && t.type === dataType && !t.transferId;
       })
       .reduce((s, t) => s + t.amount, 0);
   }, [transactions, reportYear, dataType]);

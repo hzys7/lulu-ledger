@@ -23,7 +23,7 @@ export function detectAnomalies({ transactions, getMonthSummary }) {
   // 当月交易
   const currentMonthTxs = (transactions || []).filter((t) => {
     const d = new Date(t.date);
-    return d.getFullYear() === year && d.getMonth() === month && t.type === 'expense';
+    return d.getFullYear() === year && d.getMonth() === month && t.type === 'expense' && !t.transferId;
   });
 
   const currentSummary = getMonthSummary(year, month);

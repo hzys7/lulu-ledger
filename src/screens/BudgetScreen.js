@@ -72,7 +72,7 @@ export default function BudgetScreen({ route }) {
   const monthExpenseByCategory = useMemo(() => {
     const monthTx = transactions.filter((t) => {
       const d = new Date(t.date);
-      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && t.type === 'expense';
+      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && t.type === 'expense' && !t.transferId;
     });
     const byCategory = {};
     monthTx.forEach((t) => {
