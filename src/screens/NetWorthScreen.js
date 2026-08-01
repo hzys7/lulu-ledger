@@ -250,16 +250,16 @@ export default function NetWorthScreen() {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-          style={{ flex: 1 }}
+          style={{ flex: 1, justifyContent: 'flex-end' }}
         >
-        <Pressable style={styles.modalBackdrop} onPress={closeModal}>
-          <Pressable style={[styles.modalSheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: spacing.lg }}
-            >
-            <View style={[styles.modalHandle, { backgroundColor: tc.divider }]} />
+          <Pressable style={styles.modalBackdrop} onPress={closeModal}>
+            <Pressable style={[styles.modalSheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: spacing.lg }}
+              >
+              <View style={[styles.modalHandle, { backgroundColor: tc.divider }]} />
             <Text style={[styles.modalTitle, { color: tc.text }]}>
               {editing ? '编辑账户' : '新增账户'}
             </Text>
@@ -343,9 +343,9 @@ export default function NetWorthScreen() {
               </View>
             ) : null}
           </ScrollView>
-          </KeyboardAvoidingView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* 调账弹窗 */}
