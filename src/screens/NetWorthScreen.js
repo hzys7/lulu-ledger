@@ -248,12 +248,12 @@ export default function NetWorthScreen() {
         animationType="slide"
         onRequestClose={closeModal}
       >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+          style={{ flex: 1 }}
+        >
         <Pressable style={styles.modalBackdrop} onPress={closeModal}>
           <Pressable style={[styles.modalSheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={{ width: '100%' }}
-            >
             <ScrollView
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
