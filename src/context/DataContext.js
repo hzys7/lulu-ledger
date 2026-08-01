@@ -308,8 +308,10 @@ export function DataProvider({ children }) {
   }, [currentBookId, books, settings.currency, accounts]);
 
   const setDefaultAccount = useCallback(async (id) => {
-    const updated = await storage.updateAccount(id, { isDefault: true });
-    setAccounts(sanitizeAccounts(updated.filter(a => a.bookId === currentBookId)));
+    // 先清除所有账户的默认状态，再设置新账户为默认
+    const updated = await storage.clearAllDefaultAccounts(currentBookId);
+    const finalUpdated = await storage.updateAccount(id, { isDefault: true });
+    setAccounts(sanitizeAccounts(finalUpdated.filter(a => a.bookId === currentBookId)));
   }, [currentBookId]);
 
   const getNetWorth = useCallback(() => {

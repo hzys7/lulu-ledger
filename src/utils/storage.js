@@ -494,6 +494,22 @@ export async function updateAccount(id, updates) {
   return all;
 }
 
+// 清除当前账本下所有账户的默认状态
+export async function clearAllDefaultAccounts(bookId) {
+  const env = await ensureLoaded();
+  const all = env.data.accounts || [];
+  let changed = false;
+  env.data.accounts = all.map(a => {
+    if (a && a.bookId === bookId && a.isDefault) {
+      changed = true;
+      return { ...a, isDefault: false };
+    }
+    return a;
+  });
+  if (changed) await persist();
+  return env.data.accounts;
+}
+
 export async function deleteAccount(id) {
   const env = await ensureLoaded();
   const all = env.data.accounts || [];
