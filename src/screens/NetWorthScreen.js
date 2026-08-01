@@ -24,7 +24,6 @@ import {
   spacing,
   borderRadius,
   fontSize,
-  spacing,
   fontWeight,
   shadows,
   getThemeColors,
