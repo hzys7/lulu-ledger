@@ -10,6 +10,8 @@ import {
   Modal,
   Pressable,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -248,6 +250,10 @@ export default function NetWorthScreen() {
       >
         <Pressable style={styles.modalBackdrop} onPress={closeModal}>
           <Pressable style={[styles.modalSheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={{ width: '100%' }}
+            >
             <View style={[styles.modalHandle, { backgroundColor: tc.divider }]} />
             <Text style={[styles.modalTitle, { color: tc.text }]}>
               {editing ? '编辑账户' : '新增账户'}
@@ -331,6 +337,7 @@ export default function NetWorthScreen() {
                 ) : null}
               </View>
             ) : null}
+          </KeyboardAvoidingView>
           </Pressable>
         </Pressable>
       </Modal>
