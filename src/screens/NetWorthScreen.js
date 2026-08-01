@@ -61,7 +61,7 @@ export default function NetWorthScreen() {
     setEditing(acc);
     setFormName(acc.name);
     setFormType(acc.type);
-    setFormBalance(String(acc.balance));
+    setFormBalance((acc.balance || 0).toFixed(2));
     setModalOpen(true);
   }, []);
 
