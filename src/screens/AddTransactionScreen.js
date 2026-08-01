@@ -308,6 +308,34 @@ export default function AddTransactionScreen({ navigation, route }) {
               </View>
             </View>
 
+            {/* 日期 + 备注 + 账户（放在键盘上方，始终可见） */}
+            <View style={styles.metaRow}>
+              <TouchableOpacity
+                style={[styles.metaBtn, { backgroundColor: tc.surfaceMuted }]}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="calendar-outline" size={16} color={tc.textMuted} />
+                <Text style={[styles.metaText, { color: tc.text }]}>{fmtDay(date)}</Text>
+              </TouchableOpacity>
+              <View style={[styles.metaInputWrap, { backgroundColor: tc.surfaceMuted }]}>
+                <Ionicons name="create-outline" size={16} color={tc.textMuted} />
+                <TextInput
+                  style={[styles.metaInput, { color: tc.text }]}
+                  placeholder="备注"
+                  placeholderTextColor={tc.textSubtle}
+                  value={note}
+                  onChangeText={setNote}
+                  maxLength={50}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
+            </View>
+
             {/* 消费心情 */}
             <ScrollView
               horizontal
@@ -344,40 +372,12 @@ export default function AddTransactionScreen({ navigation, route }) {
               })}
             </ScrollView>
 
-            {/* 数字键盘 - 独立组件，避免父组件 re-render */}
+            {/* 数字键盘 - 放在底部，不遮挡输入区域 */}
             <NumberPad
               onInput={handleNumberInput}
               onDelete={handleDelete}
               tc={tc}
             />
-
-            {/* 日期 + 备注 + 账户 */}
-            <View style={styles.metaRow}>
-              <TouchableOpacity
-                style={[styles.metaBtn, { backgroundColor: tc.surfaceMuted }]}
-                onPress={() => setShowDatePicker(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="calendar-outline" size={16} color={tc.textMuted} />
-                <Text style={[styles.metaText, { color: tc.text }]}>{fmtDay(date)}</Text>
-              </TouchableOpacity>
-              <View style={[styles.metaInputWrap, { backgroundColor: tc.surfaceMuted }]}>
-                <Ionicons name="create-outline" size={16} color={tc.textMuted} />
-                <TextInput
-                  style={[styles.metaInput, { color: tc.text }]}
-                  placeholder="备注"
-                  placeholderTextColor={tc.textSubtle}
-                  value={note}
-                  onChangeText={setNote}
-                  maxLength={50}
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  autoComplete="off"
-                  returnKeyType="done"
-                  onSubmitEditing={() => Keyboard.dismiss()}
-                />
-              </View>
-            </View>
 
             {/* 智能分类建议 */}
             {categorySuggestions.length > 0 && (
