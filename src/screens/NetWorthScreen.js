@@ -24,6 +24,7 @@ import {
   spacing,
   borderRadius,
   fontSize,
+  spacing,
   fontWeight,
   shadows,
   getThemeColors,
@@ -251,8 +252,13 @@ export default function NetWorthScreen() {
         <Pressable style={styles.modalBackdrop} onPress={closeModal}>
           <Pressable style={[styles.modalSheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={{ width: '100%' }}
+            >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: spacing.lg }}
             >
             <View style={[styles.modalHandle, { backgroundColor: tc.divider }]} />
             <Text style={[styles.modalTitle, { color: tc.text }]}>
@@ -337,6 +343,7 @@ export default function NetWorthScreen() {
                 ) : null}
               </View>
             ) : null}
+          </ScrollView>
           </KeyboardAvoidingView>
           </Pressable>
         </Pressable>
