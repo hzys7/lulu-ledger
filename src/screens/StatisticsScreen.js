@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { EmptyState } from '../components/SharedComponents';
 import { formatMoney } from '../utils/currency';
+import { toNumber } from '../utils/safeNumber';
 import {
   spacing,
   borderRadius,
@@ -65,17 +66,17 @@ function isSameWeek(d1, d2) {
 // ─── 汇总计算 ───────────────────────────────────────────
 function calcSummary(txList, type) {
   const filtered = txList.filter(t => t.type === type);
-  const total = filtered.reduce((s, t) => s + t.amount, 0);
+  const total = filtered.reduce((s, t) => s + toNumber(t.amount), 0);
   const byCategory = {};
   filtered.forEach(t => {
-    byCategory[t.category] = (byCategory[t.category] || 0) + t.amount;
+    byCategory[t.category] = (byCategory[t.category] || 0) + toNumber(t.amount);
   });
   return { total, byCategory };
 }
 
 function calcBalance(txList) {
-  const income = txList.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = txList.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const income = txList.filter(t => t.type === 'income').reduce((s, t) => s + toNumber(t.amount), 0);
+  const expense = txList.filter(t => t.type === 'expense').reduce((s, t) => s + toNumber(t.amount), 0);
   return income - expense;
 }
 
@@ -610,8 +611,8 @@ export default function StatisticsScreen({ navigation }) {
       return {
         period: 'week',
         weekLabel: getWeekLabel(weekStart),
-        totalIncome: weekAllTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
-        totalExpense: weekAllTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+        totalIncome: weekAllTx.filter(t => t.type === 'income').reduce((s, t) => s + toNumber(t.amount), 0),
+        totalExpense: weekAllTx.filter(t => t.type === 'expense').reduce((s, t) => s + toNumber(t.amount), 0),
         balance: weekBalance,
         topCategories: weekCategoryItems,
       };

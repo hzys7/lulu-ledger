@@ -18,6 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney } from '../utils/currency';
+import { toNumber } from '../utils/safeNumber';
 import { loadAiConfig } from '../utils/aiConfig';
 import { typeInfo } from '../utils/accountTypes';
 import AiChatScreen from './AiChatScreen';
@@ -92,7 +93,7 @@ export default function HomeScreen({ navigation }) {
         const d = new Date(t.date);
         return d >= todayStart && t.type === 'expense' && !t.transferId;
       })
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + toNumber(t.amount), 0);
   }, [transactions]);
 
   // AI

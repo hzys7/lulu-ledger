@@ -20,6 +20,7 @@ import { TransactionItem, EmptyState } from '../components/SharedComponents';
 import TransactionDetailModal from '../components/TransactionDetailModal';
 import BudgetPieChart from '../components/BudgetPieChart';
 import { formatMoney } from '../utils/currency';
+import { toNumber } from '../utils/safeNumber';
 import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
 
 function dayKey(iso) {
@@ -172,6 +173,10 @@ export default function RecordsScreen({ navigation }) {
         result.push(t);
       }
     }
+    // 把未配对的孤儿转账记录也显示出来（防止数据丢失）
+    for (const t of transferMap.values()) {
+      result.push(t);
+    }
     return result;
   }, [displayTransactions]);
 
@@ -193,8 +198,8 @@ export default function RecordsScreen({ navigation }) {
 
   const renderItem = useCallback(({ item, index }) => {
     if (item.type === 'header') {
-      const dayExpense = item.txs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-      const dayIncome = item.txs.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const dayExpense = item.txs.filter((t) => t.type === 'expense').reduce((s, t) => s + toNumber(t.amount), 0);
+      const dayIncome = item.txs.filter((t) => t.type === 'income').reduce((s, t) => s + toNumber(t.amount), 0);
       const isFirst = index === 0;
       return (
         <View style={[styles.dateHeader, isFirst && styles.dateHeaderFirst]}>
@@ -440,6 +445,10 @@ export default function RecordsScreen({ navigation }) {
         tc={tc}
         onEdit={() => {
           if (detailTx) {
+            if (detailTx.type === 'transfer') {
+              Alert.alert('提示', '转账记录暂不支持编辑');
+              return;
+            }
             setDetailTx(null);
             navigation.navigate('AddTransaction', { transaction: detailTx });
           }
@@ -449,7 +458,22 @@ export default function RecordsScreen({ navigation }) {
             const txToDelete = detailTx;
             Alert.alert('删除交易', '确定删除这条记录吗？', [
               { text: '取消', style: 'cancel' },
-              { text: '删除', style: 'destructive', onPress: async () => { await removeTx(txToDelete.id, txToDelete); setDetailTx(null); } },
+              { text: '删除', style: 'destructive', onPress: async () => {
+                if (txToDelete.type === 'transfer') {
+                  // 转账记录同时删除支出和收入两条
+                  await removeTx(txToDelete.id, txToDelete);
+                  // 查找并删除对应的收入记录
+                  if (txToDelete.transferId) {
+                    const transferTxs = transactions.filter(t => t.transferId === txToDelete.transferId && t.type === 'income');
+                    for (const tx of transferTxs) {
+                      await removeTx(tx.id, tx);
+                    }
+                  }
+                } else {
+                  await removeTx(txToDelete.id, txToDelete);
+                }
+                setDetailTx(null);
+              } },
             ]);
           }
         }}

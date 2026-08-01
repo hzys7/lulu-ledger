@@ -59,6 +59,8 @@ export function DataProvider({ children }) {
     setAccounts(sanitizeAccounts(accountsData));
 
     if (Array.isArray(dueItems) && dueItems.length > 0) {
+      const batchTxs = [];
+      const batchBalances = [];
       for (const item of dueItems) {
         const targetAccountId = item.accountId
   || (accountsData.find(a => a.isDefault && a.bookId === currentBookId)?.id)
@@ -76,16 +78,20 @@ export function DataProvider({ children }) {
           accountId: targetAccountId,
           createdAt: new Date().toISOString(),
         };
-        await storage.addTransaction(tx);
-        // 同步调整默认账户余额
+        batchTxs.push(tx);
         if (targetAccountId) {
           const delta = tx.type === 'income' ? toNumber(tx.amount) : -toNumber(tx.amount);
-          await storage.adjustAccountBalance(targetAccountId, delta);
+          batchBalances.push({ id: targetAccountId, delta });
         }
       }
-      const refreshed = await storage.getTransactions(currentBookId);
+      // 批量原子写入交易
+      const afterAdd = await storage.batchAddTransactions(batchTxs);
+      // 批量调整余额
+      if (batchBalances.length > 0) {
+        await storage.batchAdjustAccountBalances(batchBalances);
+      }
       const refreshedAccounts = await storage.getAccounts(currentBookId);
-      setTransactions(sanitizeTransactions(refreshed));
+      setTransactions(sanitizeTransactions(afterAdd.filter(t => t.bookId === currentBookId)));
       setAccounts(sanitizeAccounts(refreshedAccounts.filter(a => a.bookId === currentBookId)));
       // 所有交易创建成功后才更新 lastProcessedDate，防止崩溃导致交易丢失
       await storage.markRecurringProcessed(dueItems);
@@ -123,10 +129,9 @@ export function DataProvider({ children }) {
     const updated = await storage.updateTransaction(id, updates);
     setTransactions(sanitizeTransactions(updated.filter(t => t.bookId === currentBookId)));
     if (old) {
-      const oldAccountId = old.accountId
-        || (accounts.find(a => a.isDefault && a.bookId === currentBookId)?.id)
-        || null;
-      const newAccountId = updates.accountId !== undefined
+      const oldAccountId = old.accountId !== undefined && old.accountId !== null
+        ? old.accountId : null;
+      const newAccountId = updates.accountId !== undefined && updates.accountId !== null
         ? updates.accountId
         : oldAccountId;
 
@@ -248,8 +253,9 @@ export function DataProvider({ children }) {
     const amt = toNumber(amount);
     if (!amt || amt <= 0 || !Number.isFinite(amt) || fromAccountId === toAccountId) return;
 
-    // 校验源账户余额是否充足
-    const fromAccount = accounts.find(a => a.id === fromAccountId);
+    // 校验源账户余额是否充足（从 storage 读取最新余额，避免闭包过期）
+    const latestAccounts = await storage.getAccounts(currentBookId);
+    const fromAccount = latestAccounts.find(a => a.id === fromAccountId);
     if (!fromAccount) return;
     if (fromAccount.balance < amt) {
       Alert.alert('余额不足', `${fromAccount.name} 当前余额 ${formatMoney(fromAccount.balance, settings.currency)}，不足以转出 ${formatMoney(amt, settings.currency)}`);
@@ -344,7 +350,7 @@ export function DataProvider({ children }) {
 
     const byCategory = {};
     monthTx.forEach(t => {
-      byCategory[t.category] = (byCategory[t.category] || 0) + t.amount;
+      byCategory[t.category] = (byCategory[t.category] || 0) + toNumber(t.amount);
     });
 
     const alerts = [];
@@ -393,11 +399,11 @@ export function DataProvider({ children }) {
     const incomeByCategory = {};
     monthTx.forEach(t => {
       if (t.type === 'income') {
-        income += t.amount;
-        incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + t.amount;
+        income += toNumber(t.amount);
+        incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + toNumber(t.amount);
       } else {
-        expense += t.amount;
-        expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
+        expense += toNumber(t.amount);
+        expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + toNumber(t.amount);
       }
     });
     return {
