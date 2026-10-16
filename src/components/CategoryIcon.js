@@ -1,5 +1,5 @@
 ﻿import React, { memo } from 'react';
-import { useThemeColors, useNeu } from '../hooks/useThemeColors';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -24,24 +24,26 @@ const ICONS = {
   '其他收入': 'add-circle',
 };
 
-// 新拟物：图标方块与背景同色系（凸起），仅图标本身带分类色
+// 分类图标：柔和的彩色圆角底（Stripe 的 icon tint 手法）
+function tintBg(hex, alpha = '1F') {
+  if (typeof hex !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return 'transparent';
+  return hex + alpha;
+}
+
 export const CategoryIcon = memo(function CategoryIcon({ category, size = 40, type = 'expense' }) {
   const tc = useThemeColors();
-  const neu = useNeu();
   const tint = (tc.categories && tc.categories[category]) || (type === 'income' ? tc.success : tc.textSubtle);
-  const radius = Math.round(size * 0.32);
+  const radius = Math.round(size * 0.3);
   return (
     <View
-      style={[
-        neu.raisedSm,
-        {
-          width: size,
-          height: size,
-          borderRadius: radius,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-      ]}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: tintBg(tint),
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       <Ionicons
         name={ICONS[category] || 'pricetag'}

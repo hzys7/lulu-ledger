@@ -49,6 +49,7 @@ function AboutSection({ isChecking, checkResult, checkResultText, onToggleAutoCh
             style={[
               styles.toggleTrack,
               neu.inset,
+              settings.autoCheckUpdate && { backgroundColor: tc.primary, borderColor: tc.primary },
               { justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start' },
             ]}
           >

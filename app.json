@@ -2,12 +2,12 @@
   "expo": {
     "name": "小璐记账",
     "slug": "lulu-ledger",
-    "version": "1.7.1",
+    "version": "1.7.2",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#E0E5EC"
+      "backgroundColor": "#F6F9FC"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,11 +18,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E0E5EC",
+        "backgroundColor": "#F6F9FC",
         "foregroundImage": "./assets/icon-foreground.png"
       },
       "package": "com.lululedger.app",
-      "versionCode": 175
+      "versionCode": 176
     },
     "web": {
       "name": "小璐记账",

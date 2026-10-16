@@ -1,48 +1,44 @@
 // 小璐记账 - 设计系统
-// 风格：Neumorphism / 新拟物派（Soft UI）
-// 原则：浅灰单色背景 + 同色系元素 + 双光源柔和阴影 + 大圆角 + 低对比
-// 说明：React Native 不支持 CSS 的双重阴影与 inset 阴影，
-//       这里用「1px 同色系斜角(border bevel) + 单向柔和投影」近似模拟
-//       左上亮 / 右下暗 的固定光源，交互元素按下时由凸起转为凹陷。
-
-// ── 新拟物光源常量（浅色基准）─────────────────────────
-// 具体值随主题走 colors/darkColors 上的
-// neuBase / neuLight / neuDark / neuInset / neuEdge / neuHighlight
+// 风格：Stripe 风格（金融科技 · 精密专业）
+// 原则：浅蓝灰背景 #F6F9FC + 白色卡片 + 1px 细边框 + 多层精致阴影
+//       深蓝标题 #0A2540 保证数字可读性，Stripe 紫 #635BFF 作为唯一品牌强调色
+// 说明：React Native 只能渲染单层阴影，这里用「1px 边框 + 向下柔和投影」
+//       近似 Stripe 的 border + 多层阴影，边框才是卡片边界感的主要来源。
 
 export const colors = {
   // 品牌主色（CTA / 进度 / 选中态）
-  primary: '#6D5DFC',          // 紫 - 主色（新拟物强调色）
-  primaryHover: '#5A48E8',
-  primarySubtle: '#E3E0FB',
+  primary: '#635BFF',          // Stripe 紫
+  primaryHover: '#5851EA',
+  primarySubtle: '#F0EFFF',
   primaryOn: '#FFFFFF',
 
-  // 品牌辅色（用于次要操作 / 辅助标识）
-  accent: '#4ECDC4',           // 青 - 辅色
-  accentSubtle: '#DCF2F0',
+  // 品牌辅色（Stripe 青）
+  accent: '#0EA5C4',
+  accentSubtle: '#E5F7FA',
 
-  // 功能色（整体降饱和，贴合柔和气质）
-  success: '#2E9E6B',
-  successSubtle: '#DCEFE4',
-  danger: '#E5675F',
-  dangerSubtle: '#F7E1DF',
-  warning: '#C99A2E',
-  warningSubtle: '#F5EBD5',
-  info: '#5B8DEF',
-  infoSubtle: '#DFE8FA',
+  // 功能色
+  success: '#1EA672',
+  successSubtle: '#E7F6EF',
+  danger: '#DF1B41',
+  dangerSubtle: '#FDEDF0',
+  warning: '#C77700',
+  warningSubtle: '#FDF4E6',
+  info: '#3B82F6',
+  infoSubtle: '#EBF2FE',
 
-  // 8 色克制分类色板（用于图表 / 分类）
+  // 8 色克制色板（图表 / 分类）
   palette: [
-    '#6D5DFC',
-    '#4ECDC4',
-    '#5B8DEF',
-    '#E5A9A3',
-    '#C99A2E',
+    '#635BFF',
+    '#0EA5C4',
+    '#3B82F6',
+    '#1EA672',
+    '#C77700',
+    '#DF1B41',
     '#A78BFA',
-    '#8E97A5',
-    '#2E9E6B',
+    '#8792A2',
   ],
 
-  // 分类颜色（低饱和，避免破坏柔和立体感）
+  // 分类颜色（低饱和，保持专业克制）
   categories: {
     '餐饮': '#E5A05F',
     '交通': '#6F9BE0',
@@ -79,45 +75,38 @@ export const colors = {
     '理财收益': '#8C7DF2',
   },
 
-  // 中性色 —— 与背景同色系
-  background: '#E0E5EC',
-  surface: '#E0E5EC',
-  surfaceMuted: '#D7DDE7',
-  surfaceSubtle: '#CFD6E1',
-  surfaceSection: '#E0E5EC',
-  card: '#E0E5EC',
-  cardSubtle: '#E4E8EF',
-  text: '#333A45',
-  textSecondary: '#525A66',
-  textMuted: '#6B7280',
-  textSubtle: '#7C8593',
-  border: 'rgba(184, 188, 194, 0.6)',
-  borderStrong: '#B8BCC2',
-  divider: 'rgba(184, 188, 194, 0.5)',
+  // 中性色 —— 浅蓝灰底 + 白卡
+  background: '#F6F9FC',
+  surface: '#FFFFFF',
+  surfaceMuted: '#EEF2F7',
+  surfaceSubtle: '#E9EEF4',
+  surfaceSection: '#F6F9FC',
+  card: '#FFFFFF',
+  cardSubtle: '#FAFBFD',
+  text: '#0A2540',
+  textSecondary: '#425466',
+  textMuted: '#697386',
+  textSubtle: '#8792A2',
+  border: '#E6EBF1',
+  borderStrong: '#D8E0E9',
+  divider: '#EDF1F6',
 
   white: '#FFFFFF',
   black: '#000000',
-  overlay: 'rgba(51, 58, 69, 0.35)',
-  shadow: 'rgba(184, 188, 194, 0.75)',
+  overlay: 'rgba(10, 37, 64, 0.4)',
+  shadow: 'rgba(10, 37, 64, 0.08)',
+  shadowInk: '#0A2540',        // 阴影颜色（RN 单层阴影用）
 
-  // 新拟物专用 token
-  neuBase: '#E0E5EC',
-  neuLight: '#FFFFFF',
-  neuDark: '#B8BCC2',
-  neuInset: '#DDE3EA',
-  neuEdge: '#D2D7DE',                     // 凹陷侧边（几乎与背景同色，避免描边感）
-  neuHighlight: 'rgba(255, 255, 255, 0.85)', // 左上高光
-
-  // 专用色（柔和同色系浅色调）
-  pageBg: '#E0E5EC',
-  starColor: '#8B7DFF',
-  starColorLight: '#B9B0F5',
-  chipBg: '#E0E5EC',
-  badgeBg: '#E3E0FB',
-  iconBg: '#E3E0FB',
-  iconBgAlt: '#DCF2F0',
-  iconBgDanger: '#F7E1DF',
-  iconBgWarning: '#F5EBD5',
+  // 专用色
+  pageBg: '#F6F9FC',
+  starColor: '#635BFF',
+  starColorLight: '#C7C4FF',
+  chipBg: '#FFFFFF',
+  badgeBg: '#F0EFFF',
+  iconBg: '#F0EFFF',
+  iconBgAlt: '#E5F7FA',
+  iconBgDanger: '#FDEDF0',
+  iconBgWarning: '#FDF4E6',
 };
 
 export const spacing = {
@@ -132,14 +121,14 @@ export const spacing = {
   xxxl: 48,
 };
 
-// 新拟物要求柔和一致的曲率，整体比扁平风格更大
+// Stripe 风格：中等圆角（rounded-lg / xl），禁止过大圆角
 export const borderRadius = {
-  xs: 10,
-  sm: 14,
-  md: 18,
-  lg: 22,
-  xl: 26,
-  xxl: 30,
+  xs: 6,
+  sm: 8,
+  md: 10,
+  lg: 12,
+  xl: 14,
+  xxl: 18,
   full: 9999,
 };
 
@@ -161,88 +150,62 @@ export const fontWeight = {
   bold: '700',
 };
 
-// ── 新拟物样式助手 ────────────────────────────────────
-// RN 不支持 CSS 的双阴影 / inset 阴影，这里的近似策略：
-//   凸起 raised : 只在左上保留一道极淡高光，右下**不画暗色描边**，
-//                 改用右下方向的柔和投影让卡片"离开"背景（消除线框感）
-//   凹陷 inset  : 左上压暗 + 右下提亮，配合更深的底色表现"压进去"
+// ── 表面样式助手 ──────────────────────────────────────
+// Stripe 风格：白卡 + 1px 细边框 + 向下柔和投影。
+// 卡片边界主要靠边框（RN 单层阴影无法复刻 Stripe 的多层阴影）。
 export function neuStyles(tc) {
-  const highlight = tc.neuHighlight || tc.neuLight || '#FFFFFF';
-  const edge = tc.neuEdge || tc.neuDark || '#B8BCC2';
-  const dark = tc.neuDark || '#B8BCC2';
-  const base = tc.neuBase || tc.surface;
-  const insetBg = tc.neuInset || tc.surfaceSubtle;
+  const card = tc.card || '#FFFFFF';
+  const well = tc.surfaceSubtle || '#E9EEF4';
+  const border = tc.border || '#E6EBF1';
+  const ink = tc.shadowInk || '#0A2540';
 
-  // 仅左上高光，显式关闭右下边框避免残留描边
-  const topLeftHighlight = {
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderTopColor: highlight,
-    borderLeftColor: highlight,
-    borderBottomWidth: 0,
-    borderRightWidth: 0,
-  };
-
-  const cast = (offset, radius, elevation, opacity) => ({
-    shadowColor: dark,
-    shadowOffset: { width: offset, height: offset },
+  const cast = (elevation, offsetY, radius, opacity) => ({
+    shadowColor: ink,
+    shadowOffset: { width: 0, height: offsetY },
     shadowOpacity: opacity,
     shadowRadius: radius,
     elevation,
   });
 
-  const recessed = {
-    backgroundColor: insetBg,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderTopColor: edge,
-    borderLeftColor: edge,
-    borderBottomWidth: 1,
-    borderRightWidth: 1,
-    borderBottomColor: highlight,
-    borderRightColor: highlight,
-    shadowOpacity: 0,
-    elevation: 0,
-  };
-
   return {
-    // 凸起（卡片 / 按钮默认态）
-    raised: { backgroundColor: base, ...topLeftHighlight, ...cast(4, 16, 8, 0.5) },
-    raisedSm: { backgroundColor: base, ...topLeftHighlight, ...cast(3, 10, 5, 0.45) },
-    raisedLg: { backgroundColor: base, ...topLeftHighlight, ...cast(6, 22, 12, 0.5) },
-    // 凹陷（输入框 / 按下态 / 内嵌区）
-    inset: { ...recessed },
-    pressed: { ...recessed },
+    // 卡片（默认 / 小 / 大）
+    raised: { backgroundColor: card, borderWidth: 1, borderColor: border, ...cast(2, 2, 8, 0.06) },
+    raisedSm: { backgroundColor: card, borderWidth: 1, borderColor: border, ...cast(1, 1, 4, 0.05) },
+    raisedLg: { backgroundColor: card, borderWidth: 1, borderColor: border, ...cast(4, 6, 18, 0.1) },
+    // 输入框 / 内嵌区：浅灰底 + 1px 边框
+    inset: { backgroundColor: well, borderWidth: 1, borderColor: border, shadowOpacity: 0, elevation: 0 },
+    // 按下态
+    pressed: { backgroundColor: well, borderWidth: 1, borderColor: border, shadowOpacity: 0, elevation: 0 },
   };
 }
 
 export const darkColors = {
-  primary: '#8B7DFF',
-  primaryHover: '#9D91FF',
-  primarySubtle: '#322C55',
-  primaryOn: '#13141A',
+  primary: '#7A73FF',
+  primaryHover: '#8F89FF',
+  primarySubtle: '#1E2A5E',
+  primaryOn: '#0A1F33',
 
-  accent: '#4ECDC4',
-  accentSubtle: '#1E3B39',
+  accent: '#4DD8F0',
+  accentSubtle: '#0C3540',
 
-  success: '#4CC38A',
-  successSubtle: '#1E3A2E',
-  danger: '#F0837C',
-  dangerSubtle: '#3C2422',
-  warning: '#E0B95A',
-  warningSubtle: '#3A3320',
-  info: '#7FA8F5',
-  infoSubtle: '#233250',
+  success: '#4ADE9B',
+  successSubtle: '#0D3A2A',
+  danger: '#FF8095',
+  dangerSubtle: '#3D1620',
+  warning: '#F5B445',
+  warningSubtle: '#3D2E12',
+  info: '#78B0FF',
+  infoSubtle: '#12314F',
 
   palette: [
-    '#8B7DFF',
-    '#4ECDC4',
-    '#7FA8F5',
-    '#E5A9A3',
-    '#E0B95A',
-    '#C4B5FD',
-    '#98A0AE',
-    '#4CC38A',
+    '#8E88FF',
+    '#4DD8F0',
+    '#78B0FF',
+    '#4ADE9B',
+    '#F5C661',
+    '#FF8095',
+    '#B9A4FF',
+    '#A8B6C6',
   ],
 
   categories: {
@@ -281,41 +244,36 @@ export const darkColors = {
     '理财收益': '#9D91FF',
   },
 
-  background: '#2A2D35',
-  surface: '#2A2D35',
-  surfaceMuted: '#23262E',
-  surfaceSubtle: '#1F2229',
-  surfaceSection: '#2A2D35',
-  card: '#2A2D35',
-  cardSubtle: '#2E323B',
-  text: '#E4E7EC',
-  textSecondary: '#C2C8D2',
-  textMuted: '#98A0AE',
-  textSubtle: '#8A92A0',
-  border: 'rgba(0, 0, 0, 0.45)',
-  borderStrong: '#3C414C',
-  divider: 'rgba(0, 0, 0, 0.35)',
+  // Stripe 深蓝系暗色
+  background: '#082032',
+  surface: '#0E2E4A',
+  surfaceMuted: '#0B2438',
+  surfaceSubtle: '#0A2135',
+  surfaceSection: '#082032',
+  card: '#0E2E4A',
+  cardSubtle: '#123454',
+  text: '#E8EEF5',
+  textSecondary: '#C0CEDC',
+  textMuted: '#93A8BE',
+  textSubtle: '#6E869D',
+  border: '#1C3C5A',
+  borderStrong: '#25496B',
+  divider: '#14324D',
   white: '#FFFFFF',
   black: '#000000',
   overlay: 'rgba(0, 0, 0, 0.6)',
-  shadow: 'rgba(0, 0, 0, 0.55)',
+  shadow: 'rgba(0, 0, 0, 0.5)',
+  shadowInk: '#000000',
 
-  neuBase: '#2A2D35',
-  neuLight: '#33373F',
-  neuDark: '#212429',
-  neuInset: '#252830',
-  neuEdge: '#24272E',
-  neuHighlight: '#33373F',
-
-  pageBg: '#2A2D35',
-  starColor: '#A79BFF',
-  starColorLight: '#6E63C9',
-  chipBg: '#2A2D35',
-  badgeBg: '#322C55',
-  iconBg: '#322C55',
-  iconBgAlt: '#1E3B39',
-  iconBgDanger: '#3C2422',
-  iconBgWarning: '#3A3320',
+  pageBg: '#082032',
+  starColor: '#9F9AFF',
+  starColorLight: '#4B48A8',
+  chipBg: '#0E2E4A',
+  badgeBg: '#1E2A5E',
+  iconBg: '#1E2A5E',
+  iconBgAlt: '#0C3540',
+  iconBgDanger: '#3D1620',
+  iconBgWarning: '#3D2E12',
 };
 
 export function getThemeColors(theme = 'light') {

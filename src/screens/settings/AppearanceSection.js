@@ -28,7 +28,7 @@ function AppearanceSection({ onToggleTheme }) {
         <View style={styles.listContent}>
           <Text style={[styles.listTitle, { color: tc.text }]}>深色模式</Text>
         </View>
-        <View style={[styles.toggleTrack, neu.inset]}>
+        <View style={[styles.toggleTrack, neu.inset, settings.theme === 'dark' && { backgroundColor: tc.primary, borderColor: tc.primary }]}>
           <View
             style={[
               styles.toggleThumb,

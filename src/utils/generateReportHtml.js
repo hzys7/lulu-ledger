@@ -8,44 +8,45 @@ const REPORT_CSS = `
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: #E0E5EC;
-  color: #333A45;
+  background: #F6F9FC;
+  color: #0A2540;
   padding: 40px 32px;
 }
 .report { max-width: 640px; margin: 0 auto; }
 .header { text-align: center; margin-bottom: 32px; }
-.header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: #333A45; }
-.header .app-name { font-size: 13px; color: #6B7280; margin-top: 4px; }
-.header .period { font-size: 14px; color: #6B7280; margin-top: 2px; }
+.header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: #0A2540; }
+.header .app-name { font-size: 13px; color: #697386; margin-top: 4px; }
+.header .period { font-size: 14px; color: #697386; margin-top: 2px; }
 
 .summary-grid {
   display: flex; gap: 16px; margin-bottom: 28px;
 }
-/* 新拟物：与背景同色 + 双光源阴影（左上高光 / 右下暗影） */
+/* Stripe 风格：白卡 + 1px 细边框 + 多层精致阴影 */
 .summary-card {
-  flex: 1; background: #E0E5EC; border-radius: 20px;
+  flex: 1; background: #FFFFFF; border-radius: 12px;
   padding: 20px 16px; text-align: center;
-  box-shadow: 8px 8px 16px #B8BCC2, -8px -8px 16px #FFFFFF;
+  border: 1px solid #E6EBF1;
+  box-shadow: 0 2px 4px rgba(10, 37, 64, 0.04), 0 8px 16px rgba(10, 37, 64, 0.06);
 }
-.summary-card .label { font-size: 12px; color: #6B7280; font-weight: 500; margin-bottom: 6px; }
+.summary-card .label { font-size: 12px; color: #697386; font-weight: 500; margin-bottom: 6px; }
 .summary-card .value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-.summary-card .sub { font-size: 11px; color: #7C8593; margin-top: 4px; }
+.summary-card .sub { font-size: 11px; color: #8792A2; margin-top: 4px; }
 
 .section { margin-bottom: 28px; }
 .section-title {
-  font-size: 15px; font-weight: 600; color: #333A45;
+  font-size: 15px; font-weight: 600; color: #0A2540;
   margin-bottom: 12px; letter-spacing: -0.3px;
 }
 
 .cat-table { width: 100%; border-collapse: collapse; }
 .cat-table th {
-  text-align: left; font-size: 11px; font-weight: 600; color: #6B7280;
+  text-align: left; font-size: 11px; font-weight: 600; color: #697386;
   text-transform: uppercase; letter-spacing: 0.5px;
-  padding-bottom: 8px; border-bottom: 1px solid rgba(184, 188, 194, 0.6);
+  padding-bottom: 8px; border-bottom: 1px solid #E6EBF1;
 }
 .cat-table th:last-child { text-align: right; }
 .cat-table td {
-  padding: 8px 0; font-size: 14px; border-bottom: 1px solid rgba(184, 188, 194, 0.35);
+  padding: 8px 0; font-size: 14px; border-bottom: 1px solid #EDF1F6;
 }
 .cat-table td:last-child { text-align: right; font-weight: 600; font-variant: tabular-nums; }
 .cat-row .dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 8px; }
@@ -53,35 +54,34 @@ body {
 
 .daily-chart { margin-top: 8px; }
 .daily-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-.daily-row .day-label { width: 24px; font-size: 11px; color: #7C8593; font-weight: 500; text-align: right; }
-/* 凹陷槽：内阴影 */
+.daily-row .day-label { width: 24px; font-size: 11px; color: #8792A2; font-weight: 500; text-align: right; }
 .daily-row .bar-wrap {
-  flex: 1; height: 14px; background: #DDE3EA; border-radius: 7px; overflow: hidden; display: flex;
-  box-shadow: inset 2px 2px 5px #B8BCC2, inset -2px -2px 5px #FFFFFF;
+  flex: 1; height: 14px; background: #E9EEF4; border-radius: 7px; overflow: hidden; display: flex;
+  border: 1px solid #E6EBF1;
 }
-.daily-row .bar-expense { height: 100%; background: #E5675F; border-radius: 7px; opacity: 0.9; }
-.daily-row .bar-income { height: 100%; background: #2E9E6B; border-radius: 7px; opacity: 0.9; }
+.daily-row .bar-expense { height: 100%; background: #DF1B41; border-radius: 7px; }
+.daily-row .bar-income { height: 100%; background: #1EA672; border-radius: 7px; }
 .daily-row .bar-empty { flex: 1; }
 
 .transaction-list { margin-top: 8px; }
 .tx-item {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 7px 0; border-bottom: 1px solid rgba(184, 188, 194, 0.35); font-size: 13px;
+  padding: 7px 0; border-bottom: 1px solid #EDF1F6; font-size: 13px;
 }
 .tx-item .tx-left { display: flex; align-items: center; gap: 8px; }
 .tx-item .tx-dot { width: 6px; height: 6px; border-radius: 3px; }
 .tx-item .tx-cat { font-weight: 500; }
-.tx-item .tx-note { color: #7C8593; font-size: 11px; margin-left: 4px; }
+.tx-item .tx-note { color: #8792A2; font-size: 11px; margin-left: 4px; }
 .tx-item .tx-amount { font-weight: 600; font-variant: tabular-nums; }
-.income { color: #2E9E6B; }
-.expense { color: #333A45; }
+.income { color: #1EA672; }
+.expense { color: #0A2540; }
 
-.footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid rgba(184, 188, 194, 0.6); }
-.footer p { font-size: 11px; color: #7C8593; }
+.footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #E6EBF1; }
+.footer p { font-size: 11px; color: #8792A2; }
 `;
 
 function catColor(name, catColors) {
-  return catColors[name] || '#7C8593';
+  return catColors[name] || '#697386';
 }
 
 function catDot(name, catColors) {
@@ -180,17 +180,17 @@ export function generateMonthlyReportHtml({
   <div class="summary-grid">
     <div class="summary-card">
       <div class="label">收入</div>
-      <div class="value" style="color:#2E9E6B">${fm(totalIncome)}</div>
+      <div class="value" style="color:#1EA672">${fm(totalIncome)}</div>
       <div class="sub">${symbol}${Math.round(totalIncome / (daysInMonth || 1))}/天</div>
     </div>
     <div class="summary-card">
       <div class="label">支出</div>
-      <div class="value" style="color:#333A45">${fm(totalExpense)}</div>
+      <div class="value" style="color:#0A2540">${fm(totalExpense)}</div>
       <div class="sub">${symbol}${Math.round(totalExpense / (daysInMonth || 1))}/天</div>
     </div>
     <div class="summary-card">
       <div class="label">结余</div>
-      <div class="value" style="color:${balance >= 0 ? '#2E9E6B' : '#E5675F'}">${fm(balance)}</div>
+      <div class="value" style="color:${balance >= 0 ? '#1EA672' : '#DF1B41'}">${fm(balance)}</div>
       <div class="sub">${balance >= 0 ? '盈余' : '超支'}</div>
     </div>
   </div>
@@ -205,7 +205,7 @@ export function generateMonthlyReportHtml({
           <td>${catDot(cat, catColors)}${escapeHtml(cat)}</td>
           <td>${fm(amt)}</td>
         </tr>`).join('')}
-      <tr><td class="cat-total">合计</td><td class="cat-total" style="color:#E5675F">${fm(totalExpense)}</td></tr>
+      <tr><td class="cat-total">合计</td><td class="cat-total" style="color:#DF1B41">${fm(totalExpense)}</td></tr>
     </table>
   </div>` : ''}
 
@@ -217,9 +217,9 @@ export function generateMonthlyReportHtml({
       ${incomeCats.map(([cat, amt]) => `
         <tr class="cat-row">
           <td>${catDot(cat, catColors)}${escapeHtml(cat)}</td>
-          <td style="color:#2E9E6B">${fm(amt)}</td>
+          <td style="color:#1EA672">${fm(amt)}</td>
         </tr>`).join('')}
-      <tr><td class="cat-total">合计</td><td class="cat-total" style="color:#2E9E6B">${fm(totalIncome)}</td></tr>
+      <tr><td class="cat-total">合计</td><td class="cat-total" style="color:#1EA672">${fm(totalIncome)}</td></tr>
     </table>
   </div>` : ''}
 
@@ -228,9 +228,9 @@ export function generateMonthlyReportHtml({
     <div class="daily-chart">
       ${dailyRows}
     </div>
-    <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:#7C8593">
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#E5675F;margin-right:4px"></span>支出</span>
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#2E9E6B;margin-right:4px"></span>收入</span>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:#8792A2">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#DF1B41;margin-right:4px"></span>支出</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1EA672;margin-right:4px"></span>收入</span>
     </div>
   </div>
 
@@ -271,7 +271,7 @@ export function generateYearlyReportHtml({
           <div class="bar-expense" style="width:${m.totalExpense > 0 ? (m.totalExpense / totalExpense) * 100 : 0}%"></div>
           <div class="bar-income" style="width:${m.totalIncome > 0 ? (m.totalIncome / totalIncome) * 100 : 0}%"></div>
         </div>
-        <span style="font-size:11px;color:#6B7280;min-width:60px;text-align:right;font-variant:tabular-nums">${fm(m.balance)}</span>
+        <span style="font-size:11px;color:#697386;min-width:60px;text-align:right;font-variant:tabular-nums">${fm(m.balance)}</span>
       </div>`;
   });
 
@@ -291,24 +291,24 @@ export function generateYearlyReportHtml({
   <div class="summary-grid">
     <div class="summary-card">
       <div class="label">年度收入</div>
-      <div class="value" style="color:#2E9E6B">${fm(totalIncome)}</div>
+      <div class="value" style="color:#1EA672">${fm(totalIncome)}</div>
     </div>
     <div class="summary-card">
       <div class="label">年度支出</div>
-      <div class="value" style="color:#333A45">${fm(totalExpense)}</div>
+      <div class="value" style="color:#0A2540">${fm(totalExpense)}</div>
     </div>
     <div class="summary-card">
       <div class="label">年度结余</div>
-      <div class="value" style="color:${balance >= 0 ? '#2E9E6B' : '#E5675F'}">${fm(balance)}</div>
+      <div class="value" style="color:${balance >= 0 ? '#1EA672' : '#DF1B41'}">${fm(balance)}</div>
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">月度趋势</div>
     <div class="daily-chart">${monthlyRows}</div>
-    <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:#7C8593">
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#E5675F;margin-right:4px"></span>支出</span>
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#2E9E6B;margin-right:4px"></span>收入</span>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:#8792A2">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#DF1B41;margin-right:4px"></span>支出</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#1EA672;margin-right:4px"></span>收入</span>
     </div>
   </div>
 

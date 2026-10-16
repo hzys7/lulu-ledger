@@ -1,11 +1,10 @@
 ﻿import React, { memo } from 'react';
-import { useThemeColors, useNeu } from '../hooks/useThemeColors';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
+import { spacing, fontSize, fontWeight } from '../theme';
 
-export const SectionHeader = memo(function SectionHeader({ title, subtitle, action, onAction, style, icon }) {
+export const SectionHeader = memo(function SectionHeader({ title, subtitle, action, onAction, style }) {
   const tc = useThemeColors();
-  const neu = useNeu();
   return (
     <View style={[styles.row, style]}>
       <View style={styles.left}>
@@ -15,10 +14,7 @@ export const SectionHeader = memo(function SectionHeader({ title, subtitle, acti
       {action ? (
         <Pressable
           onPress={onAction}
-          style={({ pressed }) => [
-            styles.action,
-            pressed ? neu.inset : neu.raisedSm,
-          ]}
+          style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={[styles.actionText, { color: tc.primary }]}>{action}</Text>
@@ -49,9 +45,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   action: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
+    paddingLeft: spacing.md,
+    paddingVertical: spacing.xs,
   },
   actionText: {
     fontSize: fontSize.sm,

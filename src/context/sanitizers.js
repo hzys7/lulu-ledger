@@ -31,7 +31,7 @@ export function sanitizeBooks(list) {
       id: 'default',
       name: '日常账本',
       icon: 'wallet',
-      color: '#6D5DFC',
+      color: '#635BFF',
       currency: 'CNY',
       createdAt: new Date().toISOString(),
     }];
@@ -42,7 +42,7 @@ export function sanitizeBooks(list) {
       id: b.id,
       name: b.name || '未命名账本',
       icon: b.icon || 'wallet',
-      color: b.color || '#6D5DFC',
+      color: b.color || '#635BFF',
       currency: b.currency || 'CNY',
       createdAt: b.createdAt || new Date().toISOString(),
     }));
@@ -72,7 +72,7 @@ export function sanitizeAccounts(list) {
       name: a.name || '账户',
       type: ['wechat', 'alipay', 'bank', 'cash', 'other'].includes(a.type) ? a.type : 'other',
       balance: toNumber(a.balance),
-      color: a.color || '#6D5DFC',
+      color: a.color || '#635BFF',
       icon: a.icon || 'wallet',
       isDefault: !!a.isDefault,
       createdAt: a.createdAt || new Date().toISOString(),

@@ -159,6 +159,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
                   style={[
                     styles.toggleTrack,
                     neu.inset,
+                    config.enabled && { backgroundColor: tc.primary, borderColor: tc.primary },
                     { justifyContent: config.enabled ? 'flex-end' : 'flex-start' },
                   ]}
                 >

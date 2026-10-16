@@ -2,7 +2,6 @@
 import React, { memo } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNeu } from '../hooks/useThemeColors';
 
 // 账户图标配置（color 为各渠道品牌色，用于图标本身）
 const ACCOUNT_ICONS = {
@@ -21,9 +20,13 @@ const CUSTOM_IMAGES = {
   // cash: require('../../assets/icons/cash.png'),
 };
 
-// 新拟物：图标方块与背景同色系（凸起），仅图标本身带账户色
+// 账户图标：柔和的彩色圆角底（Stripe 的 icon tint 手法）
+function tintBg(hex, alpha = '1F') {
+  if (typeof hex !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return 'transparent';
+  return hex + alpha;
+}
+
 export const AccountIcon = memo(function AccountIcon({ type, size = 42, icon, color }) {
-  const neu = useNeu();
   const config = ACCOUNT_ICONS[type] || ACCOUNT_ICONS.other;
   const hasCustomImage = CUSTOM_IMAGES[type];
 
@@ -31,7 +34,7 @@ export const AccountIcon = memo(function AccountIcon({ type, size = 42, icon, co
   const iconSize = Math.round(size * 0.5);
 
   return (
-    <View style={[styles.container, neu.raisedSm, { width: size, height: size, borderRadius: size * 0.3 }]}>
+    <View style={[styles.container, { width: size, height: size, borderRadius: size * 0.3, backgroundColor: tintBg(iconColor) }]}>
       {hasCustomImage ? (
         <Image
           source={CUSTOM_IMAGES[type]}

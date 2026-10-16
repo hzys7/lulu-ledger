@@ -82,7 +82,7 @@ export default function HomeScreen({ navigation }) {
   const [editingBook, setEditingBook] = useState(null);
   const [newBookName, setNewBookName] = useState('');
   const [newBookIcon, setNewBookIcon] = useState('wallet');
-  const [newBookColor, setNewBookColor] = useState('#6D5DFC');
+  const [newBookColor, setNewBookColor] = useState('#635BFF');
   const netWorth = getNetWorth();
 
   // 今日支出
@@ -148,7 +148,7 @@ export default function HomeScreen({ navigation }) {
   const greeting = getGreeting();
 
   const openAddBook = () => {
-    setEditingBook(null); setNewBookName(''); setNewBookIcon('wallet'); setNewBookColor('#6D5DFC');
+    setEditingBook(null); setNewBookName(''); setNewBookIcon('wallet'); setNewBookColor('#635BFF');
     setShowBookModal(true);
   };
   const openEditBook = (book) => {
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   todayBadgeText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    color: '#6D5DFC',
+    color: '#635BFF',
   },
   todayAmount: {
     fontSize: fontSize.xl,
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   netWorthLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    color: '#6D5DFC',
+    color: '#635BFF',
     marginBottom: spacing.sm,
   },
   netWorthAmount: {

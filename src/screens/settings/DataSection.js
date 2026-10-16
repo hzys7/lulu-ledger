@@ -136,6 +136,7 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
             style={[
               autoStyles.toggleTrack,
               neu.inset,
+              backupSettings.enabled && { backgroundColor: tc.primary, borderColor: tc.primary },
               { justifyContent: backupSettings.enabled ? 'flex-end' : 'flex-start' },
             ]}
           >

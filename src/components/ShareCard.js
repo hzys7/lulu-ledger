@@ -1,74 +1,62 @@
-// 小璐记账 · 分享卡片（新拟物 / Soft UI）
+// 小璐记账 · 分享卡片（Stripe 风格）
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { formatMoney } from '../utils/currency';
 
-// 分享图自带一套固定配色（不跟随 App 设置），但风格与 App 的新拟物保持一致
+// 分享图自带一套固定配色（不跟随 App 设置），风格与 App 的 Stripe 风格保持一致
 const THEMES = {
   light: {
-    bg: '#E0E5EC',
-    cardBg: '#E0E5EC',
-    primary: '#6D5DFC',
-    accent: '#4ECDC4',
-    text: '#333A45',
-    textSecondary: '#525A66',
-    textMuted: '#7C8593',
-    border: 'rgba(184, 188, 194, 0.55)',
-    track: '#D2D9E3',
-    success: '#2E9E6B',
-    danger: '#E5675F',
-    shadowDark: '#B8BCC2',
-    shadowLight: '#FFFFFF',
+    bg: '#F6F9FC',
+    cardBg: '#FFFFFF',
+    primary: '#635BFF',
+    accent: '#0EA5C4',
+    text: '#0A2540',
+    textSecondary: '#425466',
+    textMuted: '#697386',
+    border: '#E6EBF1',
+    track: '#E9EEF4',
+    success: '#1EA672',
+    danger: '#DF1B41',
+    shadowDark: '#0A2540',
     badgeText: '#FFFFFF',
   },
   dark: {
-    bg: '#2A2D35',
-    cardBg: '#2A2D35',
-    primary: '#8B7DFF',
-    accent: '#4ECDC4',
-    text: '#E4E7EC',
-    textSecondary: '#C2C8D2',
-    textMuted: '#8A92A0',
-    border: 'rgba(0, 0, 0, 0.35)',
-    track: '#1F2229',
-    success: '#4CC38A',
-    danger: '#F0837C',
-    shadowDark: '#212429',
-    shadowLight: '#33373F',
-    badgeText: '#13141A',
+    bg: '#082032',
+    cardBg: '#0E2E4A',
+    primary: '#7A73FF',
+    accent: '#4DD8F0',
+    text: '#E8EEF5',
+    textSecondary: '#C0CEDC',
+    textMuted: '#93A8BE',
+    border: '#1C3C5A',
+    track: '#0A2135',
+    success: '#4ADE9B',
+    danger: '#FF8095',
+    shadowDark: '#000000',
+    badgeText: '#0A1F33',
   },
 };
 
-// 新拟物近似（RN 无双重/内阴影）：凸起只保留左上高光 + 右下柔和投影
-function raised(t, offset = 6, radius = 16, elevation = 6) {
+// Stripe 风格：白卡 + 1px 细边框 + 向下柔和投影
+function raised(t, offset = 2, radius = 8, elevation = 2) {
   return {
     backgroundColor: t.cardBg,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderTopColor: t.shadowLight,
-    borderLeftColor: t.shadowLight,
-    borderBottomWidth: 0,
-    borderRightWidth: 0,
+    borderWidth: 1,
+    borderColor: t.border,
     shadowColor: t.shadowDark,
-    shadowOffset: { width: offset, height: offset },
-    shadowOpacity: 0.6,
+    shadowOffset: { width: 0, height: offset },
+    shadowOpacity: 0.08,
     shadowRadius: radius,
     elevation,
   };
 }
 
-// 凹陷：左上压暗 + 右下提亮 + 更深的底色
+// 内嵌通道：浅灰底 + 1px 边框
 function inset(t) {
   return {
     backgroundColor: t.track,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderTopColor: t.shadowDark,
-    borderLeftColor: t.shadowDark,
-    borderBottomWidth: 1,
-    borderRightWidth: 1,
-    borderBottomColor: t.shadowLight,
-    borderRightColor: t.shadowLight,
+    borderWidth: 1,
+    borderColor: t.border,
   };
 }
 
@@ -162,13 +150,13 @@ export default function ShareCard({
 const styles = StyleSheet.create({
   card: {
     width: 540,
-    borderRadius: 24,
+    borderRadius: 14,
     padding: 28,
     paddingTop: 32,
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
     shadowRadius: 18,
-    elevation: 8,
+    elevation: 6,
   },
   header: {
     alignItems: 'center',

@@ -1,21 +1,20 @@
 ﻿import React, { memo, useState, useCallback } from 'react';
-import { useThemeColors, useNeu } from '../hooks/useThemeColors';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 
-// 新拟物按钮：默认凸起，按下转为凹陷（不使用位移，元素“长”在背景上）
+// Stripe 风格按钮：实色主色 + 同色系柔和投影；次级为白底细边框；按下轻微下压
 export const Button = memo(function Button({ title, onPress, variant = 'primary', icon, style, disabled, loading }) {
   const tc = useThemeColors();
-  const neu = useNeu();
   const [pressed, setPressed] = useState(false);
 
   const solidShadow = (color) => ({
     shadowColor: color,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: pressed ? 0.25 : 0.4,
-    shadowRadius: pressed ? 6 : 12,
-    elevation: pressed ? 3 : 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: pressed ? 0.18 : 0.28,
+    shadowRadius: 6,
+    elevation: pressed ? 1 : 2,
   });
 
   const variants = {
@@ -25,16 +24,17 @@ export const Button = memo(function Button({ title, onPress, variant = 'primary'
       extra: solidShadow(tc.primary),
     },
     secondary: {
-      text: pressed ? tc.textSecondary : tc.text,
-      extra: pressed ? neu.pressed : neu.raisedSm,
+      bg: pressed ? tc.surfaceMuted : tc.card,
+      text: tc.text,
+      extra: { borderWidth: 1, borderColor: tc.borderStrong, shadowOpacity: 0, elevation: 0 },
     },
     ghost: {
       bg: 'transparent',
       text: pressed ? tc.text : tc.textSecondary,
-      extra: { borderWidth: 0, shadowOpacity: 0, elevation: 0, backgroundColor: 'transparent' },
+      extra: { borderWidth: 0, shadowOpacity: 0, elevation: 0 },
     },
     danger: {
-      bg: pressed ? '#D65B54' : tc.danger,
+      bg: pressed ? '#C4162F' : tc.danger,
       text: tc.white,
       extra: solidShadow(tc.danger),
     },
@@ -48,7 +48,7 @@ export const Button = memo(function Button({ title, onPress, variant = 'primary'
     <Pressable
       style={[
         styles.button,
-        v.bg ? { backgroundColor: v.bg } : null,
+        { backgroundColor: v.bg, transform: [{ scale: pressed && !disabled ? 0.98 : 1 }] },
         v.extra,
         disabled && styles.buttonDisabled,
         style,

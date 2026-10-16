@@ -36,7 +36,7 @@ function MainTabs() {
         tabBarIcon: ({ focused, color, size }) => {
           // 中间 "AddTab" 用自定义外凸的圆形按钮
           if (route.name === 'AddTab') {
-            // 新拟物：强调色凸起圆形按钮，不悬浮、不位移
+            // Stripe 风格：主色实心圆钮 + 同色系柔和投影
             return (
               <View style={{
                 width: 44,
@@ -67,16 +67,13 @@ function MainTabs() {
         tabBarInactiveTintColor: tc.textSubtle,
         tabBarStyle: {
           backgroundColor: tc.surface,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: tc.border,
           height: 68,
           paddingTop: 8,
           paddingBottom: 10,
-          // 新拟物：底部导航与背景同色，靠向上的柔和暗影分隔
-          shadowColor: tc.neuDark,
-          shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: 0.5,
-          shadowRadius: 10,
-          elevation: 12,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: {
           fontSize: fontSize.xs,
