@@ -1,6 +1,6 @@
 // DataSection: 可折叠的数据管理模块
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
 import { getThemeColors, spacing, neuStyles } from '../../theme';
@@ -47,7 +47,7 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
   };
 
   const handleToggleAutoBackup = async (value) => {
-    // Switch 的 onValueChange 会传入新值，直接使用
+    // 由外层显式传入目标状态
     const newEnabled = value !== undefined ? value : !backupSettings.enabled;
     console.log('[DataSection] Toggle auto backup:', newEnabled);
     await updateAppSettings({ autoBackupEnabled: newEnabled });
@@ -89,38 +89,41 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
       <CollapsibleSection
         title="数据管理"
         icon="folder-open-outline"
-        iconColor="#34C759"
+        iconColor={tc.success}
       >
         <ActionRow
           icon="document-text-outline"
-          iconColor={tc.text}
-          iconBg={tc.surfaceMuted}
+          iconColor={tc.primary}
+          iconBg={tc.primarySubtle}
           label="导出为 CSV"
           onPress={onExportCSV}
           rightIcon="download-outline"
         />
         <ActionRow
           icon="cloud-upload-outline"
-          iconColor={tc.text}
-          iconBg={tc.surfaceMuted}
+          iconColor={tc.info}
+          iconBg={tc.infoSubtle}
           label="完整备份导出"
           onPress={onExportJSON}
           rightIcon="download-outline"
         />
         <ActionRow
           icon="download-outline"
-          iconColor={tc.text}
-          iconBg={tc.surfaceMuted}
+          iconColor={tc.success}
+          iconBg={tc.successSubtle}
           label="导入备份"
           onPress={onOpenImportModal}
+          rightIcon="enter-outline"
         />
 
         {/* 自动备份开关 */}
-        <View
+        <TouchableOpacity
           style={[autoStyles.row, neu.raisedSm]}
+          onPress={() => handleToggleAutoBackup(!backupSettings.enabled)}
+          activeOpacity={0.7}
         >
-          <View style={[autoStyles.iconWrap, { backgroundColor: '#FF9F0A' + '15' }]}>
-            <Ionicons name="time-outline" size={18} color="#FF9F0A" />
+          <View style={[autoStyles.iconWrap, { backgroundColor: tc.warningSubtle }]}>
+            <Ionicons name="time-outline" size={18} color={tc.warning} />
           </View>
           <View style={autoStyles.rowContent}>
             <Text style={[autoStyles.rowLabel, { color: tc.text }]}>自动备份</Text>
@@ -128,13 +131,17 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
               {backupSummary}
             </Text>
           </View>
-          <Switch
-            value={backupSettings.enabled}
-            onValueChange={handleToggleAutoBackup}
-            trackColor={{ false: tc.surfaceMuted, true: '#FF9F0A' }}
-            thumbColor="#fff"
-          />
-        </View>
+          {/* 与其它设置项一致的新拟物开关（凹槽 + 滑块） */}
+          <View
+            style={[
+              autoStyles.toggleTrack,
+              neu.inset,
+              { justifyContent: backupSettings.enabled ? 'flex-end' : 'flex-start' },
+            ]}
+          >
+            <View style={[autoStyles.toggleThumb, { backgroundColor: tc.white }]} />
+          </View>
+        </TouchableOpacity>
 
         {/* 自动备份详情 */}
         {backupSettings.enabled && (
@@ -243,6 +250,20 @@ const autoStyles = StyleSheet.create({
   rowHint: {
     fontSize: 12,
     marginTop: 1,
+  },
+  toggleTrack: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 2,
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
   },
   panel: {
     marginTop: spacing.sm,

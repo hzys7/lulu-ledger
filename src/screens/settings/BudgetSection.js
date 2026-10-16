@@ -18,8 +18,8 @@ function BudgetSection({ onNavigate }) {
         onPress={onNavigate}
         activeOpacity={0.7}
       >
-        <View style={[styles.listIcon, { backgroundColor: '#FF9F0A' + '15' }]}>
-          <Ionicons name="pie-chart" size={18} color="#FF9F0A" />
+        <View style={[styles.listIcon, { backgroundColor: tc.warningSubtle }]}>
+          <Ionicons name="pie-chart" size={18} color={tc.warning} />
         </View>
         <View style={styles.listContent}>
           <Text style={[styles.listTitle, { color: tc.text }]}>月度预算</Text>

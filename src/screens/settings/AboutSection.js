@@ -18,8 +18,8 @@ function AboutSection({ isChecking, checkResult, checkResultText, onToggleAutoCh
     <Section title="关于">
       {/* 版本信息 */}
       <View style={[styles.listItem, neu.raisedSm]}>
-        <View style={[styles.listIcon, { backgroundColor: '#6C63FF' + '15' }]}>
-          <Ionicons name="wallet" size={18} color="#6C63FF" />
+        <View style={[styles.listIcon, { backgroundColor: tc.primarySubtle }]}>
+          <Ionicons name="wallet" size={18} color={tc.primary} />
         </View>
         <View style={styles.listContent}>
           <Text style={[styles.listTitle, { color: tc.text }]}>小璐记账</Text>
@@ -35,8 +35,8 @@ function AboutSection({ isChecking, checkResult, checkResultText, onToggleAutoCh
         onPress={onToggleAutoCheck}
         activeOpacity={0.7}
       >
-        <View style={[styles.listIcon, { backgroundColor: '#007AFF' + '15' }]}>
-          <Ionicons name="sync" size={18} color="#007AFF" />
+        <View style={[styles.listIcon, { backgroundColor: tc.infoSubtle }]}>
+          <Ionicons name="sync" size={18} color={tc.info} />
         </View>
         <View style={styles.listContent}>
           <Text style={[styles.listTitle, { color: tc.text }]}>自动检查更新</Text>
@@ -64,11 +64,11 @@ function AboutSection({ isChecking, checkResult, checkResultText, onToggleAutoCh
         activeOpacity={0.7}
         disabled={isChecking}
       >
-        <View style={[styles.listIcon, { backgroundColor: '#007AFF' + '15' }]}>
+        <View style={[styles.listIcon, { backgroundColor: tc.infoSubtle }]}>
           <Ionicons
             name={isChecking ? 'sync' : 'cloud-download-outline'}
             size={18}
-            color="#007AFF"
+            color={tc.info}
           />
         </View>
         <View style={styles.listContent}>

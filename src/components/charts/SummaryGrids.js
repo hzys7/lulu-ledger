@@ -40,13 +40,15 @@ export function MonthSummaryGrid({ tc, selectedMonth, dataType, totalAmount, dai
         label={`比上月${dataType === 'expense' ? '支出' : '收入'}(元)`}
         amount={`${diffVsLast >= 0 ? '+' : ''}${diffVsLast.toFixed(2)}`}
         amountColor={diffVsLast > 0 ? tc.danger : tc.success}
-        icon="trending-down" iconBg={tc.iconBgDanger} iconColor={tc.success}
+        icon="swap-vertical" iconBg={tc.surfaceMuted} iconColor={tc.info}
       />
       <SummaryCell tc={tc}
         label="收支结余(元)"
         amount={balance.toFixed(2)}
         amountColor={balance >= 0 ? tc.success : tc.danger}
-        icon="card" iconBg={tc.iconBgDanger} iconColor={tc.danger}
+        icon="card"
+        iconBg={balance >= 0 ? tc.successSubtle : tc.dangerSubtle}
+        iconColor={balance >= 0 ? tc.success : tc.danger}
       />
     </View>
   );
@@ -69,13 +71,15 @@ export function WeekSummaryGrid({ tc, dataType, totalAmount, dailyAvg, diffVsLas
         label={`比上周${dataType === 'expense' ? '支出' : '收入'}(元)`}
         amount={`${diffVsLast >= 0 ? '+' : ''}${diffVsLast.toFixed(2)}`}
         amountColor={diffVsLast > 0 ? tc.danger : tc.success}
-        icon="trending-down" iconBg={tc.iconBgDanger} iconColor={tc.success}
+        icon="swap-vertical" iconBg={tc.surfaceMuted} iconColor={tc.info}
       />
       <SummaryCell tc={tc}
         label="收支结余(元)"
         amount={balance.toFixed(2)}
         amountColor={balance >= 0 ? tc.success : tc.danger}
-        icon="card" iconBg={tc.iconBgDanger} iconColor={tc.danger}
+        icon="card"
+        iconBg={balance >= 0 ? tc.successSubtle : tc.dangerSubtle}
+        iconColor={balance >= 0 ? tc.success : tc.danger}
       />
     </View>
   );
@@ -98,13 +102,15 @@ export function YearSummaryGrid({ tc, dataType, reportYear, totalAmount, monthly
         label={`比去年${dataType === 'expense' ? '支出' : '收入'}(元)`}
         amount={`${diffVsLast >= 0 ? '+' : ''}${diffVsLast.toFixed(2)}`}
         amountColor={diffVsLast > 0 ? tc.danger : tc.success}
-        icon="trending-down" iconBg={tc.iconBgDanger} iconColor={tc.success}
+        icon="swap-vertical" iconBg={tc.surfaceMuted} iconColor={tc.info}
       />
       <SummaryCell tc={tc}
         label="收支结余(元)"
         amount={balance.toFixed(2)}
         amountColor={balance >= 0 ? tc.success : tc.danger}
-        icon="card" iconBg={tc.iconBgDanger} iconColor={tc.danger}
+        icon="card"
+        iconBg={balance >= 0 ? tc.successSubtle : tc.dangerSubtle}
+        iconColor={balance >= 0 ? tc.success : tc.danger}
       />
     </View>
   );

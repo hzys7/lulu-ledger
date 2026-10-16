@@ -13,8 +13,8 @@ function AiSection({ onOpenModal }) {
     <Section title="AI 智能">
       <ActionRow
         icon="sparkles"
-        iconColor="#AF52DE"
-        iconBg="#AF52DE15"
+        iconColor={tc.primary}
+        iconBg={tc.primarySubtle}
         label="AI 配置"
         onPress={onOpenModal}
         rightIcon="chevron-forward"

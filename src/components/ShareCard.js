@@ -1,34 +1,76 @@
-// 小璐记账 · 分享卡片（精致版）
+// 小璐记账 · 分享卡片（新拟物 / Soft UI）
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { formatMoney } from '../utils/currency';
 
+// 分享图自带一套固定配色（不跟随 App 设置），但风格与 App 的新拟物保持一致
 const THEMES = {
   light: {
-    bg: '#FFFFFF',
-    cardBg: '#F8FAFC',
-    primary: '#111827',
-    accent: '#667EEA',
-    text: '#0F172A',
-    textSecondary: '#64748B',
-    textMuted: '#94A3B8',
-    border: '#E5E7EB',
-    success: '#059669',
-    danger: '#DC2626',
+    bg: '#E0E5EC',
+    cardBg: '#E0E5EC',
+    primary: '#6D5DFC',
+    accent: '#4ECDC4',
+    text: '#333A45',
+    textSecondary: '#525A66',
+    textMuted: '#7C8593',
+    border: 'rgba(184, 188, 194, 0.55)',
+    track: '#D2D9E3',
+    success: '#2E9E6B',
+    danger: '#E5675F',
+    shadowDark: '#B8BCC2',
+    shadowLight: '#FFFFFF',
+    badgeText: '#FFFFFF',
   },
   dark: {
-    bg: '#1E1E2E',
-    cardBg: '#2A2A3C',
-    primary: '#F1F5F9',
-    accent: '#818CF8',
-    text: '#F1F5F9',
-    textSecondary: '#94A3B8',
-    textMuted: '#64748B',
-    border: '#334155',
-    success: '#34D399',
-    danger: '#F87171',
+    bg: '#2A2D35',
+    cardBg: '#2A2D35',
+    primary: '#8B7DFF',
+    accent: '#4ECDC4',
+    text: '#E4E7EC',
+    textSecondary: '#C2C8D2',
+    textMuted: '#8A92A0',
+    border: 'rgba(0, 0, 0, 0.35)',
+    track: '#1F2229',
+    success: '#4CC38A',
+    danger: '#F0837C',
+    shadowDark: '#212429',
+    shadowLight: '#33373F',
+    badgeText: '#13141A',
   },
 };
+
+// 新拟物近似（RN 无双重/内阴影）：凸起只保留左上高光 + 右下柔和投影
+function raised(t, offset = 6, radius = 16, elevation = 6) {
+  return {
+    backgroundColor: t.cardBg,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: t.shadowLight,
+    borderLeftColor: t.shadowLight,
+    borderBottomWidth: 0,
+    borderRightWidth: 0,
+    shadowColor: t.shadowDark,
+    shadowOffset: { width: offset, height: offset },
+    shadowOpacity: 0.6,
+    shadowRadius: radius,
+    elevation,
+  };
+}
+
+// 凹陷：左上压暗 + 右下提亮 + 更深的底色
+function inset(t) {
+  return {
+    backgroundColor: t.track,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: t.shadowDark,
+    borderLeftColor: t.shadowDark,
+    borderBottomWidth: 1,
+    borderRightWidth: 1,
+    borderBottomColor: t.shadowLight,
+    borderRightColor: t.shadowLight,
+  };
+}
 
 export default function ShareCard({
   period, year, month, weekLabel,
@@ -44,17 +86,17 @@ export default function ShareCard({
   const totalAmount = dataType === 'expense' ? totalExpense : totalIncome;
 
   return (
-    <View style={[styles.card, { backgroundColor: t.bg }]}>
+    <View style={[styles.card, { backgroundColor: t.bg, shadowColor: t.shadowDark }]}>
       {/* 头部 */}
       <View style={styles.header}>
         <Text style={[styles.periodText, { color: t.text }]}>{periodLabel}</Text>
         <View style={[styles.badge, { backgroundColor: t.primary }]}>
-          <Text style={styles.badgeText}>{topLabel}报告</Text>
+          <Text style={[styles.badgeText, { color: t.badgeText }]}>{topLabel}报告</Text>
         </View>
       </View>
 
       {/* 核心数据 */}
-      <View style={[styles.dataCard, { backgroundColor: t.cardBg, borderColor: t.border }]}>
+      <View style={[styles.dataCard, raised(t)]}>
         <View style={styles.dataRow}>
           <View style={styles.dataItem}>
             <Text style={[styles.dataLabel, { color: t.textSecondary }]}>收入</Text>
@@ -96,7 +138,7 @@ export default function ShareCard({
                 </Text>
                 <View style={[styles.catDot, { backgroundColor: cat.color }]} />
                 <Text style={[styles.catName, { color: t.text }]}>{cat.name}</Text>
-                <View style={[styles.catBarBg, { backgroundColor: t.border }]}>
+                <View style={[styles.catBarBg, inset(t)]}>
                   <View style={[styles.catBar, { width: pct + '%', backgroundColor: cat.color }]} />
                 </View>
                 <Text style={[styles.catAmount, { color: t.text }]}>
@@ -120,23 +162,17 @@ export default function ShareCard({
 const styles = StyleSheet.create({
   card: {
     width: 540,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    paddingTop: 32,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.6,
+    shadowRadius: 18,
+    elevation: 8,
   },
   header: {
     alignItems: 'center',
     marginBottom: 24,
-  },
-  appName: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
   },
   periodText: {
     fontSize: 28,
@@ -152,14 +188,12 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    color: '#FFFFFF',
     fontWeight: '600',
   },
 
   dataCard: {
-    borderRadius: 14,
+    borderRadius: 20,
     padding: 18,
-    borderWidth: 1,
     marginBottom: 20,
   },
   dataRow: {
@@ -220,13 +254,13 @@ const styles = StyleSheet.create({
   },
   catBarBg: {
     flex: 1,
-    height: 5,
-    borderRadius: 2.5,
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   catBar: {
     height: '100%',
-    borderRadius: 2.5,
+    borderRadius: 4,
   },
   catAmount: {
     fontSize: 13,

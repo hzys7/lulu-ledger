@@ -16,10 +16,10 @@ const MODE_OVERVIEW = 'overview';
 const MODE_CATEGORY = 'category';
 
 const GRADIENT_COLORS = {
-  primary: ['#6C63FF', '#8B83FF'],
-  success: ['#34C759', '#5BD87A'],
-  danger: ['#FF6B6B', '#FF8A8A'],
-  warning: ['#FF9F0A', '#FFB340'],
+  primary: ['#6D5DFC', '#8B7DFF'],
+  success: ['#2E9E6B', '#4CC38A'],
+  danger: ['#E5675F', '#F0837C'],
+  warning: ['#C99A2E', '#E0B95A'],
 };
 
 export default function BudgetPieChart({
@@ -123,9 +123,9 @@ export default function BudgetPieChart({
   }, [chartData?.isTotalOnly]);
 
   const getHealthColor = (score) => {
-    if (score >= 70) return '#34D399';
-    if (score >= 40) return '#FF9F0A';
-    return '#FF6B6B';
+    if (score >= 70) return '#2E9E6B';
+    if (score >= 40) return '#C99A2E';
+    return '#E5675F';
   };
 
   if (!chartData) {

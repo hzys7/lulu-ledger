@@ -49,7 +49,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 26,
     borderRadius: 13,
-    justifyContent: 'center',
+    // 必须显式横向排列，否则 justifyContent 会变成纵向定位、滑块上下跑
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 2,
   },
   toggleThumb: {

@@ -106,8 +106,8 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
     const isRestoring = restoring === item.name;
     return (
       <View style={[styles.item, neu.raisedSm]}>
-        <View style={[styles.itemIcon, { backgroundColor: '#34C759' + '15' }]}>
-          <Ionicons name="document-text-outline" size={20} color="#34C759" />
+        <View style={[styles.itemIcon, { backgroundColor: tc.successSubtle }]}>
+          <Ionicons name="document-text-outline" size={20} color={tc.success} />
         </View>
         <View style={styles.itemInfo}>
           <Text style={[styles.itemName, { color: tc.text }]} numberOfLines={1}>

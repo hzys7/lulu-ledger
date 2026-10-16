@@ -6,7 +6,8 @@
 //       左上亮 / 右下暗 的固定光源，交互元素按下时由凸起转为凹陷。
 
 // ── 新拟物光源常量（浅色基准）─────────────────────────
-// 具体值随主题走 colors/darkColors 上的 neuBase / neuLight / neuDark / neuShadow / neuInset
+// 具体值随主题走 colors/darkColors 上的
+// neuBase / neuLight / neuDark / neuInset / neuEdge / neuHighlight
 
 export const colors = {
   // 品牌主色（CTA / 进度 / 选中态）
@@ -81,18 +82,18 @@ export const colors = {
   // 中性色 —— 与背景同色系
   background: '#E0E5EC',
   surface: '#E0E5EC',
-  surfaceMuted: '#E0E5EC',
-  surfaceSubtle: '#DDE3EA',
+  surfaceMuted: '#D7DDE7',
+  surfaceSubtle: '#CFD6E1',
   surfaceSection: '#E0E5EC',
   card: '#E0E5EC',
   cardSubtle: '#E4E8EF',
   text: '#333A45',
   textSecondary: '#525A66',
   textMuted: '#6B7280',
-  textSubtle: '#8E97A5',
-  border: '#C9CFD9',
+  textSubtle: '#7C8593',
+  border: 'rgba(184, 188, 194, 0.6)',
   borderStrong: '#B8BCC2',
-  divider: '#CFD5DE',
+  divider: 'rgba(184, 188, 194, 0.5)',
 
   white: '#FFFFFF',
   black: '#000000',
@@ -103,8 +104,9 @@ export const colors = {
   neuBase: '#E0E5EC',
   neuLight: '#FFFFFF',
   neuDark: '#B8BCC2',
-  neuShadow: '#B8BCC2',
   neuInset: '#DDE3EA',
+  neuEdge: '#D2D7DE',                     // 凹陷侧边（几乎与背景同色，避免描边感）
+  neuHighlight: 'rgba(255, 255, 255, 0.85)', // 左上高光
 
   // 专用色（柔和同色系浅色调）
   pageBg: '#E0E5EC',
@@ -159,76 +161,58 @@ export const fontWeight = {
   bold: '700',
 };
 
-// 默认（静态）柔和阴影：单向暗影，光源固定在右下 +X/+Y
-// 适用于 StyleSheet.create 中无法拿到主题色的场景
-export const shadows = {
-  none: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
-  },
-  sm: {
-    shadowColor: '#B8BCC2',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  md: {
-    shadowColor: '#B8BCC2',
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  lg: {
-    shadowColor: '#B8BCC2',
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 0.65,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-};
-
 // ── 新拟物样式助手 ────────────────────────────────────
-// RN 不支持双阴影 / inset 阴影，这里以「斜角 bevel + 单向投影」组合近似：
-//   凸起 raised : 左上白高光 + 右下暗斜角 + 右下柔和投影
-//   凹陷 inset  : 左上暗斜角 + 右下白高光 + 凹陷底色（无投影）
+// RN 不支持 CSS 的双阴影 / inset 阴影，这里的近似策略：
+//   凸起 raised : 只在左上保留一道极淡高光，右下**不画暗色描边**，
+//                 改用右下方向的柔和投影让卡片"离开"背景（消除线框感）
+//   凹陷 inset  : 左上压暗 + 右下提亮，配合更深的底色表现"压进去"
 export function neuStyles(tc) {
-  const light = tc.neuLight || '#FFFFFF';
+  const highlight = tc.neuHighlight || tc.neuLight || '#FFFFFF';
+  const edge = tc.neuEdge || tc.neuDark || '#B8BCC2';
   const dark = tc.neuDark || '#B8BCC2';
   const base = tc.neuBase || tc.surface;
   const insetBg = tc.neuInset || tc.surfaceSubtle;
 
-  const bevel = (tl, br) => ({
+  // 仅左上高光，显式关闭右下边框避免残留描边
+  const topLeftHighlight = {
     borderTopWidth: 1,
     borderLeftWidth: 1,
-    borderTopColor: tl,
-    borderLeftColor: tl,
-    borderBottomWidth: 1,
-    borderRightWidth: 1,
-    borderBottomColor: br,
-    borderRightColor: br,
-  });
+    borderTopColor: highlight,
+    borderLeftColor: highlight,
+    borderBottomWidth: 0,
+    borderRightWidth: 0,
+  };
 
   const cast = (offset, radius, elevation, opacity) => ({
-    shadowColor: tc.neuShadow,
+    shadowColor: dark,
     shadowOffset: { width: offset, height: offset },
     shadowOpacity: opacity,
     shadowRadius: radius,
     elevation,
   });
 
+  const recessed = {
+    backgroundColor: insetBg,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: edge,
+    borderLeftColor: edge,
+    borderBottomWidth: 1,
+    borderRightWidth: 1,
+    borderBottomColor: highlight,
+    borderRightColor: highlight,
+    shadowOpacity: 0,
+    elevation: 0,
+  };
+
   return {
     // 凸起（卡片 / 按钮默认态）
-    raised: { backgroundColor: base, ...bevel(light, dark), ...cast(5, 12, 6, 0.7) },
-    raisedSm: { backgroundColor: base, ...bevel(light, dark), ...cast(3, 8, 4, 0.6) },
-    raisedLg: { backgroundColor: base, ...bevel(light, dark), ...cast(8, 18, 10, 0.75) },
+    raised: { backgroundColor: base, ...topLeftHighlight, ...cast(4, 16, 8, 0.5) },
+    raisedSm: { backgroundColor: base, ...topLeftHighlight, ...cast(3, 10, 5, 0.45) },
+    raisedLg: { backgroundColor: base, ...topLeftHighlight, ...cast(6, 22, 12, 0.5) },
     // 凹陷（输入框 / 按下态 / 内嵌区）
-    inset: { backgroundColor: insetBg, ...bevel(dark, light), shadowOpacity: 0, elevation: 0 },
-    pressed: { backgroundColor: insetBg, ...bevel(dark, light), shadowOpacity: 0, elevation: 0 },
+    inset: { ...recessed },
+    pressed: { ...recessed },
   };
 }
 
@@ -299,18 +283,18 @@ export const darkColors = {
 
   background: '#2A2D35',
   surface: '#2A2D35',
-  surfaceMuted: '#2A2D35',
-  surfaceSubtle: '#252830',
+  surfaceMuted: '#23262E',
+  surfaceSubtle: '#1F2229',
   surfaceSection: '#2A2D35',
   card: '#2A2D35',
   cardSubtle: '#2E323B',
   text: '#E4E7EC',
   textSecondary: '#C2C8D2',
   textMuted: '#98A0AE',
-  textSubtle: '#7A8291',
-  border: '#343842',
+  textSubtle: '#8A92A0',
+  border: 'rgba(0, 0, 0, 0.45)',
   borderStrong: '#3C414C',
-  divider: '#343842',
+  divider: 'rgba(0, 0, 0, 0.35)',
   white: '#FFFFFF',
   black: '#000000',
   overlay: 'rgba(0, 0, 0, 0.6)',
@@ -319,8 +303,9 @@ export const darkColors = {
   neuBase: '#2A2D35',
   neuLight: '#33373F',
   neuDark: '#212429',
-  neuShadow: '#212429',
   neuInset: '#252830',
+  neuEdge: '#24272E',
+  neuHighlight: '#33373F',
 
   pageBg: '#2A2D35',
   starColor: '#A79BFF',

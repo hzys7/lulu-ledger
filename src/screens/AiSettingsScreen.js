@@ -15,7 +15,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -146,18 +145,26 @@ export default function AiSettingsScreen({ visible, onClose }) {
               </Text>
 
               {/* 启用开关 */}
-              <View style={[styles.toggleRow, neu.raisedSm]}>
+              <TouchableOpacity
+                style={[styles.toggleRow, neu.raisedSm]}
+                onPress={() => updateField('enabled', !config.enabled)}
+                activeOpacity={0.7}
+              >
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.toggleTitle, { color: tc.text }]}>启用 AI 功能</Text>
                   <Text style={[styles.toggleHint, { color: tc.textMuted }]}>关闭后首页不会显示 AI 入口</Text>
                 </View>
-                <Switch
-                  value={!!config.enabled}
-                  onValueChange={(v) => updateField('enabled', v)}
-                  trackColor={{ false: tc.border, true: tc.primary }}
-                  thumbColor={tc.white}
-                />
-              </View>
+                {/* 与设置页一致的新拟物开关（凹槽 + 滑块） */}
+                <View
+                  style={[
+                    styles.toggleTrack,
+                    neu.inset,
+                    { justifyContent: config.enabled ? 'flex-end' : 'flex-start' },
+                  ]}
+                >
+                  <View style={[styles.toggleThumb, { backgroundColor: tc.white }]} />
+                </View>
+              </TouchableOpacity>
 
               {/* 服务商 */}
               <Text style={[styles.label, { color: tc.textMuted }]}>服务商</Text>
@@ -322,7 +329,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
             {Object.entries(AI_PROVIDERS).map(([key, info]) => (
               <TouchableOpacity
                 key={key}
-                style={[styles.pickerItem, config.provider === key && { backgroundColor: tc.surfaceMuted }]}
+                style={[styles.pickerItem, config.provider === key && { backgroundColor: tc.primarySubtle }]}
                 onPress={() => handleProviderChange(key)}
                 activeOpacity={0.7}
               >
@@ -341,7 +348,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
             {modelList.map((m) => (
               <TouchableOpacity
                 key={m}
-                style={[styles.pickerItem, config.model === m && { backgroundColor: tc.surfaceMuted }]}
+                style={[styles.pickerItem, config.model === m && { backgroundColor: tc.primarySubtle }]}
                 onPress={() => {
                   updateField('model', m);
                   setShowModelPicker(false);
@@ -353,7 +360,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
               </TouchableOpacity>
             ))}
             <TouchableOpacity
-              style={[styles.pickerItem, config.model === '__custom__' && { backgroundColor: tc.surfaceMuted }]}
+              style={[styles.pickerItem, config.model === '__custom__' && { backgroundColor: tc.primarySubtle }]}
               onPress={() => {
                 updateField('model', '__custom__');
                 setShowModelPicker(false);
@@ -449,9 +456,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.base,
     gap: spacing.sm,
+  },
+  toggleTrack: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
   },
   toggleTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: 2 },
   toggleHint: { fontSize: fontSize.xs, lineHeight: 16 },

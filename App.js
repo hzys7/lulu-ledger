@@ -72,7 +72,7 @@ function MainTabs() {
           paddingTop: 8,
           paddingBottom: 10,
           // 新拟物：底部导航与背景同色，靠向上的柔和暗影分隔
-          shadowColor: tc.neuShadow,
+          shadowColor: tc.neuDark,
           shadowOffset: { width: 0, height: -3 },
           shadowOpacity: 0.5,
           shadowRadius: 10,

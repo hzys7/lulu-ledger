@@ -18,11 +18,11 @@ function AppearanceSection({ onToggleTheme }) {
         onPress={onToggleTheme}
         activeOpacity={0.7}
       >
-        <View style={[styles.listIcon, { backgroundColor: '#AF52DE' + '15' }]}>
+        <View style={[styles.listIcon, { backgroundColor: tc.primarySubtle }]}>
           <Ionicons
             name={settings.theme === 'dark' ? 'moon' : 'sunny-outline'}
             size={18}
-            color="#AF52DE"
+            color={tc.primary}
           />
         </View>
         <View style={styles.listContent}>
@@ -33,7 +33,7 @@ function AppearanceSection({ onToggleTheme }) {
             style={[
               styles.toggleThumb,
               {
-                transform: [{ translateX: settings.theme === 'dark' ? 20 : 0 }],
+                transform: [{ translateX: settings.theme === 'dark' ? 18 : 0 }],
                 backgroundColor: tc.white,
               },
             ]}

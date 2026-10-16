@@ -4,13 +4,13 @@ import { View, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNeu } from '../hooks/useThemeColors';
 
-// 账户图标配置
+// 账户图标配置（color 为各渠道品牌色，用于图标本身）
 const ACCOUNT_ICONS = {
-  wechat: { icon: 'chatbubbles', color: '#07C160', bg: '#E8F8EE' },
-  alipay: { icon: 'wallet', color: '#1677FF', bg: '#E6F0FF' },
-  bank: { icon: 'business', color: '#722ED1', bg: '#F3E8FF' },
-  cash: { icon: 'cash', color: '#FA8C16', bg: '#FFF3E6' },
-  other: { icon: 'ellipsis-horizontal-circle', color: '#8C8C8C', bg: '#F3F4F6' },
+  wechat: { icon: 'chatbubbles', color: '#07C160' },
+  alipay: { icon: 'wallet', color: '#1677FF' },
+  bank: { icon: 'business', color: '#722ED1' },
+  cash: { icon: 'cash', color: '#FA8C16' },
+  other: { icon: 'ellipsis-horizontal-circle', color: '#8C8C8C' },
 };
 
 // 如果有自定义图片，优先使用图片

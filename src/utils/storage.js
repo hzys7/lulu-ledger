@@ -370,7 +370,7 @@ export async function getBooks() {
       id: 'default',
       name: '日常账本',
       icon: 'wallet',
-      color: '#6C63FF',
+      color: '#6D5DFC',
       currency: 'CNY',
       createdAt: new Date().toISOString(),
     }];

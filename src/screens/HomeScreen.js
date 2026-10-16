@@ -82,7 +82,7 @@ export default function HomeScreen({ navigation }) {
   const [editingBook, setEditingBook] = useState(null);
   const [newBookName, setNewBookName] = useState('');
   const [newBookIcon, setNewBookIcon] = useState('wallet');
-  const [newBookColor, setNewBookColor] = useState('#7C5CFF');
+  const [newBookColor, setNewBookColor] = useState('#6D5DFC');
   const netWorth = getNetWorth();
 
   // 今日支出
@@ -148,7 +148,7 @@ export default function HomeScreen({ navigation }) {
   const greeting = getGreeting();
 
   const openAddBook = () => {
-    setEditingBook(null); setNewBookName(''); setNewBookIcon('wallet'); setNewBookColor('#7C5CFF');
+    setEditingBook(null); setNewBookName(''); setNewBookIcon('wallet'); setNewBookColor('#6D5DFC');
     setShowBookModal(true);
   };
   const openEditBook = (book) => {
@@ -268,34 +268,34 @@ export default function HomeScreen({ navigation }) {
         {/* ─── AI 助手 ───────────────────────────────── */}
         {aiEnabled ? (
           <View style={styles.section}>
-            <View style={[styles.aiCard, neu.raised, { backgroundColor: tc.iconBg }]}>
+            <View style={[styles.aiCard, neu.raised]}>
               {/* 装饰星星 */}
-              <DecoStar style={styles.starAi1} size={10} color="#DDD6FE" />
+              <DecoStar style={styles.starAi1} size={10} color={tc.starColorLight} />
 
               <View style={styles.aiCardLeft}>
-                <AiAvatar size={50} />
+                <AiAvatar size={44} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.aiTitle, { color: tc.text }]}>AI 助手</Text>
-                  <Text style={[styles.aiHint, { color: tc.primary }]}>一句话记账 · 问答分析</Text>
-                  <View style={[styles.aiUnderline, { backgroundColor: tc.primary }]} />
+                  <Text style={[styles.aiHint, { color: tc.textMuted }]} numberOfLines={1}>一句话记账 · 问答分析</Text>
                 </View>
               </View>
+              <View style={[styles.aiUnderline, { backgroundColor: tc.primary }]} />
               <View style={styles.aiBtns}>
                 <TouchableOpacity
-                  style={[styles.aiBtnPrimary, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5 }]}
+                  style={[styles.aiBtnPrimary, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.32, shadowRadius: 8, elevation: 5 }]}
                   onPress={() => setShowAiChat(true)}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="sparkles" size={14} color={tc.primaryOn} />
+                  <Ionicons name="sparkles" size={15} color={tc.primaryOn} />
                   <Text style={[styles.aiBtnPrimaryText, { color: tc.primaryOn }]}>记账</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.aiBtnAccent, { backgroundColor: tc.accent, shadowColor: tc.accent, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5 }]}
+                  style={[styles.aiBtnAccent, neu.raisedSm]}
                   onPress={() => setShowAiQA(true)}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="chatbubbles" size={14} color="#123B38" />
-                  <Text style={[styles.aiBtnAccentText, { color: '#123B38' }]}>问问</Text>
+                  <Ionicons name="chatbubbles" size={15} color={tc.accent} />
+                  <Text style={[styles.aiBtnAccentText, { color: tc.text }]}>问问</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   todayBadgeText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    color: '#7C5CFF',
+    color: '#6D5DFC',
   },
   todayAmount: {
     fontSize: fontSize.xl,
@@ -576,9 +576,6 @@ const styles = StyleSheet.create({
 
   // AI 卡片
   aiCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
     borderRadius: borderRadius.xl,
     padding: spacing.base + 2,
     position: 'relative',
@@ -590,10 +587,9 @@ const styles = StyleSheet.create({
     right: 16,
   },
   aiCardLeft: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   aiIconWarp: {
     width: 44, height: 44, borderRadius: 22,
@@ -607,25 +603,27 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs, lineHeight: 16,
   },
   aiUnderline: {
-    width: 24,
+    width: 28,
     height: 3,
     borderRadius: 2,
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
   },
   aiBtns: {
-    flexDirection: 'row', gap: spacing.sm,
+    flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md,
   },
   aiBtnPrimary: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 1,
+    flex: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: spacing.sm + 1,
     borderRadius: borderRadius.full, gap: spacing.xs,
   },
   aiBtnPrimaryText: {
     fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
   },
   aiBtnAccent: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 1,
+    flex: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: spacing.sm + 1,
     borderRadius: borderRadius.full, gap: spacing.xs,
   },
   aiBtnAccentText: {

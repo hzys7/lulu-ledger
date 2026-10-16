@@ -108,11 +108,11 @@ function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) 
       onPress={() => handleSelectFile(item)}
       activeOpacity={0.7}
     >
-      <View style={[styles.fileIcon, { backgroundColor: item.type === 'json' ? '#6C63FF' + '15' : '#34C759' + '15' }]}>
+      <View style={[styles.fileIcon, { backgroundColor: item.type === 'json' ? tc.primarySubtle : tc.successSubtle }]}>
         <Ionicons
           name={item.type === 'json' ? 'code-outline' : 'document-text-outline'}
           size={18}
-          color={item.type === 'json' ? '#6C63FF' : '#34C759'}
+          color={item.type === 'json' ? tc.primary : tc.success}
         />
       </View>
       <View style={styles.fileInfo}>

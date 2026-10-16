@@ -112,11 +112,11 @@ export default function FilePickerModal({ visible, onClose, onSelect }) {
       onPress={() => handleSelect(item)}
       activeOpacity={0.7}
     >
-      <View style={[styles.itemIcon, { backgroundColor: item.type === 'json' ? '#6C63FF' + '15' : '#34C759' + '15' }]}>
+      <View style={[styles.itemIcon, { backgroundColor: item.type === 'json' ? tc.primarySubtle : tc.successSubtle }]}>
         <Ionicons
           name={item.type === 'json' ? 'code-outline' : 'document-text-outline'}
           size={20}
-          color={item.type === 'json' ? '#6C63FF' : '#34C759'}
+          color={item.type === 'json' ? tc.primary : tc.success}
         />
       </View>
       <View style={styles.itemInfo}>

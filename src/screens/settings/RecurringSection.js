@@ -17,7 +17,7 @@ function RecurringSection({ recurring, onAdd, onDelete }) {
       onPress={onAdd}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Ionicons name="add-circle-outline" size={20} color="#FF9F0A" />
+      <Ionicons name="add-circle-outline" size={20} color={tc.warning} />
     </TouchableOpacity>
   );
 
@@ -25,7 +25,7 @@ function RecurringSection({ recurring, onAdd, onDelete }) {
     <CollapsibleSection
       title="周期性交易"
       icon="repeat-outline"
-      iconColor="#FF9F0A"
+      iconColor={tc.warning}
       rightAction={rightAction}
     >
       {recurring.length > 0 ? (
@@ -36,8 +36,8 @@ function RecurringSection({ recurring, onAdd, onDelete }) {
             onLongPress={() => onDelete(item.id)}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconWrap, { backgroundColor: '#FF9F0A' + '15' }]}>
-              <Ionicons name="repeat" size={16} color="#FF9F0A" />
+            <View style={[styles.iconWrap, { backgroundColor: tc.warningSubtle }]}>
+              <Ionicons name="repeat" size={16} color={tc.warning} />
             </View>
             <View style={styles.rowContent}>
               <Text style={[styles.rowLabel, { color: tc.text }]}>{item.category}</Text>

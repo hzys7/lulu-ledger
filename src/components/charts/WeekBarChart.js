@@ -3,16 +3,13 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Rect, G } from 'react-native-svg';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
-import { useNeu } from '../../hooks/useThemeColors';
-
-const WEEKDAY_COLORS = [
-  '#FF6B6B', '#FFA94D', '#FFD43B', '#69DB7C', '#4DABF7', '#9775FA', '#F06595',
-];
+import { useNeu, useThemeColors } from '../../hooks/useThemeColors';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function WeekBarChart({ data, accent, muted }) {
   const neu = useNeu();
+  const tc = useThemeColors();
   const width = screenWidth - spacing.base * 4;
   const height = 140;
   const values = data.map(d => d.value);
@@ -36,7 +33,7 @@ export default function WeekBarChart({ data, accent, muted }) {
                 height={Math.max(barH, 2)}
                 rx={3}
                 ry={3}
-                fill={d.value > 0 ? WEEKDAY_COLORS[i % 7] : accent}
+                fill={d.value > 0 ? tc.palette[i % tc.palette.length] : accent}
                 opacity={d.value > 0 ? 0.85 : 0.2}
               />
             </G>
