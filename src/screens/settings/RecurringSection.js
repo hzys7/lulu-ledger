@@ -1,15 +1,16 @@
 // RecurringSection: 周期性交易（可折叠）
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors, fontWeight } from '../../theme';
+import { getThemeColors, fontWeight, neuStyles } from '../../theme';
 import { formatMoney } from '../../utils/currency';
 import CollapsibleSection from './CollapsibleSection';
 
 function RecurringSection({ recurring, onAdd, onDelete }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
 
   const rightAction = (
     <TouchableOpacity
@@ -31,7 +32,7 @@ function RecurringSection({ recurring, onAdd, onDelete }) {
         recurring.map((item) => (
           <TouchableOpacity
             key={item.id}
-            style={[styles.row, { backgroundColor: tc.surface, borderColor: tc.border }]}
+            style={[styles.row, neu.raisedSm]}
             onLongPress={() => onDelete(item.id)}
             activeOpacity={0.7}
           >
@@ -65,7 +66,7 @@ function RecurringSection({ recurring, onAdd, onDelete }) {
         <View
           style={[
             styles.emptyRow,
-            { backgroundColor: tc.surface, borderColor: tc.border },
+            neu.inset,
           ]}
         >
           <Ionicons name="time-outline" size={24} color={tc.textSubtle} />
@@ -86,7 +87,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
   iconWrap: {
@@ -116,7 +116,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: 4,
   },
   emptyText: {

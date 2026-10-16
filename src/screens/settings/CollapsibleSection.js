@@ -1,13 +1,14 @@
 // CollapsibleSection: 可折叠的设置模块
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme';
+import { getThemeColors, spacing, borderRadius, fontSize, fontWeight, neuStyles } from '../../theme';
 
 export default function CollapsibleSection({ title, icon, iconColor, defaultExpanded = false, children, rightAction }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const [expanded, setExpanded] = useState(defaultExpanded);
   const animatedHeight = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
   const contentRef = useRef(null);
@@ -38,7 +39,7 @@ export default function CollapsibleSection({ title, icon, iconColor, defaultExpa
   return (
     <View style={styles.section}>
       <TouchableOpacity
-        style={[styles.header, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        style={[styles.header, neu.raisedSm]}
         onPress={toggle}
         activeOpacity={0.7}
       >
@@ -83,7 +84,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   headerLeft: {
     flexDirection: 'row',

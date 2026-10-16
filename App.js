@@ -2,7 +2,7 @@
 import React from 'react';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import UpdatePrompt, { triggerUpdateCheck } from './src/components/UpdatePrompt';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { StatusBar } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -36,22 +36,22 @@ function MainTabs() {
         tabBarIcon: ({ focused, color, size }) => {
           // 中间 "AddTab" 用自定义外凸的圆形按钮
           if (route.name === 'AddTab') {
+            // 新拟物：强调色凸起圆形按钮，不悬浮、不位移
             return (
               <View style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 backgroundColor: colors.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginTop: -10,
                 shadowColor: colors.primary,
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.15,
-                shadowRadius: 3,
-                elevation: 3,
+                shadowOffset: { width: 4, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 10,
+                elevation: 6,
               }}>
-                <Ionicons name="add" size={24} color={colors.primaryOn} />
+                <Ionicons name="add" size={26} color={colors.primaryOn} />
               </View>
             );
           }
@@ -63,15 +63,20 @@ function MainTabs() {
           };
           return <Ionicons name={icons[route.name] || 'ellipse-outline'} size={size || 22} color={color} />;
         },
-        tabBarActiveTintColor: tc.text,
+        tabBarActiveTintColor: tc.primary,
         tabBarInactiveTintColor: tc.textSubtle,
         tabBarStyle: {
           backgroundColor: tc.surface,
-          borderTopColor: tc.divider,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          height: 64,
-          paddingTop: 6,
-          paddingBottom: 8,
+          borderTopWidth: 0,
+          height: 68,
+          paddingTop: 8,
+          paddingBottom: 10,
+          // 新拟物：底部导航与背景同色，靠向上的柔和暗影分隔
+          shadowColor: tc.neuShadow,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.5,
+          shadowRadius: 10,
+          elevation: 12,
         },
         tabBarLabelStyle: {
           fontSize: fontSize.xs,
@@ -226,7 +231,7 @@ function ThemedApp() {
           card: tc.surface,
           text: tc.text,
           border: tc.divider,
-          primary: tc.text,
+          primary: tc.primary,
         },
       }
     : {
@@ -237,7 +242,7 @@ function ThemedApp() {
           card: tc.surface,
           text: tc.text,
           border: tc.divider,
-          primary: tc.text,
+          primary: tc.primary,
         },
       };
   return (
@@ -251,7 +256,7 @@ function ThemedApp() {
 
 export default function App() {
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <ErrorBoundary><FinanceProvider><ThemedApp /></FinanceProvider></ErrorBoundary>
       </SafeAreaProvider>

@@ -1,5 +1,5 @@
 // 小璐记账 · AI 月度复盘结果页
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney } from '../utils/currency';
-import { spacing, borderRadius, fontSize, fontWeight, getThemeColors, categories as categoryConfig } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, getThemeColors, neuStyles, categories as categoryConfig } from '../theme';
 import { generateMonthlyReport, clearCachedReport } from '../utils/aiReport';
 import { loadAiConfig } from '../utils/aiConfig';
 
@@ -153,6 +153,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
   const { year, month } = route.params || {};
   const { transactions, settings, getMonthTransactions, getMonthSummary } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(false);
@@ -300,7 +301,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
               请前往设置 → AI 智能 → AI 配置，开启开关并填写 API Key。
             </Text>
             <TouchableOpacity
-              style={[styles.primaryBtn, { backgroundColor: tc.surfaceMuted }]}
+              style={[styles.primaryBtn, neu.raisedSm]}
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
             >
@@ -316,7 +317,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
               点击下方按钮，让 AI 阅读你的{monthLabel}账目并生成中文复盘报告。
             </Text>
             <TouchableOpacity
-              style={[styles.primaryBtn, { backgroundColor: tc.primary }, loading && { opacity: 0.6 }]}
+              style={[styles.primaryBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }, loading && { opacity: 0.6 }]}
               onPress={() => handleGenerate(false)}
               activeOpacity={0.85}
               disabled={loading}
@@ -334,7 +335,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
               )}
             </TouchableOpacity>
             {error ? (
-              <View style={[styles.errorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
+              <View style={[styles.errorBox, neu.raisedSm, { backgroundColor: tc.dangerSubtle }]}>
                 <Ionicons name="alert-circle" size={16} color={tc.danger} />
                 <Text style={[styles.errorText, { color: tc.danger }]}>{error}</Text>
               </View>
@@ -349,7 +350,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
               keyboardShouldPersistTaps="handled"
             >
               {/* 顶部元信息 */}
-              <View style={[styles.metaRow, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+              <View style={[styles.metaRow, neu.inset]}>
                 <View style={styles.metaLeft}>
                   <Ionicons name="sparkles" size={14} color={tc.primary} />
                   <Text style={[styles.metaText, { color: tc.textSecondary }]}>
@@ -363,7 +364,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
                 </TouchableOpacity>
               </View>
               {error ? (
-                <View style={[styles.errorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger, marginTop: spacing.md }]}>
+                <View style={[styles.errorBox, neu.raisedSm, { backgroundColor: tc.dangerSubtle, marginTop: spacing.md }]}>
                   <Ionicons name="alert-circle" size={16} color={tc.danger} />
                   <Text style={[styles.errorText, { color: tc.danger }]}>{error}</Text>
                 </View>
@@ -374,9 +375,9 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
               <View style={{ height: 100 }} />
             </ScrollView>
             {/* 底部操作栏 */}
-            <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.sm), backgroundColor: tc.surface, borderTopColor: tc.divider }]}>
+            <View style={[styles.bottomBar, neu.raisedLg, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
               <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: tc.surfaceMuted, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth }]}
+                style={[styles.actionBtn, neu.raisedSm]}
                 onPress={handleClearAndRegenerate}
                 activeOpacity={0.7}
                 disabled={loading}
@@ -385,7 +386,7 @@ export default function AiMonthlyReportScreen({ route, navigation }) {
                 <Text style={[styles.actionBtnText, { color: tc.text }]}>重新生成</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionBtn, styles.actionBtnPrimary, { backgroundColor: tc.primary }]}
+                style={[styles.actionBtn, styles.actionBtnPrimary, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
                 onPress={handleShare}
                 activeOpacity={0.85}
               >

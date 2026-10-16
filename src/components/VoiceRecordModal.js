@@ -1,6 +1,6 @@
 // 小璐记账 · 语音记账浮层
 // 交互：按住说话 → 松手识别 → 预览确认 → 保存
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,8 +23,8 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
-  shadows,
   getThemeColors,
+  neuStyles,
   categories as categoryConfig,
 } from '../theme';
 
@@ -48,6 +48,7 @@ function vibrateLong() {
 export default function VoiceRecordModal({ visible, onClose, onSaved }) {
   const { settings, addTx, accounts } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const currencySymbol = getCurrencySymbol(settings.currency);
 
@@ -193,7 +194,7 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
           <TouchableOpacity
             onPress={() => { setStage('idle'); setError(''); setParsed(null); onClose(); }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={[styles.closeBtn, { backgroundColor: tc.surface + 'CC' }]}
+            style={[styles.closeBtn, neu.raisedSm]}
           >
             <Ionicons name="close" size={24} color={tc.text} />
           </TouchableOpacity>
@@ -204,7 +205,7 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
           {stage === 'idle' && (
             <View style={styles.idleArea}>
               {/* 麦克风图标 */}
-              <View style={[styles.micOuter, { backgroundColor: tc.surface + 'E6', borderColor: tc.border }]}>
+              <View style={[styles.micOuter, neu.raisedLg]}>
                 <Ionicons name="mic" size={48} color={tc.primary} />
               </View>
               <TouchableOpacity
@@ -213,13 +214,13 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
                 onPressOut={handlePressOut}
                 activeOpacity={0.9}
               >
-                <View style={[styles.holdBtn, { backgroundColor: tc.primary }]}>
+                <View style={[styles.holdBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}>
                   <Ionicons name="mic" size={24} color={tc.primaryOn} />
                   <Text style={[styles.holdBtnText, { color: tc.primaryOn }]}>按住说话</Text>
                 </View>
               </TouchableOpacity>
               {error ? (
-                <View style={[styles.errorBox, { backgroundColor: tc.dangerSubtle }]}>
+                <View style={[styles.errorBox, neu.raisedSm, { backgroundColor: tc.dangerSubtle }]}>
                   <Ionicons name="alert-circle" size={16} color={tc.danger} />
                   <Text style={[styles.errorText, { color: tc.danger }]}>{error}</Text>
                 </View>
@@ -259,7 +260,7 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
             <View style={styles.previewArea}>
               {/* 转写文字 */}
               {transcribedText ? (
-                <View style={[styles.transcribeBox, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+                <View style={[styles.transcribeBox, neu.inset]}>
                   <Ionicons name="chatbox-ellipses" size={14} color={tc.textMuted} />
                   <Text style={[styles.transcribeText, { color: tc.textSecondary }]} numberOfLines={3}>
                     {transcribedText}
@@ -268,7 +269,7 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
               ) : null}
 
               {/* 解析结果卡片 */}
-              <View style={[styles.resultCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.resultCard, neu.raisedSm]}>
                 <View style={styles.resultRow}>
                   <View style={[styles.resultCatIcon, { backgroundColor: catColor + '22' }]}>
                     <Ionicons name={catInfo?.icon || 'ellipse'} size={20} color={catColor} />
@@ -291,7 +292,7 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
               {/* 操作按钮 */}
               <View style={styles.previewActions}>
                 <TouchableOpacity
-                  style={[styles.previewBtn, { backgroundColor: tc.primary }]}
+                  style={[styles.previewBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
                   onPress={handleSave}
                   activeOpacity={0.85}
                 >
@@ -299,7 +300,7 @@ export default function VoiceRecordModal({ visible, onClose, onSaved }) {
                   <Text style={[styles.previewBtnText, { color: tc.primaryOn }]}>确认记账</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.previewBtnOutline, { borderColor: tc.border }]}
+                  style={[styles.previewBtnOutline, neu.raisedSm]}
                   onPress={handleRetry}
                   activeOpacity={0.7}
                 >
@@ -355,9 +356,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
     marginBottom: spacing.sm,
-    ...shadows.lg,
   },
   holdBtn: {
     flexDirection: 'row',
@@ -366,7 +365,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.md + 2,
     borderRadius: borderRadius.full,
-    ...shadows.lg,
   },
   holdBtnText: {
     fontSize: fontSize.lg,
@@ -407,7 +405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     opacity: 0.9,
-    borderWidth: 3,
+    borderWidth: 1,
   },
   recordingText: {
     fontSize: fontSize.xl,
@@ -449,9 +447,7 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
     padding: spacing.md,
-    ...shadows.md,
   },
   resultRow: {
     flexDirection: 'row',

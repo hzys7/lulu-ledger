@@ -2,6 +2,9 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors, spacing, borderRadius, neuStyles } from '../theme';
+
+const neu = neuStyles(colors);
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -61,17 +64,17 @@ export default class ErrorBoundary extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0B0B12' },
-  header: { padding: 20, paddingTop: 24 },
-  title: { color: '#F8FAFC', fontSize: 22, fontWeight: '700' },
-  subtitle: { color: '#94A3B8', fontSize: 13, marginTop: 6 },
-  logBox: { flex: 1, margin: 16, backgroundColor: '#15151D', borderRadius: 12, padding: 12 },
-  logContent: { paddingBottom: 24 },
-  logText: { color: '#FCA5A5', fontSize: 12, fontFamily: 'Courier', lineHeight: 18 },
-  actions: { padding: 16, gap: 10 },
-  btn: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: '#F8FAFC' },
-  btnTextPrimary: { color: '#0B0B12', fontSize: 15, fontWeight: '600' },
-  btnDanger: { backgroundColor: '#1F2937' },
-  btnTextDanger: { color: '#FCA5A5', fontSize: 14, fontWeight: '600' },
+  root: { flex: 1, backgroundColor: colors.background },
+  header: { padding: spacing.lg, paddingTop: spacing.xl },
+  title: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 6 },
+  logBox: { flex: 1, margin: spacing.base, borderRadius: borderRadius.md, padding: spacing.md, ...neu.inset },
+  logContent: { paddingBottom: spacing.xl },
+  logText: { color: colors.danger, fontSize: 12, fontFamily: 'Courier', lineHeight: 18 },
+  actions: { padding: spacing.base, gap: 10 },
+  btn: { height: 48, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center', ...neu.raisedSm },
+  btnPrimary: { backgroundColor: colors.primary, shadowColor: colors.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 },
+  btnTextPrimary: { color: colors.primaryOn, fontSize: 15, fontWeight: '600' },
+  btnDanger: {},
+  btnTextDanger: { color: colors.danger, fontSize: 14, fontWeight: '600' },
 });

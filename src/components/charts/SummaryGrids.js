@@ -1,14 +1,15 @@
 // 小璐记账 · 汇总卡片组件（v1.6.5 深色模式适配）
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, borderRadius, fontSize, fontWeight, shadows } from '../../theme';
+import { spacing, borderRadius, fontSize, fontWeight, neuStyles } from '../../theme';
 
 const screenWidth = Dimensions.get('window').width;
 
 export function SummaryCell({ tc, label, amount, amountColor, icon, iconBg, iconColor }) {
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   return (
-    <View style={[styles.summaryCell, { backgroundColor: tc.card }]}>
+    <View style={[styles.summaryCell, neu.raised]}>
       <View style={styles.summaryHeader}>
         <Text style={[styles.summaryLabel, { color: tc.textMuted }]}>{label}</Text>
         <View style={[styles.summaryIconWrap, { backgroundColor: iconBg || tc.iconBg }]}>
@@ -121,7 +122,6 @@ const styles = StyleSheet.create({
     width: (screenWidth - spacing.base * 2 - spacing.sm) / 2,
     padding: spacing.base,
     borderRadius: borderRadius.xl,
-    ...shadows.sm,
   },
   summaryHeader: {
     flexDirection: 'row',

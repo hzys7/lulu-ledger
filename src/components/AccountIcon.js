@@ -2,6 +2,7 @@
 import React, { memo } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNeu } from '../hooks/useThemeColors';
 
 // 账户图标配置
 const ACCOUNT_ICONS = {
@@ -20,21 +21,17 @@ const CUSTOM_IMAGES = {
   // cash: require('../../assets/icons/cash.png'),
 };
 
-function withAlpha(hex, alpha) {
-  if (!hex) return hex;
-  return hex + Math.round(alpha * 255).toString(16).padStart(2, '0');
-}
-
+// 新拟物：图标方块与背景同色系（凸起），仅图标本身带账户色
 export const AccountIcon = memo(function AccountIcon({ type, size = 42, icon, color }) {
+  const neu = useNeu();
   const config = ACCOUNT_ICONS[type] || ACCOUNT_ICONS.other;
   const hasCustomImage = CUSTOM_IMAGES[type];
-  
+
   const iconColor = color || config.color;
-  const bgColor = withAlpha(iconColor, 0.15);
   const iconSize = Math.round(size * 0.5);
-  
+
   return (
-    <View style={[styles.container, { width: size, height: size, borderRadius: size * 0.3, backgroundColor: bgColor }]}>
+    <View style={[styles.container, neu.raisedSm, { width: size, height: size, borderRadius: size * 0.3 }]}>
       {hasCustomImage ? (
         <Image
           source={CUSTOM_IMAGES[type]}

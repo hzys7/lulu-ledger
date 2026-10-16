@@ -1,17 +1,18 @@
 // 小璐记账 · 异常消费提醒卡片
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, neuStyles } from '../theme';
 
 export default function AnomalyAlert({ message, anomalies, onDismiss, tc }) {
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   if (!message) return null;
 
   const severityIcon = (anomalies?.[0]?.severity === 'high') ? 'warning' : 'information-circle';
   const accentColor = (anomalies?.[0]?.severity === 'high') ? tc.danger : tc.accent;
 
   return (
-    <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+    <View style={[styles.card, neu.raisedLg]}>
       <View style={styles.row}>
         <View style={[styles.iconWrap, { backgroundColor: accentColor + '18' }]}>
           <Ionicons name={severityIcon} size={18} color={accentColor} />

@@ -1,6 +1,6 @@
 // 小璐记账 · AI 配置弹窗
 // 风格：仿截图样式（机器人图标 + 表单 + 底部三按钮）
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,12 +20,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFinance } from '../context/FinanceContext';
-import { spacing, borderRadius, fontSize, fontWeight, getThemeColors } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, getThemeColors, neuStyles } from '../theme';
 import { AI_PROVIDERS, DEFAULT_CONFIG, loadAiConfig, saveAiConfig, testAiConnection } from '../utils/aiConfig';
 
 export default function AiSettingsScreen({ visible, onClose }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
 
   const [config, setConfig] = useState({ ...DEFAULT_CONFIG });
@@ -120,13 +121,13 @@ export default function AiSettingsScreen({ visible, onClose }) {
             onPress={() => {}}
             style={[
               styles.sheet,
+              neu.raisedLg,
               {
-                backgroundColor: tc.surface,
                 paddingBottom: insets.bottom + spacing.sm,
               },
             ]}
           >
-            <View style={styles.handle} />
+            <View style={[styles.handle, { backgroundColor: tc.border }]} />
 
             <ScrollView
               keyboardShouldPersistTaps="handled"
@@ -145,7 +146,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
               </Text>
 
               {/* 启用开关 */}
-              <View style={[styles.toggleRow, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+              <View style={[styles.toggleRow, neu.raisedSm]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.toggleTitle, { color: tc.text }]}>启用 AI 功能</Text>
                   <Text style={[styles.toggleHint, { color: tc.textMuted }]}>关闭后首页不会显示 AI 入口</Text>
@@ -154,14 +155,14 @@ export default function AiSettingsScreen({ visible, onClose }) {
                   value={!!config.enabled}
                   onValueChange={(v) => updateField('enabled', v)}
                   trackColor={{ false: tc.border, true: tc.primary }}
-                  thumbColor={'#FFFFFF'}
+                  thumbColor={tc.white}
                 />
               </View>
 
               {/* 服务商 */}
               <Text style={[styles.label, { color: tc.textMuted }]}>服务商</Text>
               <TouchableOpacity
-                style={[styles.input, styles.selectInput, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+                style={[styles.input, styles.selectInput, neu.inset]}
                 onPress={() => setShowProviderPicker(true)}
                 activeOpacity={0.7}
               >
@@ -171,7 +172,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
 
               {/* API Key */}
               <Text style={[styles.label, { color: tc.textMuted }]}>API Key</Text>
-              <View style={[styles.input, styles.keyInputWrap, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+              <View style={[styles.input, styles.keyInputWrap, neu.inset]}>
                 <TextInput
                   style={[styles.input, styles.keyInput, { color: tc.text }]}
                   value={config.apiKey}
@@ -196,7 +197,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
                 ) : null}
               </Text>
               <TextInput
-                style={[styles.input, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border }]}
+                style={[styles.input, neu.inset, { color: tc.text }]}
                 value={config.baseURL}
                 onChangeText={(v) => updateField('baseURL', v)}
                 placeholder={providerInfo.defaultBaseURL || 'https://your-api.com/v1'}
@@ -212,7 +213,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
               {config.provider === 'custom' ? (
                 // 自定义服务商：直接显示输入框
                 <TextInput
-                  style={[styles.input, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border }]}
+                  style={[styles.input, neu.inset, { color: tc.text }]}
                   value={config.customModel}
                   onChangeText={(v) => updateField('customModel', v)}
                   placeholder="输入模型名称，如 gpt-4o"
@@ -225,7 +226,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
                 // 预设服务商：显示选择器
                 <>
                   <TouchableOpacity
-                    style={[styles.input, styles.selectInput, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+                    style={[styles.input, styles.selectInput, neu.inset]}
                     onPress={() => setShowModelPicker(true)}
                     activeOpacity={0.7}
                   >
@@ -236,7 +237,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
                   </TouchableOpacity>
                   {config.model === '__custom__' ? (
                     <TextInput
-                      style={[styles.input, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border, marginTop: spacing.sm }]}
+                      style={[styles.input, neu.inset, { color: tc.text, marginTop: spacing.sm }]}
                       value={config.customModel}
                       onChangeText={(v) => updateField('customModel', v)}
                       placeholder="输入自定义模型名称"
@@ -258,9 +259,9 @@ export default function AiSettingsScreen({ visible, onClose }) {
                 <View
                   style={[
                     styles.testResult,
+                    neu.raisedSm,
                     {
                       backgroundColor: testResult.ok ? tc.successSubtle : tc.dangerSubtle,
-                      borderColor: testResult.ok ? tc.success : tc.danger,
                     },
                   ]}
                 >
@@ -279,14 +280,14 @@ export default function AiSettingsScreen({ visible, onClose }) {
             {/* 底部三按钮 */}
             <View style={[styles.footer, { borderTopColor: tc.divider }]}>
               <TouchableOpacity
-                style={[styles.footerBtn, { backgroundColor: tc.surfaceMuted }]}
+                style={[styles.footerBtn, neu.raisedSm]}
                 onPress={onClose}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.footerBtnText, { color: tc.text }]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.footerBtn, styles.footerBtnMiddle, { backgroundColor: tc.surfaceMuted }]}
+                style={[styles.footerBtn, styles.footerBtnMiddle, neu.raisedSm]}
                 onPress={handleTest}
                 activeOpacity={0.7}
                 disabled={testing}
@@ -298,7 +299,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.footerBtn, { backgroundColor: tc.primary, flex: 1.4 }]}
+                style={[styles.footerBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5, flex: 1.4 }]}
                 onPress={handleSave}
                 activeOpacity={0.85}
                 disabled={saving}
@@ -317,7 +318,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
       {/* 服务商选择弹窗 */}
       <Modal visible={showProviderPicker} transparent animationType="fade" onRequestClose={() => setShowProviderPicker(false)}>
         <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setShowProviderPicker(false)}>
-          <View style={[styles.pickerSheet, { backgroundColor: tc.surface }]}>
+          <View style={[styles.pickerSheet, neu.raisedLg]}>
             {Object.entries(AI_PROVIDERS).map(([key, info]) => (
               <TouchableOpacity
                 key={key}
@@ -336,7 +337,7 @@ export default function AiSettingsScreen({ visible, onClose }) {
       {/* 模型选择弹窗 */}
       <Modal visible={showModelPicker} transparent animationType="fade" onRequestClose={() => setShowModelPicker(false)}>
         <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setShowModelPicker(false)}>
-          <View style={[styles.pickerSheet, { backgroundColor: tc.surface }]}>
+          <View style={[styles.pickerSheet, neu.raisedLg]}>
             {modelList.map((m) => (
               <TouchableOpacity
                 key={m}
@@ -388,7 +389,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D4D4D8',
     alignSelf: 'center',
     marginBottom: spacing.md,
   },

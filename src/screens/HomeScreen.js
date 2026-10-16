@@ -26,7 +26,7 @@ import AiQAScreen from './AiQAScreen';
 import AnomalyAlert from '../components/AnomalyAlert';
 import { detectAnomalies, generateAnomalyMessage, getCachedAnomalies, setCachedAnomalies } from '../utils/aiAnomaly';
 import BookModal from './settings/BookModal';
-import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, getThemeColors, neuStyles } from '../theme';
 import { AiAvatar } from '../components/AiAvatar';
 import { AccountIcon } from '../components/AccountIcon';
 import TransferModal from '../components/TransferModal';
@@ -74,6 +74,7 @@ function DecoStar({ style, size = 12, color = '#C4B5FD' }) {
 export default function HomeScreen({ navigation }) {
   const { settings, reload, getNetWorth, books, currentBookId, switchBook, createBook, editBook, removeBook, accounts, transactions, getMonthSummary, transfer } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
@@ -182,7 +183,7 @@ export default function HomeScreen({ navigation }) {
       >
         {/* ─── 问候 + 今日支出 + 账本切换 ──────────────── */}
         <View style={styles.header}>
-          <View style={[styles.appIconWrap, { backgroundColor: tc.card, borderRadius: 16, padding: 4 }]}>
+          <View style={[styles.appIconWrap, neu.raisedSm, { borderRadius: 20, padding: 4 }]}>
             <Image
               source={require('../../assets/icon.png')}
               style={styles.appIcon}
@@ -209,7 +210,7 @@ export default function HomeScreen({ navigation }) {
             )}
           </View>
           <TouchableOpacity
-            style={[styles.bookChip, { backgroundColor: tc.chipBg }]}
+            style={[styles.bookChip, neu.raisedSm]}
             onPress={() => setBookPickerOpen(true)}
             activeOpacity={0.7}
           >
@@ -225,24 +226,24 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.netWorthArea}>
           {accounts.length === 0 ? (
             <TouchableOpacity
-              style={styles.netWorthCard}
+              style={[styles.netWorthCard, neu.raisedLg]}
               onPress={() => navigation.navigate('NetWorth')}
               activeOpacity={0.7}
             >
               <View style={styles.netWorthEmptyRow}>
-                <View style={[styles.netWorthEmptyIcon, { backgroundColor: tc.iconBg }]}>
+                <View style={[styles.netWorthEmptyIcon, neu.inset]}>
                   <Ionicons name="wallet-outline" size={22} color={tc.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.netWorthLabel}>净资产</Text>
-                  <Text style={styles.netWorthEmptyTitle}>还没有账户</Text>
+                  <Text style={[styles.netWorthLabel, { color: tc.primary }]}>净资产</Text>
+                  <Text style={[styles.netWorthEmptyTitle, { color: tc.text }]}>还没有账户</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={tc.starColor} />
               </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.netWorthCard, { backgroundColor: tc.card }]}
+              style={[styles.netWorthCard, neu.raisedLg]}
               onPress={() => navigation.navigate('NetWorth')}
               activeOpacity={0.7}
             >
@@ -253,10 +254,10 @@ export default function HomeScreen({ navigation }) {
                 {formatMoney(netWorth, settings.currency)}
               </Text>
               <View style={styles.netWorthMeta}>
-                <Text style={styles.netWorthHint}>
+                <Text style={[styles.netWorthHint, { color: tc.textSubtle }]}>
                   {accounts.length} 个账户
                 </Text>
-                <View style={[styles.netWorthArrow, { backgroundColor: tc.iconBg }]}>
+                <View style={[styles.netWorthArrow, neu.inset]}>
                   <Ionicons name="chevron-forward" size={16} color={tc.primary} />
                 </View>
               </View>
@@ -267,7 +268,7 @@ export default function HomeScreen({ navigation }) {
         {/* ─── AI 助手 ───────────────────────────────── */}
         {aiEnabled ? (
           <View style={styles.section}>
-            <View style={[styles.aiCard, { backgroundColor: tc.iconBg }]}>
+            <View style={[styles.aiCard, neu.raised, { backgroundColor: tc.iconBg }]}>
               {/* 装饰星星 */}
               <DecoStar style={styles.starAi1} size={10} color="#DDD6FE" />
 
@@ -281,7 +282,7 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={styles.aiBtns}>
                 <TouchableOpacity
-                  style={[styles.aiBtnPrimary, { backgroundColor: tc.primary }]}
+                  style={[styles.aiBtnPrimary, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5 }]}
                   onPress={() => setShowAiChat(true)}
                   activeOpacity={0.85}
                 >
@@ -289,12 +290,12 @@ export default function HomeScreen({ navigation }) {
                   <Text style={[styles.aiBtnPrimaryText, { color: tc.primaryOn }]}>记账</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.aiBtnAccent, { backgroundColor: tc.accent }]}
+                  style={[styles.aiBtnAccent, { backgroundColor: tc.accent, shadowColor: tc.accent, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5 }]}
                   onPress={() => setShowAiQA(true)}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="chatbubbles" size={14} color="#fff" />
-                  <Text style={[styles.aiBtnAccentText, { color: '#fff' }]}>问问</Text>
+                  <Ionicons name="chatbubbles" size={14} color="#123B38" />
+                  <Text style={[styles.aiBtnAccentText, { color: '#123B38' }]}>问问</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -332,13 +333,13 @@ export default function HomeScreen({ navigation }) {
           </View>
 
           {accounts.length === 0 ? (
-            <View style={[styles.card, styles.emptyCard]}>
+            <View style={[styles.card, styles.emptyCard, neu.raised]}>
               <Ionicons name="wallet-outline" size={32} color={tc.textSubtle} />
               <Text style={[styles.emptyText, { color: tc.textMuted }]}>还没有账户</Text>
               <Text style={[styles.emptyHint, { color: tc.textSubtle }]}>添加微信/支付宝/银行卡</Text>
             </View>
           ) : (
-            <View style={[styles.accountCard, { backgroundColor: tc.card }]}>
+            <View style={[styles.accountCard, neu.raised]}>
               {accounts.map((acc, i) => {
                 const meta = typeInfo(acc.type);
                 const isLast = i === accounts.length - 1;
@@ -482,7 +483,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     gap: spacing.xs,
     marginTop: spacing.xs,
-    ...shadows.sm,
   },
   bookChipText: {
     fontSize: fontSize.xs,
@@ -498,20 +498,17 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: borderRadius.xl,
     padding: spacing.base + 2,
-    ...shadows.sm,
   },
   netWorthCard: {
     borderRadius: borderRadius.xl,
     padding: spacing.base + 4,
-    backgroundColor: '#FFFFFF',
     position: 'relative',
     overflow: 'hidden',
-    ...shadows.md,
   },
   netWorthLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    color: '#7C5CFF',
+    color: '#6D5DFC',
     marginBottom: spacing.sm,
   },
   netWorthAmount: {
@@ -520,7 +517,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: -1.5,
     marginBottom: spacing.md,
-    color: '#0F172A',
   },
   netWorthMeta: {
     flexDirection: 'row',
@@ -529,13 +525,11 @@ const styles = StyleSheet.create({
   },
   netWorthHint: {
     fontSize: fontSize.sm,
-    color: '#94A3B8',
   },
   netWorthArrow: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F5F3FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -545,7 +539,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   netWorthEmptyIcon: {
-    width: 48, height: 48, borderRadius: 14,
+    width: 48, height: 48, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
   netWorthEmptyTitle: {
@@ -642,7 +636,6 @@ const styles = StyleSheet.create({
   accountCard: {
     borderRadius: borderRadius.xl,
     overflow: 'hidden',
-    ...shadows.sm,
   },
   accountRow: {
     flexDirection: 'row', alignItems: 'center',

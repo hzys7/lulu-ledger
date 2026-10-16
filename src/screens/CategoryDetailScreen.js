@@ -21,9 +21,8 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
-  shadows,
 } from '../theme';
-import { useThemeColors } from '../hooks/useThemeColors';
+import { useThemeColors, useNeu } from '../hooks/useThemeColors';
 
 // ─── 日期分组 ───────────────────────────────────────────────
 function groupByDate(txs) {
@@ -75,6 +74,7 @@ export default function CategoryDetailScreen({ route, navigation }) {
   } = route.params;
 
   const tc = useThemeColors();
+  const neu = useNeu();
   const insets = useSafeAreaInsets();
   const { transactions, settings, accounts, removeTx } = useFinance();
 
@@ -186,7 +186,7 @@ export default function CategoryDetailScreen({ route, navigation }) {
   const headerComponent = useMemo(() => (
     <View>
       {/* 分类汇总卡片 */}
-      <View style={[styles.summaryCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+      <View style={[styles.summaryCard, neu.raised]}>
         <View style={styles.summaryTop}>
           <CategoryIcon category={categoryName} type={dataType} size={48} />
           <View style={styles.summaryInfo}>
@@ -301,7 +301,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     padding: spacing.md,
     borderRadius: borderRadius.xl,
-    ...shadows.sm,
   },
   summaryTop: {
     flexDirection: 'row',

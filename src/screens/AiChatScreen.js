@@ -1,6 +1,6 @@
 ﻿// 小璐记账 · AI 智能记账（全屏弹窗）
 // 流程：用户输入自然语言 → 调 AI 解析 → 预览结果 → 保存
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
-import { spacing, borderRadius, fontSize, fontWeight, getThemeColors, categories as categoryConfig } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, getThemeColors, neuStyles, categories as categoryConfig } from '../theme';
 import { parseTransactionFromText } from '../utils/aiParser';
 import { loadAiConfig } from '../utils/aiConfig';
 
@@ -35,6 +35,7 @@ const SUGGESTIONS = [
 export default function AiChatScreen({ visible, onClose, onSaved }) {
   const { settings, addTx, accounts } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const inputRef = useRef(null);
 
@@ -163,7 +164,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                 请前往设置 → AI 智能 → AI 配置，开启开关并填写 API Key。
               </Text>
               <TouchableOpacity
-                style={[styles.emptyBtn, { backgroundColor: tc.primary }]}
+                style={[styles.emptyBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
                 onPress={onClose}
                 activeOpacity={0.85}
               >
@@ -182,7 +183,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                 例如「昨天打车 35」「今天中午吃火锅 120」
               </Text>
 
-              <View style={[styles.inputBox, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.inputBox, neu.inset]}>
                 <TextInput
                   ref={inputRef}
                   style={[styles.textInput, { color: tc.text }]}
@@ -204,7 +205,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                 {SUGGESTIONS.map((s, i) => (
                   <TouchableOpacity
                     key={i}
-                    style={[styles.suggestionChip, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+                    style={[styles.suggestionChip, neu.raisedSm]}
                     onPress={() => setText(s)}
                     activeOpacity={0.7}
                   >
@@ -214,7 +215,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
               </View>
 
               {error ? (
-                <View style={[styles.errorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
+                <View style={[styles.errorBox, neu.raisedSm, { backgroundColor: tc.dangerSubtle }]}>
                   <Ionicons name="alert-circle" size={16} color={tc.danger} />
                   <Text style={[styles.errorText, { color: tc.danger }]}>{error}</Text>
                 </View>
@@ -234,7 +235,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                 const info = categoryConfig[item.type].find((c) => c.name === item.category);
                 const color = tc.categories[item.category] || tc.textMuted;
                 return (
-                  <View key={idx} style={[styles.previewCard, { backgroundColor: tc.surface, borderColor: tc.border, marginBottom: spacing.md, padding: spacing.lg, alignItems: 'flex-start' }]}>
+                  <View key={idx} style={[styles.previewCard, neu.raisedSm, { marginBottom: spacing.md, padding: spacing.lg, alignItems: 'flex-start' }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: spacing.sm }}>
                       <View style={[styles.previewCat, { backgroundColor: color + '22', width: 40, height: 40, borderRadius: 12, marginRight: spacing.md, marginBottom: 0 }]}>
                         <Ionicons name={info?.icon || 'help'} size={20} color={color} />
@@ -267,7 +268,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.previewContent}
             >
-              <View style={[styles.previewCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.previewCard, neu.raisedLg]}>
                 <View style={[styles.previewCat, { backgroundColor: catColor + '22' }]}>
                   <Ionicons name={catInfo?.icon || 'help'} size={32} color={catColor} />
                 </View>
@@ -302,10 +303,12 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
           )}
 
           {/* 底部按钮 */}
-          <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.sm), backgroundColor: tc.surface, borderTopColor: tc.divider, bottom: keyboardH }]}>
+          <View style={[styles.bottomBar, neu.raisedLg, { paddingBottom: Math.max(insets.bottom, spacing.sm), bottom: keyboardH }]}>
             {aiEnabled && hasApiKey && !parsed && !parsedList ? (
               <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: text.trim() ? tc.primary : tc.surfaceMuted, opacity: text.trim() ? 1 : 0.5 }]}
+                style={[styles.actionBtn, text.trim()
+                  ? { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5, opacity: 1 }
+                  : { ...neu.inset, opacity: 0.5 }]}
                 onPress={handleParse}
                 activeOpacity={0.85}
                 disabled={parsing || !text.trim()}
@@ -326,7 +329,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
             {aiEnabled && hasApiKey && (parsed || parsedList) ? (
               <View style={styles.previewActions}>
                 <TouchableOpacity
-                  style={[styles.actionBtn, styles.reParseBtn, { backgroundColor: tc.surfaceMuted, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth }]}
+                  style={[styles.actionBtn, styles.reParseBtn, neu.raisedSm]}
                   onPress={handleReParse}
                   activeOpacity={0.7}
                 >
@@ -334,7 +337,7 @@ export default function AiChatScreen({ visible, onClose, onSaved }) {
                   <Text style={[styles.actionBtnText, { color: tc.text }]}>重新输入</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionBtn, styles.saveBtn, { backgroundColor: tc.primary, flex: 1.4 }]}
+                  style={[styles.actionBtn, styles.saveBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5, flex: 1.4 }]}
                   onPress={handleSave}
                   activeOpacity={0.85}
                 >

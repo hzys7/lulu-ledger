@@ -2,7 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Rect, G } from 'react-native-svg';
-import { spacing, fontSize, fontWeight } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { useNeu } from '../../hooks/useThemeColors';
 
 const WEEKDAY_COLORS = [
   '#FF6B6B', '#FFA94D', '#FFD43B', '#69DB7C', '#4DABF7', '#9775FA', '#F06595',
@@ -11,6 +12,7 @@ const WEEKDAY_COLORS = [
 const screenWidth = Dimensions.get('window').width;
 
 export default function WeekBarChart({ data, accent, muted }) {
+  const neu = useNeu();
   const width = screenWidth - spacing.base * 4;
   const height = 140;
   const values = data.map(d => d.value);
@@ -19,7 +21,7 @@ export default function WeekBarChart({ data, accent, muted }) {
   const labelY = height - 24;
 
   return (
-    <View style={{ width, height, alignItems: 'center' }}>
+    <View style={[styles.weekWrap, { height, alignItems: 'center' }, neu.inset]}>
       <Svg width={width} height={labelY}>
         {data.map((d, i) => {
           const barH = max > 0 ? (d.value / max) * (labelY - 12) : 4;
@@ -59,6 +61,10 @@ export default function WeekBarChart({ data, accent, muted }) {
 }
 
 const styles = StyleSheet.create({
+  weekWrap: {
+    width: '100%',
+    borderRadius: borderRadius.md,
+  },
   weekBarLabels: {
     flexDirection: 'row',
     justifyContent: 'space-around',

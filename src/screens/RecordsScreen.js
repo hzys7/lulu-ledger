@@ -21,7 +21,7 @@ import TransactionDetailModal from '../components/TransactionDetailModal';
 import BudgetPieChart from '../components/BudgetPieChart';
 import { formatMoney } from '../utils/currency';
 import { toNumber } from '../utils/safeNumber';
-import { spacing, borderRadius, fontSize, fontWeight, shadows, getThemeColors } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, neuStyles, getThemeColors } from '../theme';
 
 function dayKey(iso) {
   return new Date(iso).toLocaleDateString('zh-CN', {
@@ -51,6 +51,7 @@ function buildFlatData(grouped) {
 export default function RecordsScreen({ navigation }) {
   const { transactions, settings, getMonthSummary, reload, accounts, removeTx, budgets } = useFinance();
   const tc = useMemo(() => getThemeColors(settings.theme), [settings.theme]);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const [detailTx, setDetailTx] = useState(null);
   const insets = useSafeAreaInsets();
 
@@ -223,7 +224,7 @@ export default function RecordsScreen({ navigation }) {
           onPress={() => setDetailTx(item.data)}
           activeOpacity={0.6}
         >
-          <View style={[styles.transferIcon, { backgroundColor: tc.primary + '15' }]}>
+          <View style={[styles.transferIcon, neu.raisedSm]}>
             <Ionicons name="swap-horizontal" size={18} color={tc.primary} />
           </View>
           <View style={styles.transferInfo}>
@@ -350,7 +351,7 @@ export default function RecordsScreen({ navigation }) {
             </View>
             {/* 搜索框 */}
             <View style={styles.searchBarWrap}>
-              <View style={[styles.searchBar, { backgroundColor: tc.card }]}>
+              <View style={[styles.searchBar, neu.inset]}>
                 <Ionicons name="search" size={16} color={tc.textSubtle} />
                 <TextInput
                   style={[styles.searchInput, { color: tc.text }]}
@@ -393,7 +394,7 @@ export default function RecordsScreen({ navigation }) {
               ) : null}
             </View>
             {(showHint && !searchQuery) ? (
-              <View style={[styles.hintBox, { backgroundColor: tc.card }]}>
+              <View style={[styles.hintBox, neu.raised]}>
                 <View style={styles.hintRow}>
                   <Text style={[styles.hintLabel, { color: tc.primary }]}>{'大于100'}</Text>
                   <Text style={[styles.hintDesc, { color: tc.textSecondary }]}>金额≥100</Text>
@@ -416,7 +417,7 @@ export default function RecordsScreen({ navigation }) {
               </View>
             ) : null}
             {(searchQuery && displayTransactions.length === 0) ? (
-              <View style={styles.hintBox}>
+              <View style={[styles.hintBox, neu.raised]}>
                 <Text style={styles.hintTip}>试试：大于100、小于50、100到500、直接输数字搜金额、或输入关键词</Text>
               </View>
             ) : null}
@@ -431,7 +432,7 @@ export default function RecordsScreen({ navigation }) {
             />
           </View>
         }
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C5CFF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tc.primary} />}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
@@ -484,7 +485,7 @@ export default function RecordsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F3FF' },
+  container: { flex: 1 },
 
   stickyBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -503,7 +504,6 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row', alignItems: 'center', borderRadius: borderRadius.full,
     paddingHorizontal: spacing.md, height: 42, gap: spacing.sm,
-    ...shadows.sm,
   },
   searchInput: { flex: 1, fontSize: fontSize.md, paddingVertical: 0, letterSpacing: -0.1 },
 
@@ -517,7 +517,6 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.base, marginTop: spacing.xs, marginBottom: spacing.sm,
     borderRadius: borderRadius.sm,
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: 4,
-    ...shadows.sm,
   },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   hintLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, fontFamily: 'monospace', minWidth: 52 },

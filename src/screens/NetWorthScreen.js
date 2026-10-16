@@ -25,13 +25,14 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
-  shadows,
+  neuStyles,
   getThemeColors,
 } from '../theme';
 
 export default function NetWorthScreen() {
   const { accounts, addAccount, editAccount, removeAccount, adjustAccount, setDefaultAccount, transfer, settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -134,7 +135,7 @@ export default function NetWorthScreen() {
         contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 100 }}
       >
         {/* 顶部净资产大卡 */}
-        <View style={[styles.heroCard, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+        <View style={[styles.heroCard, neu.raisedLg]}>
           {/* 装饰性背景元素 */}
           <View style={[styles.heroDeco, { backgroundColor: totalNetWorth >= 0 ? tc.primary + '08' : tc.danger + '08' }]} />
           <Text style={[styles.heroLabel, { color: tc.textMuted }]}>净资产</Text>
@@ -152,7 +153,7 @@ export default function NetWorthScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             {accounts.length >= 2 && (
               <TouchableOpacity
-                style={[styles.addBtn, { backgroundColor: tc.primarySubtle }]}
+                style={[styles.addBtn, neu.raisedSm, { backgroundColor: tc.primarySubtle }]}
                 onPress={() => setTransferOpen(true)}
                 activeOpacity={0.7}
               >
@@ -161,7 +162,7 @@ export default function NetWorthScreen() {
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: tc.surfaceMuted }]}
+              style={[styles.addBtn, neu.raisedSm]}
               onPress={openNew}
               activeOpacity={0.7}
             >
@@ -186,16 +187,16 @@ export default function NetWorthScreen() {
               return (
                 <View
                   key={acc.id}
-                  style={[styles.accountCard, { backgroundColor: tc.surface, borderColor: tc.border }]}
+                  style={[styles.accountCard, neu.raised]}
                 >
-                  <View style={[styles.accountIcon, { backgroundColor: info.color + '22' }]}>
+                  <View style={[styles.accountIcon, neu.raisedSm, { backgroundColor: info.color + '22' }]}>
                     <Ionicons name={info.icon} size={22} color={info.color} />
                   </View>
                   <View style={styles.accountInfo}>
                     <View style={styles.accountNameRow}>
                       <Text style={[styles.accountName, { color: tc.text }]}>{acc.name}</Text>
                       {acc.isDefault ? (
-                        <View style={[styles.defaultBadge, { backgroundColor: tc.primarySubtle }]}>
+                        <View style={[styles.defaultBadge, neu.raisedSm, { backgroundColor: tc.primarySubtle }]}>
                           <Text style={[styles.defaultBadgeText, { color: tc.primary }]}>默认</Text>
                         </View>
                       ) : null}
@@ -214,7 +215,7 @@ export default function NetWorthScreen() {
                     <View style={styles.accountActions}>
                       <TouchableOpacity
                         onPress={() => openEdit(acc)}
-                        style={[styles.cardActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                        style={[styles.cardActionBtn, neu.raisedSm]}
                         activeOpacity={0.7}
                       >
                         <Ionicons name="create-outline" size={12} color={tc.textMuted} />
@@ -222,7 +223,7 @@ export default function NetWorthScreen() {
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleDelete(acc)}
-                        style={[styles.cardActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                        style={[styles.cardActionBtn, neu.raisedSm]}
                         activeOpacity={0.7}
                       >
                         <Ionicons name="trash-outline" size={12} color={tc.danger} />
@@ -271,9 +272,9 @@ export default function NetWorthScreen() {
                   key={t.key}
                   style={[
                     styles.typeChip,
+                    neu.raisedSm,
                     {
                       backgroundColor: formType === t.key ? t.color + '22' : tc.surfaceMuted,
-                      borderColor: formType === t.key ? t.color : 'transparent',
                     },
                   ]}
                   onPress={() => setFormType(t.key)}
@@ -294,7 +295,7 @@ export default function NetWorthScreen() {
 
             <Text style={[styles.fieldLabel, { color: tc.textMuted }]}>账户名称</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border }]}
+              style={[styles.input, neu.inset, { color: tc.text }]}
               value={formName}
               onChangeText={setFormName}
               placeholder="例如：日常微信、工资卡"
@@ -304,7 +305,7 @@ export default function NetWorthScreen() {
 
             <Text style={[styles.fieldLabel, { color: tc.textMuted }]}>当前余额</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border }]}
+              style={[styles.input, neu.inset, { color: tc.text }]}
               value={formBalance}
               onChangeText={setFormBalance}
               placeholder="0.00"
@@ -313,7 +314,7 @@ export default function NetWorthScreen() {
             />
 
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary }]}
+              style={[styles.saveBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
               onPress={saveAccount}
               activeOpacity={0.8}
             >
@@ -323,7 +324,7 @@ export default function NetWorthScreen() {
             {editing ? (
               <View style={styles.editActionRow}>
                 <TouchableOpacity
-                  style={[styles.editActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                  style={[styles.editActionBtn, neu.raisedSm]}
                   onPress={() => { closeModal(); openAdjust(editing); }}
                   activeOpacity={0.7}
                 >
@@ -332,7 +333,7 @@ export default function NetWorthScreen() {
                 </TouchableOpacity>
                 {!editing.isDefault ? (
                   <TouchableOpacity
-                    style={[styles.editActionBtn, { backgroundColor: tc.surfaceMuted }]}
+                    style={[styles.editActionBtn, neu.raisedSm]}
                     onPress={() => { setDefaultAccount(editing.id); closeModal(); }}
                     activeOpacity={0.7}
                   >
@@ -356,7 +357,7 @@ export default function NetWorthScreen() {
         onRequestClose={() => setAdjustModalOpen(false)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setAdjustModalOpen(false)}>
-          <Pressable style={[styles.adjustSheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
+          <Pressable style={[styles.adjustSheet, neu.raisedLg]} onPress={() => {}}>
             <Text style={[styles.modalTitle, { color: tc.text, textAlign: 'center' }]}>调整余额</Text>
             <Text style={[styles.adjustHint, { color: tc.textMuted }]}>
               {adjusting ? `${adjusting.name} · 当前 ${formatMoney(adjusting.balance, settings.currency)}` : ''}
@@ -365,7 +366,7 @@ export default function NetWorthScreen() {
               {'输入正数表示增加，负数表示减少（不通过交易流水）'}
             </Text>
             <TextInput
-              style={[styles.input, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border, marginTop: spacing.md }]}
+              style={[styles.input, neu.inset, { color: tc.text, marginTop: spacing.md }]}
               value={adjustDelta}
               onChangeText={setAdjustDelta}
               placeholder="例如：-50 或 +200"
@@ -374,14 +375,14 @@ export default function NetWorthScreen() {
             />
             <View style={styles.adjustBtnRow}>
               <TouchableOpacity
-                style={[styles.adjustBtn, { backgroundColor: tc.surfaceMuted }]}
+                style={[styles.adjustBtn, neu.raisedSm]}
                 onPress={() => setAdjustModalOpen(false)}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.adjustBtnText, { color: tc.text }]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.adjustBtn, { backgroundColor: tc.primary, marginLeft: spacing.sm }]}
+                style={[styles.adjustBtn, { backgroundColor: tc.primary, marginLeft: spacing.sm, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
                 onPress={saveAdjust}
                 activeOpacity={0.8}
               >
@@ -414,7 +415,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
-    ...shadows.md,
   },
   heroLabel: { fontSize: fontSize.sm, letterSpacing: -0.1 },
   heroAmount: {
@@ -462,7 +462,6 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     borderRadius: borderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    ...shadows.sm,
   },
   accountIcon: {
     width: 40,
@@ -560,13 +559,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: borderRadius.full,
-    borderWidth: 1,
     gap: 4,
   },
   typeChipText: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, marginLeft: 2 },
   input: {
     borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.md,
     height: 40,
     fontSize: fontSize.md,

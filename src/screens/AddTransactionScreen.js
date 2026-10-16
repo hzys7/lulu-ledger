@@ -1,6 +1,6 @@
 // 小璐记账 · 记一笔（重构：分类页 + 底部抽屉）
 // 流程：点 tab 栏记一笔 -> 分类页 -> 点分类 -> 弹底部抽屉填金额保存
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
-  shadows,
+  neuStyles,
   getThemeColors,
 } from '../theme';
 
@@ -64,6 +64,7 @@ function FormHeader({ category, type, onClose, tc, catColor, catIcon }) {
 export default function AddTransactionScreen({ navigation, route }) {
   const { addTx, editTx, removeTx, settings, accounts } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const editTransaction = route.params?.transaction;
   const initialType = route.params?.type || 'expense';
@@ -209,9 +210,9 @@ export default function AddTransactionScreen({ navigation, route }) {
     <View style={[styles.container, { backgroundColor: tc.background }]}>
       {/* ============ 分类页 ============ */}
       <View style={styles.pageWrap}>
-        <View style={[styles.segment, { backgroundColor: tc.surfaceMuted }]}>
+        <View style={[styles.segment, neu.inset]}>
           <TouchableOpacity
-            style={[styles.segmentItem, type === 'expense' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
+            style={[styles.segmentItem, type === 'expense' && neu.raisedSm]}
             onPress={() => setType('expense')}
             activeOpacity={0.7}
           >
@@ -226,7 +227,7 @@ export default function AddTransactionScreen({ navigation, route }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentItem, type === 'income' && [styles.segmentItemActive, { backgroundColor: tc.surface }]]}
+            style={[styles.segmentItem, type === 'income' && neu.raisedSm]}
             onPress={() => setType('income')}
             activeOpacity={0.7}
           >
@@ -257,7 +258,7 @@ export default function AddTransactionScreen({ navigation, route }) {
                   onPress={() => openFormForCategory(c.name)}
                   activeOpacity={0.6}
                 >
-                  <View style={[styles.categoryIcon, { backgroundColor: color + '22' }]}>
+                  <View style={[styles.categoryIcon, neu.raisedSm]}>
                     <Ionicons name={c.icon} size={22} color={color} />
                   </View>
                   <Text style={[styles.categoryName, { color: tc.text }]} numberOfLines={1}>
@@ -301,7 +302,7 @@ export default function AddTransactionScreen({ navigation, route }) {
             />
 
             {/* 金额显示 */}
-            <View style={styles.amountBlock}>
+            <View style={[styles.amountBlock, neu.inset]}>
               <View style={styles.amountRow}>
                 <Text style={[styles.currencySign, { color: tc.text }]}>{currencySymbol}</Text>
                 <Text style={[styles.amountValue, { color: tc.text }]}>{displayAmount}</Text>
@@ -311,14 +312,14 @@ export default function AddTransactionScreen({ navigation, route }) {
             {/* 日期 + 备注 + 账户（放在键盘上方，始终可见） */}
             <View style={styles.metaRow}>
               <TouchableOpacity
-                style={[styles.metaBtn, { backgroundColor: tc.surfaceMuted }]}
+                style={[styles.metaBtn, neu.raisedSm]}
                 onPress={() => setShowDatePicker(true)}
                 activeOpacity={0.7}
               >
                 <Ionicons name="calendar-outline" size={16} color={tc.textMuted} />
                 <Text style={[styles.metaText, { color: tc.text }]}>{fmtDay(date)}</Text>
               </TouchableOpacity>
-              <View style={[styles.metaInputWrap, { backgroundColor: tc.surfaceMuted }]}>
+              <View style={[styles.metaInputWrap, neu.inset]}>
                 <Ionicons name="create-outline" size={16} color={tc.textMuted} />
                 <TextInput
                   style={[styles.metaInput, { color: tc.text }]}
@@ -349,10 +350,7 @@ export default function AddTransactionScreen({ navigation, route }) {
                     key={m.key}
                     style={[
                       styles.moodChip,
-                      {
-                        backgroundColor: active ? tc.primary : tc.surfaceMuted,
-                        borderColor: active ? tc.primary : tc.border,
-                      },
+                      active ? { backgroundColor: tc.primary } : neu.raisedSm,
                     ]}
                     onPress={() => setMood(mood === m.key ? '' : m.key)}
                     activeOpacity={0.7}
@@ -387,7 +385,7 @@ export default function AddTransactionScreen({ navigation, route }) {
                 {categorySuggestions.map((s) => (
                   <TouchableOpacity
                     key={s.category}
-                    style={[styles.suggestionChip, { backgroundColor: tc.accentSubtle }]}
+                    style={[styles.suggestionChip, neu.raisedSm]}
                     onPress={() => setFormCategory(s.category)}
                     activeOpacity={0.7}
                   >
@@ -409,10 +407,7 @@ export default function AddTransactionScreen({ navigation, route }) {
                     key={a.id}
                     style={[
                       styles.accountChip,
-                      {
-                        backgroundColor: active ? tc.primary : tc.surfaceMuted,
-                        borderColor: active ? tc.primary : tc.border,
-                      },
+                      active ? { backgroundColor: tc.primary } : neu.raisedSm,
                     ]}
                     onPress={() => setAccountId(a.id)}
                     activeOpacity={0.7}
@@ -447,7 +442,7 @@ export default function AddTransactionScreen({ navigation, route }) {
             <View style={styles.actions}>
               {editTransaction ? (
                 <TouchableOpacity
-                  style={[styles.deleteBtn, { backgroundColor: tc.surfaceMuted }]}
+                  style={[styles.deleteBtn, neu.raisedSm]}
                   onPress={handleDeleteTransaction}
                   activeOpacity={0.7}
                 >
@@ -496,13 +491,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  segmentItemActive: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 1,
   },
   segmentText: {
     fontSize: fontSize.md,
@@ -588,7 +576,7 @@ const styles = StyleSheet.create({
   },
 
   // 金额
-  amountBlock: { paddingVertical: spacing.sm },
+  amountBlock: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   amountRow: { flexDirection: 'row', alignItems: 'flex-end' },
   currencySign: {
     fontSize: fontSize.xxl,
@@ -613,7 +601,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: borderRadius.full,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: 3,
   },
   moodEmoji: { fontSize: fontSize.sm },
@@ -659,7 +646,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 5,
     borderRadius: borderRadius.full,
-    borderWidth: StyleSheet.hairlineWidth,
     maxWidth: 140,
   },
   accountChipText: {

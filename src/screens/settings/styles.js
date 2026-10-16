@@ -26,7 +26,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     minHeight: 56,
@@ -64,7 +63,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.md,
     borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   statLabel: { fontSize: fontSize.xs, letterSpacing: -0.1 },
   statValue: {
@@ -75,7 +73,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalBackdrop: { ...StyleSheet.absoluteFillObject },
   handle: {
     width: 36,
@@ -106,7 +104,7 @@ const styles = StyleSheet.create({
   iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   iconOption: {
     width: 48, height: 48, borderRadius: borderRadius.md,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
   },
 
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -116,7 +114,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
-    borderWidth: 1,
   },
   typePillText: {
     fontSize: fontSize.sm,
@@ -146,7 +143,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.md,
   },
   currency: { fontSize: fontSize.xl, fontWeight: fontWeight.semibold, marginRight: spacing.sm, letterSpacing: -0.3 },
@@ -170,7 +166,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   currencyLabel: { fontSize: fontSize.md, letterSpacing: -0.2 },
 
@@ -178,7 +173,6 @@ const styles = StyleSheet.create({
   fileList: {
     maxHeight: 150,
     borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     padding: spacing.xs,
   },
   fileItem: {
@@ -186,7 +180,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.sm,
     borderRadius: borderRadius.sm,
-    borderWidth: 1,
     marginBottom: spacing.xs,
     gap: spacing.sm,
   },
@@ -217,7 +210,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     alignItems: 'center',
     borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.xs,
   },
   emptyText: {

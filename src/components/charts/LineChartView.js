@@ -2,7 +2,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Polyline, Circle, Line, G, Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
-import { spacing, fontSize, fontWeight } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { useNeu } from '../../hooks/useThemeColors';
 
 const screenWidth = Dimensions.get('window').width;
 const CHART_WIDTH = screenWidth - spacing.base * 2 - spacing.base * 2;
@@ -55,6 +56,7 @@ function smoothPath(pts) {
 }
 
 export default function LineChartView({ data, accent, muted, divider, selectedDay, onSelectDay }) {
+  const neu = useNeu();
   if (!data || data.length === 0) return null;
 
   const values = data.map(d => d.value);
@@ -97,7 +99,7 @@ export default function LineChartView({ data, accent, muted, divider, selectedDa
   const avgY = PADDING.top + INNER_H - (avg / max) * INNER_H;
 
   return (
-    <View>
+    <View style={[styles.chartWrap, neu.inset]}>
       <View
         style={{ width: CHART_WIDTH, height: CHART_HEIGHT }}
         onStartShouldSetResponder={() => true}
@@ -209,6 +211,10 @@ export default function LineChartView({ data, accent, muted, divider, selectedDa
 }
 
 const styles = StyleSheet.create({
+  chartWrap: {
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.xs,
+  },
   lineLabels: {
     height: 16,
     marginTop: 2,

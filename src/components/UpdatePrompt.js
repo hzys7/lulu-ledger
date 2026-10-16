@@ -2,7 +2,7 @@
 // 检测到新版本时弹窗，用户点击「立即更新」即可在应用内完成下载和安装
 
 import { useSettings } from '../context/SettingsContext';
-import { useThemeColors } from '../hooks/useThemeColors';
+import { useThemeColors, useNeu } from '../hooks/useThemeColors';
 import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import {
   View,
@@ -47,6 +47,8 @@ const STAGE = {
 const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   const { settings } = useSettings();
   const tc = useThemeColors();
+  const neu = useNeu();
+  const ctaStyle = { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 };
 
   const [visible, setVisible] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -242,10 +244,10 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <View style={[styles.card, { backgroundColor: tc.surface }]}>
+        <View style={[styles.card, neu.raisedLg]}>
 
           {/* ─── 图标 ─────────────────────────────── */}
-          <View style={[styles.iconWrap, { backgroundColor: tc.primarySubtle }]}>
+          <View style={[styles.iconWrap, neu.raisedSm, { backgroundColor: tc.primarySubtle }]}>
             <Ionicons
               name={stage === STAGE.ERROR ? 'alert-circle' : 'arrow-up-circle'}
               size={28}
@@ -274,7 +276,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           {/* ─── 下载进度条 ───────────────────────── */}
           {stage === STAGE.DOWNLOADING ? (
             <View style={styles.progressSection}>
-              <View style={[styles.progressBarBg, { backgroundColor: tc.surfaceMuted }]}>
+              <View style={[styles.progressBarBg, neu.inset]}>
                 <View style={[styles.progressBarFill, {
                   backgroundColor: tc.primary,
                   width: Math.max(downloadPercent, 2) + '%',
@@ -308,7 +310,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
 
           {/* ─── 错误信息 ─────────────────────────── */}
           {stage === STAGE.ERROR ? (
-            <View style={[styles.errorBox, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger + '22' }]}>
+            <View style={[styles.errorBox, neu.raisedSm, { backgroundColor: tc.dangerSubtle }]}>
               <Text style={[styles.errorText, { color: tc.danger }]} numberOfLines={3}>
                 {errorMsg || '未知错误'}
               </Text>
@@ -326,7 +328,7 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
 
           {/* ─── 更新内容（仅在 info 和 error 阶段显示） ──── */}
           {(stage === STAGE.INFO || stage === STAGE.ERROR) && updateInfo.remote?.body ? (
-            <View style={[styles.notesBox, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+            <View style={[styles.notesBox, neu.inset]}>
               <Text style={[styles.notesTitle, { color: tc.text }]}>更新内容</Text>
               <Text style={[styles.notesBody, { color: tc.textSecondary }]} numberOfLines={6}>
                 {updateInfo.remote.body}
@@ -338,39 +340,39 @@ const UpdatePrompt = forwardRef(function UpdatePrompt(_props, ref) {
           <View style={styles.btnRow}>
             {stage === STAGE.INFO ? (
               <>
-                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleLater} activeOpacity={0.7}>
+                <TouchableOpacity style={[styles.btn, styles.btnSecondary, neu.raisedSm]} onPress={handleLater} activeOpacity={0.7}>
                   <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>稍后</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleSkip} activeOpacity={0.7}>
+                <TouchableOpacity style={[styles.btn, styles.btnSecondary, neu.raisedSm]} onPress={handleSkip} activeOpacity={0.7}>
                   <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>忽略此版</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1.4 }]} onPress={handleStartUpdate} activeOpacity={0.85}>
+                <TouchableOpacity style={[styles.btn, styles.btnPrimary, ctaStyle, { flex: 1.4 }]} onPress={handleStartUpdate} activeOpacity={0.85}>
                   <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>立即更新</Text>
                 </TouchableOpacity>
               </>
             ) : stage === STAGE.NO_PERM ? (
               <>
-                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleClose} activeOpacity={0.7}>
+                <TouchableOpacity style={[styles.btn, styles.btnSecondary, neu.raisedSm]} onPress={handleClose} activeOpacity={0.7}>
                   <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>稍后</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1.4 }]} onPress={handlePermissionSettings} activeOpacity={0.85}>
+                <TouchableOpacity style={[styles.btn, styles.btnPrimary, ctaStyle, { flex: 1.4 }]} onPress={handlePermissionSettings} activeOpacity={0.85}>
                   <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>去授权</Text>
                 </TouchableOpacity>
               </>
             ) : stage === STAGE.ERROR ? (
               <>
-                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleClose} activeOpacity={0.7}>
+                <TouchableOpacity style={[styles.btn, styles.btnSecondary, neu.raisedSm]} onPress={handleClose} activeOpacity={0.7}>
                   <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>稍后</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border }]} onPress={handleFallbackBrowser} activeOpacity={0.7}>
+                <TouchableOpacity style={[styles.btn, styles.btnSecondary, neu.raisedSm]} onPress={handleFallbackBrowser} activeOpacity={0.7}>
                   <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>网页下载</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnPrimary, { backgroundColor: tc.primary, flex: 1.4 }]} onPress={handleRetry} activeOpacity={0.85}>
+                <TouchableOpacity style={[styles.btn, styles.btnPrimary, ctaStyle, { flex: 1.4 }]} onPress={handleRetry} activeOpacity={0.85}>
                   <Text style={[styles.btnPrimaryText, { color: tc.primaryOn }]}>重试</Text>
                 </TouchableOpacity>
               </>
             ) : stage === STAGE.DOWNLOADING ? (
-              <TouchableOpacity style={[styles.btn, styles.btnSecondary, { borderColor: tc.border, flex: 1 }]} onPress={handleClose} activeOpacity={0.7}>
+              <TouchableOpacity style={[styles.btn, styles.btnSecondary, neu.raisedSm, { flex: 1 }]} onPress={handleClose} activeOpacity={0.7}>
                 <Text style={[styles.btnSecondaryText, { color: tc.textSecondary }]}>后台下载</Text>
               </TouchableOpacity>
             ) : null}

@@ -3,7 +3,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import Svg, { Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, borderRadius, fontSize, fontWeight, shadows } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, neuStyles } from '../theme';
 import { formatMoney } from '../utils/currency';
 
 const CHART_SIZE = 150;
@@ -34,6 +34,7 @@ export default function BudgetPieChart({
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [overviewSelected, setOverviewSelected] = useState(null);
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const neu = useMemo(() => neuStyles(tc), [tc]);
 
   useEffect(() => {
     Animated.timing(animatedValue, {
@@ -100,8 +101,8 @@ export default function BudgetPieChart({
     if (usedPct > 0.8) healthScore = Math.max(0, 100 - (usedPct - 0.8) * 500);
     if (isOver) healthScore = 0;
     return {
-      used: { arcLength: usedArc, rotation: 0, color: isOver ? tc.danger : '#7C5CFF', percent: Math.round(usedPct * 100) },
-      remaining: { arcLength: remainArc, rotation: usedArc, color: '#34D399', percent: Math.round(remainPct * 100) },
+      used: { arcLength: usedArc, rotation: 0, color: isOver ? tc.danger : tc.primary, percent: Math.round(usedPct * 100) },
+      remaining: { arcLength: remainArc, rotation: usedArc, color: tc.success, percent: Math.round(remainPct * 100) },
       totalBudget, totalSpent, totalRemaining: Math.abs(totalRemaining), isOver, daysLeft, dailyRemaining, healthScore, usedPct,
     };
   }, [chartData, tc]);
@@ -129,7 +130,7 @@ export default function BudgetPieChart({
 
   if (!chartData) {
     return (
-      <View style={[styles.emptyCard, { backgroundColor: tc.card }]}>
+      <View style={[styles.emptyCard, neu.raised]}>
         <View style={[styles.emptyIconWrap, { backgroundColor: tc.iconBg }]}>
           <Ionicons name="pie-chart-outline" size={32} color={tc.primary} />
         </View>
@@ -138,12 +139,12 @@ export default function BudgetPieChart({
           设置每月预算，掌控消费节奏
         </Text>
         <TouchableOpacity
-          style={[styles.emptyBtn, { backgroundColor: tc.primary }]}
+          style={[styles.emptyBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
           onPress={onNavigateBudget}
           activeOpacity={0.85}
         >
-          <Ionicons name="add-circle-outline" size={16} color="#fff" />
-          <Text style={[styles.emptyBtnText, { color: '#fff' }]}>去设置预算</Text>
+          <Ionicons name="add-circle-outline" size={16} color={tc.primaryOn} />
+          <Text style={[styles.emptyBtnText, { color: tc.primaryOn }]}>去设置预算</Text>
         </TouchableOpacity>
       </View>
     );
@@ -152,7 +153,7 @@ export default function BudgetPieChart({
   const selected = selectedIndex !== null ? chartData.segments[selectedIndex] : null;
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: tc.card, opacity: animatedValue }]}>
+    <Animated.View style={[styles.container, neu.raisedLg, { opacity: animatedValue }]}>
       {/* 装饰盾牌 */}
       <View style={styles.shieldDeco}>
         <Ionicons name="shield-checkmark" size={48} color={tc.starColorLight} />
@@ -240,38 +241,38 @@ export default function BudgetPieChart({
             {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
               overviewSelected === 'used' ? (
                 <View style={styles.centerContent}>
-                  <Text style={[styles.centerLabel, { color: '#7C5CFF' }]}>已用</Text>
-                  <Text style={styles.centerTotal} numberOfLines={1}>{formatMoney(overviewSegments.totalSpent, currency, 0)}</Text>
-                  <Text style={styles.centerSub}>{overviewSegments.used.percent}% 预算</Text>
+                  <Text style={[styles.centerLabel, { color: tc.primary }]}>已用</Text>
+                  <Text style={[styles.centerTotal, { color: tc.text }]} numberOfLines={1}>{formatMoney(overviewSegments.totalSpent, currency, 0)}</Text>
+                  <Text style={[styles.centerSub, { color: tc.textMuted }]}>{overviewSegments.used.percent}% 预算</Text>
                 </View>
               ) : overviewSelected === 'remaining' ? (
                 <View style={styles.centerContent}>
-                  <Text style={[styles.centerLabel, { color: '#34D399' }]}>剩余</Text>
-                  <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? '#FF6B6B' : '#0F172A' }]} numberOfLines={1}>
+                  <Text style={[styles.centerLabel, { color: tc.success }]}>剩余</Text>
+                  <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
                     {overviewSegments.isOver ? '-' : ''}{formatMoney(overviewSegments.totalRemaining, currency, 0)}
                   </Text>
-                  <Text style={styles.centerSub}>{overviewSegments.isOver ? '已超支' : `${overviewSegments.remaining.percent}% 可用`}</Text>
+                  <Text style={[styles.centerSub, { color: tc.textMuted }]}>{overviewSegments.isOver ? '已超支' : `${overviewSegments.remaining.percent}% 可用`}</Text>
                 </View>
               ) : (
                 <View style={styles.centerContent}>
-                  <Text style={styles.centerLabelGray}>剩余</Text>
-                  <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? '#FF6B6B' : '#0F172A' }]} numberOfLines={1}>
+                  <Text style={[styles.centerLabelGray, { color: tc.textMuted }]}>剩余</Text>
+                  <Text style={[styles.centerTotal, { color: overviewSegments?.isOver ? tc.danger : tc.text }]} numberOfLines={1}>
                     {overviewSegments?.isOver ? '-' : ''}{formatMoney(overviewSegments?.totalRemaining || 0, currency, 0)}
                   </Text>
-                  <Text style={styles.centerSubBudget}>总预算 {formatMoney(overviewSegments?.totalBudget || 0, currency, 0)}</Text>
+                  <Text style={[styles.centerSubBudget, { color: tc.primary, backgroundColor: tc.primarySubtle }]}>总预算 {formatMoney(overviewSegments?.totalBudget || 0, currency, 0)}</Text>
                 </View>
               )
             ) : selected ? (
               <View style={styles.centerContent}>
                 <View style={[styles.centerDot, { backgroundColor: selected.color }]} />
-                <Text style={styles.centerCategory} numberOfLines={1}>{selected.category}</Text>
-                <Text style={styles.centerSpent} numberOfLines={1}>{formatMoney(selected.spent, currency)}</Text>
-                <Text style={styles.centerBudget}>/ {formatMoney(selected.budget, currency)}</Text>
+                <Text style={[styles.centerCategory, { color: tc.text }]} numberOfLines={1}>{selected.category}</Text>
+                <Text style={[styles.centerSpent, { color: tc.text }]} numberOfLines={1}>{formatMoney(selected.spent, currency)}</Text>
+                <Text style={[styles.centerBudget, { color: tc.textMuted }]}>/ {formatMoney(selected.budget, currency)}</Text>
               </View>
             ) : (
               <View style={styles.centerContent}>
-                <Text style={styles.centerLabelGray}>已用</Text>
-                <Text style={styles.centerTotal} numberOfLines={1}>{formatMoney(chartData.totalSpent, currency)}</Text>
+                <Text style={[styles.centerLabelGray, { color: tc.textMuted }]}>已用</Text>
+                <Text style={[styles.centerTotal, { color: tc.text }]} numberOfLines={1}>{formatMoney(chartData.totalSpent, currency)}</Text>
               </View>
             )}
           </View>
@@ -282,39 +283,39 @@ export default function BudgetPieChart({
           {(mode === MODE_OVERVIEW || chartData.isTotalOnly) ? (
             <>
               <TouchableOpacity
-                style={[styles.statCard, overviewSelected === 'used' && styles.statCardActive]}
+                style={[styles.statCard, overviewSelected === 'used' && { backgroundColor: tc.primarySubtle }]}
                 onPress={() => handleOverviewPress('used')} activeOpacity={0.7}
               >
-                <View style={[styles.statDot, { backgroundColor: '#7C5CFF' }]} />
+                <View style={[styles.statDot, { backgroundColor: tc.primary }]} />
                 <View style={styles.statInfo}>
-                  <Text style={styles.statLabel}>已用</Text>
-                  <Text style={styles.statValue}>{formatMoney(chartData.totalSpent, currency, 0)}</Text>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>已用</Text>
+                  <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(chartData.totalSpent, currency, 0)}</Text>
                 </View>
-                <Text style={[styles.statPct, { color: '#7C5CFF' }]}>{overviewSegments?.used.percent || 0}%</Text>
+                <Text style={[styles.statPct, { color: tc.primary }]}>{overviewSegments?.used.percent || 0}%</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.statCard, overviewSelected === 'remaining' && styles.statCardActiveGreen]}
+                style={[styles.statCard, overviewSelected === 'remaining' && { backgroundColor: tc.successSubtle }]}
                 onPress={() => handleOverviewPress('remaining')} activeOpacity={0.7}
               >
-                <View style={[styles.statDot, { backgroundColor: '#34D399' }]} />
+                <View style={[styles.statDot, { backgroundColor: tc.success }]} />
                 <View style={styles.statInfo}>
-                  <Text style={styles.statLabel}>剩余</Text>
-                  <Text style={[styles.statValue, { color: chartData.isOver ? '#FF6B6B' : '#0F172A' }]}>
+                  <Text style={[styles.statLabel, { color: tc.textMuted }]}>剩余</Text>
+                  <Text style={[styles.statValue, { color: chartData.isOver ? tc.danger : tc.text }]}>
                     {chartData.isOver ? '-' : ''}{formatMoney(chartData.totalRemaining < 0 ? Math.abs(chartData.totalRemaining) : chartData.totalRemaining, currency, 0)}
                   </Text>
                 </View>
-                <Text style={[styles.statPct, { color: '#34D399' }]}>{overviewSegments?.remaining.percent || 0}%</Text>
+                <Text style={[styles.statPct, { color: tc.success }]}>{overviewSegments?.remaining.percent || 0}%</Text>
               </TouchableOpacity>
 
               {overviewSegments && overviewSegments.daysLeft > 0 && (
-                <View style={styles.dailyCard}>
-                  <Ionicons name="calendar-outline" size={14} color="#7C5CFF" />
+                <View style={[styles.dailyCard, { backgroundColor: tc.primarySubtle }]}>
+                  <Ionicons name="calendar-outline" size={14} color={tc.primary} />
                   <View style={styles.statInfo}>
-                    <Text style={styles.statLabel}>日均可用</Text>
-                    <Text style={styles.statValueSmall}>{formatMoney(overviewSegments.dailyRemaining, currency, 0)}</Text>
+                    <Text style={[styles.statLabel, { color: tc.textMuted }]}>日均可用</Text>
+                    <Text style={[styles.statValueSmall, { color: tc.primary }]}>{formatMoney(overviewSegments.dailyRemaining, currency, 0)}</Text>
                   </View>
-                  <Text style={styles.statHint}>{overviewSegments.daysLeft}天</Text>
+                  <Text style={[styles.statHint, { color: tc.textMuted }]}>{overviewSegments.daysLeft}天</Text>
                 </View>
               )}
             </>
@@ -322,15 +323,15 @@ export default function BudgetPieChart({
             <View style={[styles.statCard, { backgroundColor: tc.cardSubtle }]}>
               <View style={[styles.statDot, { backgroundColor: selected.color }]} />
               <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>预算</Text>
-                <Text style={styles.statValue}>{formatMoney(selected.budget, currency, 0)}</Text>
+                <Text style={[styles.statLabel, { color: tc.textMuted }]}>预算</Text>
+                <Text style={[styles.statValue, { color: tc.text }]}>{formatMoney(selected.budget, currency, 0)}</Text>
               </View>
               {selected.isOver ? (
-                <View style={styles.overBadge}>
-                  <Text style={styles.overBadgeText}>超支</Text>
+                <View style={[styles.overBadge, { backgroundColor: tc.dangerSubtle }]}>
+                  <Text style={[styles.overBadgeText, { color: tc.danger }]}>超支</Text>
                 </View>
               ) : (
-                <Text style={styles.statHint}>{selected.percent}%</Text>
+                <Text style={[styles.statHint, { color: tc.textMuted }]}>{selected.percent}%</Text>
               )}
             </View>
           ) : (
@@ -357,13 +358,13 @@ export default function BudgetPieChart({
       {/* 进度条 */}
       {(mode === MODE_OVERVIEW || chartData.isTotalOnly) && overviewSegments && (
         <View style={styles.progressWrap}>
-          <View style={styles.progressBg}>
-            <View style={[styles.progressFill, { width: `${Math.min(overviewSegments.used.percent, 100)}%` }]} />
+          <View style={[styles.progressBg, neu.inset]}>
+            <View style={[styles.progressFill, { width: `${Math.min(overviewSegments.used.percent, 100)}%`, backgroundColor: tc.primary }]} />
           </View>
           <View style={styles.progressLabels}>
-            <Text style={styles.progressLabel}>0%</Text>
-            <Text style={styles.progressLabel}>{overviewSegments.used.percent}%</Text>
-            <Text style={styles.progressLabel}>100%</Text>
+            <Text style={[styles.progressLabel, { color: tc.textMuted }]}>0%</Text>
+            <Text style={[styles.progressLabel, { color: tc.textMuted }]}>{overviewSegments.used.percent}%</Text>
+            <Text style={[styles.progressLabel, { color: tc.textMuted }]}>100%</Text>
           </View>
         </View>
       )}
@@ -377,22 +378,22 @@ export default function BudgetPieChart({
             return (
               <TouchableOpacity
                 key={seg.category}
-                style={[styles.legendItem, isSelected && styles.legendItemSelected]}
+                style={[styles.legendItem, isSelected && { backgroundColor: tc.primarySubtle }]}
                 onPress={() => handleSegmentPress(seg.index)} activeOpacity={0.7}
               >
                 <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
                 <View style={styles.legendInfo}>
                   <View style={styles.legendHeader}>
-                    <Text style={[styles.legendName, isSelected && styles.legendNameSelected]} numberOfLines={1}>{seg.category}</Text>
-                    {seg.isOver && <View style={styles.overTag}><Text style={styles.overTagText}>超支</Text></View>}
+                    <Text style={[styles.legendName, { color: isSelected ? tc.text : tc.textMuted }]} numberOfLines={1}>{seg.category}</Text>
+                    {seg.isOver && <View style={[styles.overTag, { backgroundColor: tc.dangerSubtle }]}><Text style={[styles.overTagText, { color: tc.danger }]}>超支</Text></View>}
                   </View>
-                  <View style={styles.legendBarBg}>
-                    <View style={[styles.legendBar, { width: `${Math.min(usedPct, 100)}%`, backgroundColor: seg.isOver ? '#FF6B6B' : seg.color }]} />
+                  <View style={[styles.legendBarBg, { backgroundColor: tc.surfaceSubtle }]}>
+                    <View style={[styles.legendBar, { width: `${Math.min(usedPct, 100)}%`, backgroundColor: seg.isOver ? tc.danger : seg.color }]} />
                   </View>
                 </View>
                 <View style={styles.legendValues}>
-                  <Text style={styles.legendAmount} numberOfLines={1}>{formatMoney(seg.spent, currency)}</Text>
-                  <Text style={styles.legendBudget} numberOfLines={1}>/ {formatMoney(seg.budget, currency)}</Text>
+                  <Text style={[styles.legendAmount, { color: tc.text }]} numberOfLines={1}>{formatMoney(seg.spent, currency)}</Text>
+                  <Text style={[styles.legendBudget, { color: tc.textMuted }]} numberOfLines={1}>/ {formatMoney(seg.budget, currency)}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -413,13 +414,11 @@ export default function BudgetPieChart({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.xl,
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.base,
     position: 'relative',
     overflow: 'hidden',
-    ...shadows.md,
   },
   shieldDeco: {
     position: 'absolute',
@@ -442,7 +441,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     letterSpacing: -0.3,
-    color: '#0F172A',
   },
   healthBadge: {
     paddingHorizontal: spacing.sm,
@@ -479,7 +477,6 @@ const styles = StyleSheet.create({
   },
   centerLabelGray: {
     fontSize: 10,
-    color: '#94A3B8',
     letterSpacing: 0.3,
     marginBottom: 3,
   },
@@ -491,19 +488,15 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     letterSpacing: -0.6,
     fontVariant: ['tabular-nums'],
-    color: '#0F172A',
   },
   centerSub: {
     fontSize: 10,
     fontWeight: fontWeight.medium,
     marginTop: 2,
-    color: '#94A3B8',
   },
   centerSubBudget: {
     fontSize: 9,
-    color: '#7C5CFF',
     marginTop: 4,
-    backgroundColor: '#F3F0FF',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -514,19 +507,16 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: -0.1,
     marginBottom: 2,
-    color: '#0F172A',
   },
   centerSpent: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
     letterSpacing: -0.3,
     fontVariant: ['tabular-nums'],
-    color: '#0F172A',
   },
   centerBudget: {
     fontSize: 10,
     marginTop: 2,
-    color: '#94A3B8',
   },
   statsCol: {
     flex: 1,
@@ -540,12 +530,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     gap: spacing.xs,
   },
-  statCardActive: {
-    backgroundColor: '#F5F3FF',
-  },
-  statCardActiveGreen: {
-    backgroundColor: '#ECFDF5',
-  },
+  statCardActive: {},
+  statCardActiveGreen: {},
   statDot: {
     width: 7, height: 7, borderRadius: 3.5,
   },
@@ -554,7 +540,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    color: '#94A3B8',
     letterSpacing: 0.2,
     marginBottom: 1,
   },
@@ -563,14 +548,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.2,
-    color: '#0F172A',
   },
   statValueSmall: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.2,
-    color: '#7C5CFF',
   },
   statPct: {
     fontSize: fontSize.sm,
@@ -582,14 +565,13 @@ const styles = StyleSheet.create({
   statHint: {
     fontSize: fontSize.xs,
     fontVariant: ['tabular-nums'],
-    color: '#94A3B8',
   },
   overBadge: {
     paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: borderRadius.xs, backgroundColor: '#FEF2F2',
+    borderRadius: borderRadius.xs,
   },
   overBadgeText: {
-    fontSize: 10, fontWeight: fontWeight.semibold, color: '#DC2626',
+    fontSize: 10, fontWeight: fontWeight.semibold,
   },
   dailyCard: {
     flexDirection: 'row',
@@ -598,7 +580,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: borderRadius.md,
     gap: spacing.xs,
-    backgroundColor: '#F5F3FF',
   },
   progressWrap: {
     marginTop: spacing.md,
@@ -607,13 +588,11 @@ const styles = StyleSheet.create({
   progressBg: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F1F5F9',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 4,
-    backgroundColor: '#7C5CFF',
   },
   progressLabels: {
     flexDirection: 'row',
@@ -622,7 +601,6 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 9,
-    color: '#94A3B8',
     fontVariant: ['tabular-nums'],
   },
   legendList: {
@@ -637,21 +615,19 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     gap: spacing.sm,
   },
-  legendItemSelected: {
-    backgroundColor: '#F5F3FF',
-  },
+  legendItemSelected: {},
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendInfo: { flex: 1, gap: 4 },
   legendHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  legendName: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: '#64748B' },
-  legendNameSelected: { color: '#0F172A' },
-  legendBarBg: { height: 4, borderRadius: 2, backgroundColor: '#F1F5F9', overflow: 'hidden' },
+  legendName: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+  legendNameSelected: {},
+  legendBarBg: { height: 4, borderRadius: 2, overflow: 'hidden' },
   legendBar: { height: '100%', borderRadius: 2 },
   legendValues: { alignItems: 'flex-end' },
-  legendAmount: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: '#0F172A' },
-  legendBudget: { fontSize: fontSize.xs, color: '#94A3B8' },
-  overTag: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: borderRadius.xs, backgroundColor: '#FEF2F2' },
-  overTagText: { fontSize: 9, fontWeight: fontWeight.bold, color: '#DC2626' },
+  legendAmount: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  legendBudget: { fontSize: fontSize.xs },
+  overTag: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: borderRadius.xs },
+  overTagText: { fontSize: 9, fontWeight: fontWeight.bold },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -664,37 +640,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
-    backgroundColor: '#F5F3FF',
   },
   footerBtnText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
-    color: '#7C5CFF',
   },
   emptyCard: {
     alignItems: 'center',
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.xl,
-    backgroundColor: '#FFFFFF',
     marginHorizontal: spacing.base,
     marginVertical: spacing.sm,
-    ...shadows.sm,
   },
   emptyIconWrap: {
     width: 64, height: 64, borderRadius: 32,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#F5F3FF', marginBottom: spacing.md,
+    marginBottom: spacing.md,
   },
   emptyTitle: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    color: '#0F172A',
   },
   emptyHint: {
     fontSize: fontSize.sm,
     marginTop: spacing.xs,
-    color: '#94A3B8',
     textAlign: 'center',
   },
   emptyBtn: {
@@ -705,11 +675,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
     marginTop: spacing.base,
-    backgroundColor: '#7C5CFF',
   },
   emptyBtnText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
-    color: '#FFFFFF',
   },
 });

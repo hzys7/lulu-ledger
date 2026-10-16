@@ -1,7 +1,9 @@
 // 数字键盘组件 - 独立渲染，避免父组件 re-render
+// 新拟物：按键默认凸起，按下转为凹陷
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useThemeColors, useNeu } from '../hooks/useThemeColors';
 import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 
 const KEYS = [
@@ -11,7 +13,10 @@ const KEYS = [
   ['.', '0', 'del'],
 ];
 
-export default function NumberPad({ onInput, onDelete, tc }) {
+export default function NumberPad({ onInput, onDelete, tc: tcProp }) {
+  const tcHook = useThemeColors();
+  const tc = tcProp || tcHook;
+  const neu = useNeu();
   const [pressedKey, setPressedKey] = useState(null);
 
   const handlePressIn = useCallback((key) => {
@@ -39,26 +44,23 @@ export default function NumberPad({ onInput, onDelete, tc }) {
             const isLast = ki === row.length - 1;
             const isPressed = pressedKey === k;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={k}
                 style={[
                   styles.keypadKey,
                   !isLast && styles.keypadKeyGap,
-                  { 
-                    backgroundColor: isPressed ? tc.surfaceSubtle : tc.surfaceMuted,
-                  },
+                  isPressed ? neu.pressed : neu.raisedSm,
                 ]}
                 onPress={() => handlePress(k)}
                 onPressIn={() => handlePressIn(k)}
                 onPressOut={handlePressOut}
-                activeOpacity={0.8}
               >
                 {isDel ? (
                   <Ionicons name="backspace-outline" size={20} color={tc.text} />
                 ) : (
                   <Text style={[styles.keypadKeyText, { color: tc.text }]}>{k}</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </View>

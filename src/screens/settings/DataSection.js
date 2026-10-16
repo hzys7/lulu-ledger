@@ -1,9 +1,9 @@
 // DataSection: 可折叠的数据管理模块
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors, spacing } from '../../theme';
+import { getThemeColors, spacing, neuStyles } from '../../theme';
 import { ActionRow } from './Section';
 import CollapsibleSection from './CollapsibleSection';
 import BackupBrowserModal from './BackupBrowserModal';
@@ -24,6 +24,7 @@ const FREQUENCY_OPTIONS = [
 function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }) {
   const { settings, updateAppSettings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
 
   const backupSettings = getAutoBackupSettings(settings);
   const [backupCount, setBackupCount] = useState(0);
@@ -116,7 +117,7 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
 
         {/* 自动备份开关 */}
         <View
-          style={[autoStyles.row, { backgroundColor: tc.surface, borderColor: tc.border }]}
+          style={[autoStyles.row, neu.raisedSm]}
         >
           <View style={[autoStyles.iconWrap, { backgroundColor: '#FF9F0A' + '15' }]}>
             <Ionicons name="time-outline" size={18} color="#FF9F0A" />
@@ -137,7 +138,7 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
 
         {/* 自动备份详情 */}
         {backupSettings.enabled && (
-          <View style={[autoStyles.panel, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+          <View style={[autoStyles.panel, neu.inset]}>
             {/* 频率选择 */}
             <Text style={[autoStyles.panelLabel, { color: tc.textMuted }]}>备份频率</Text>
             <View style={autoStyles.freqRow}>
@@ -146,10 +147,10 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
                   key={opt.value}
                   style={[
                     autoStyles.freqBtn,
-                    { backgroundColor: tc.surfaceMuted, borderColor: tc.border },
+                    neu.raisedSm,
                     backupSettings.frequency === opt.value && {
-                      backgroundColor: '#FF9F0A',
-                      borderColor: '#FF9F0A',
+                      backgroundColor: tc.primary,
+                      borderColor: tc.primary,
                     },
                   ]}
                   onPress={() => handleChangeFrequency(opt.value)}
@@ -157,7 +158,7 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
                   <Text style={[
                     autoStyles.freqBtnText,
                     { color: tc.text },
-                    backupSettings.frequency === opt.value && { color: '#fff' },
+                    backupSettings.frequency === opt.value && { color: tc.primaryOn },
                   ]}>
                     {opt.label}
                   </Text>
@@ -185,14 +186,14 @@ function DataSection({ onExportCSV, onExportJSON, onOpenImportModal, onRestore }
             {/* 操作按钮 */}
             <View style={autoStyles.actionRow}>
               <TouchableOpacity
-                style={[autoStyles.actionBtn, { backgroundColor: '#FF9F0A' }]}
+                style={[autoStyles.actionBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 4 }]}
                 onPress={handleBackupNow}
               >
-                <Ionicons name="cloud-upload-outline" size={14} color="#fff" />
-                <Text style={autoStyles.actionBtnText}>立即备份</Text>
+                <Ionicons name="cloud-upload-outline" size={14} color={tc.primaryOn} />
+                <Text style={[autoStyles.actionBtnText, { color: tc.primaryOn }]}>立即备份</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[autoStyles.actionBtn, { backgroundColor: tc.surfaceMuted }]}
+                style={[autoStyles.actionBtn, neu.raisedSm]}
                 onPress={() => setShowBackupBrowser(true)}
               >
                 <Ionicons name="list-outline" size={14} color={tc.text} />
@@ -222,7 +223,6 @@ const autoStyles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.sm,
   },
   iconWrap: {
@@ -248,7 +248,6 @@ const autoStyles = StyleSheet.create({
     marginTop: spacing.sm,
     padding: spacing.md,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.sm,
   },
   panelLabel: {
@@ -266,7 +265,6 @@ const autoStyles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
-    borderWidth: 1,
   },
   freqBtnText: {
     fontSize: 13,
@@ -302,7 +300,6 @@ const autoStyles = StyleSheet.create({
     gap: 6,
   },
   actionBtnText: {
-    color: '#fff',
     fontSize: 13,
     fontWeight: '500',
   },

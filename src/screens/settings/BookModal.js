@@ -1,6 +1,6 @@
 // BookModal: create / edit a book. All form state and the save / delete
 // handlers stay in the parent; this modal is purely presentational.
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Modal,
   View,
@@ -13,23 +13,24 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getThemeColors, fontSize, spacing } from '../../theme';
-import { hexAlpha, bookIcons, bookColors } from './_shared';
+import { getThemeColors, fontSize, spacing, neuStyles } from '../../theme';
+import { bookIcons, bookColors } from './_shared';
 import { styles } from './styles';
 
 function BookModal({ visible, onClose, editingBook, newBookName, setNewBookName,
   newBookIcon, setNewBookIcon, newBookColor, setNewBookColor, onSave, onDelete }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={styles.modalOverlay}
+        style={[styles.modalOverlay, { backgroundColor: tc.overlay }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={onClose} />
-        <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
+        <View style={[styles.modalContent, neu.raisedLg, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={styles.handle} />
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: tc.text }]}>
@@ -43,7 +44,7 @@ function BookModal({ visible, onClose, editingBook, newBookName, setNewBookName,
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: tc.textMuted }]}>账本名称</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text }]}
+              style={[styles.textInput, neu.inset, { color: tc.text }]}
               value={newBookName}
               onChangeText={setNewBookName}
               autoCorrect={false}
@@ -63,8 +64,7 @@ function BookModal({ visible, onClose, editingBook, newBookName, setNewBookName,
                   key={icon}
                   style={[
                     styles.iconOption,
-                    { backgroundColor: tc.surfaceMuted, borderColor: 'transparent' },
-                    newBookIcon === icon && { borderColor: newBookColor, backgroundColor: hexAlpha(newBookColor, 0.08) },
+                    newBookIcon === icon ? neu.inset : neu.raisedSm,
                   ]}
                   onPress={() => setNewBookIcon(icon)}
                 >
@@ -87,12 +87,12 @@ function BookModal({ visible, onClose, editingBook, newBookName, setNewBookName,
                   style={[
                     styles.colorOption,
                     { backgroundColor: color },
-                    newBookColor === color && { borderColor: tc.text, borderWidth: 3 },
+                    newBookColor === color && { borderColor: tc.text, borderWidth: 1 },
                   ]}
                   onPress={() => setNewBookColor(color)}
                 >
                   {newBookColor === color ? (
-                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    <Ionicons name="checkmark" size={16} color={tc.white} />
                   ) : null}
                 </TouchableOpacity>
               ))}
@@ -102,14 +102,14 @@ function BookModal({ visible, onClose, editingBook, newBookName, setNewBookName,
           <View style={styles.modalActions}>
             {editingBook ? (
               <TouchableOpacity
-                style={[styles.deleteBtn, { backgroundColor: tc.dangerSubtle }]}
+                style={[styles.deleteBtn, neu.raisedSm, { backgroundColor: tc.dangerSubtle }]}
                 onPress={onDelete}
               >
                 <Ionicons name="trash-outline" size={18} color={tc.danger} />
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary }]}
+              style={[styles.saveBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
               onPress={onSave}
               activeOpacity={0.85}
             >

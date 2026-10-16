@@ -1,9 +1,9 @@
 // UpdateSection: 版本更新（可折叠）
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors } from '../../theme';
+import { getThemeColors, neuStyles } from '../../theme';
 import CollapsibleSection from './CollapsibleSection';
 
 function UpdateSection({
@@ -15,6 +15,7 @@ function UpdateSection({
 }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
 
   return (
     <CollapsibleSection
@@ -23,7 +24,7 @@ function UpdateSection({
       iconColor="#007AFF"
     >
       <TouchableOpacity
-        style={[styles.row, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        style={[styles.row, neu.raisedSm]}
         onPress={onToggleAutoCheck}
         activeOpacity={0.7}
       >
@@ -40,19 +41,17 @@ function UpdateSection({
           <View
             style={[
               styles.toggleTrack,
-              {
-                backgroundColor: settings.autoCheckUpdate ? '#007AFF' : tc.surfaceMuted,
-                justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start',
-              },
+              neu.inset,
+              { justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start' },
             ]}
           >
-            <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
+            <View style={[styles.toggleThumb, { backgroundColor: tc.white }]} />
           </View>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.row, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        style={[styles.row, neu.raisedSm]}
         onPress={onCheckNow}
         activeOpacity={0.7}
         disabled={isChecking}
@@ -89,7 +88,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
   iconWrap: {

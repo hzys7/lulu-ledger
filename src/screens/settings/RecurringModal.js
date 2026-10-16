@@ -1,6 +1,6 @@
 // RecurringModal: add a recurring (template) transaction. Form state
 // (recurringForm) lives in the parent; this is the form shell.
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Modal,
   View,
@@ -15,13 +15,14 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getThemeColors, fontSize, spacing, borderRadius } from '../../theme';
+import { getThemeColors, fontSize, spacing, borderRadius, neuStyles } from '../../theme';
 import { formatMoney } from '../../utils/currency';
 import { styles } from './styles';
 
 function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onSave, accounts = [] }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [showAccountPicker, setShowAccountPicker] = React.useState(false);
@@ -51,11 +52,11 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={styles.modalOverlay}
+        style={[styles.modalOverlay, { backgroundColor: tc.overlay }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={onClose} />
-        <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
+        <View style={[styles.modalContent, neu.raisedLg, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={styles.handle} />
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: tc.text }]}>新增周期交易</Text>
@@ -74,7 +75,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
                     key={t.key}
                     style={[
                       styles.typePill,
-                      { backgroundColor: tc.surfaceMuted, borderColor: 'transparent' },
+                      neu.raisedSm,
                       active && { backgroundColor: tc.primary, borderColor: tc.primary },
                     ]}
                     onPress={() => setRecurringForm({ ...recurringForm, type: t.key })}
@@ -91,7 +92,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: tc.textMuted }]}>分类</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text }]}
+              style={[styles.textInput, neu.inset, { color: tc.text }]}
               value={recurringForm.category}
               onChangeText={(v) => setRecurringForm({ ...recurringForm, category: v })}
               autoCorrect={false}
@@ -104,7 +105,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
 
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: tc.textMuted }]}>金额</Text>
-            <View style={[styles.amountRow, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+            <View style={[styles.amountRow, neu.inset]}>
               <Text style={[styles.currency, { color: tc.textMuted }]}>
                 {settings.currency === 'CNY' ? '¥' : '$'}
               </Text>
@@ -132,7 +133,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
                     key={f.key}
                     style={[
                       styles.typePill,
-                      { backgroundColor: tc.surfaceMuted, borderColor: 'transparent' },
+                      neu.raisedSm,
                       active && { backgroundColor: tc.primary, borderColor: tc.primary },
                     ]}
                     onPress={() => setRecurringForm({ ...recurringForm, frequency: f.key })}
@@ -149,7 +150,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: tc.textMuted }]}>备注 (选填)</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text }]}
+              style={[styles.textInput, neu.inset, { color: tc.text }]}
               value={recurringForm.note}
               onChangeText={(v) => setRecurringForm({ ...recurringForm, note: v })}
               autoCorrect={false}
@@ -163,7 +164,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: tc.textMuted }]}>生效日期 (选填)</Text>
             <TouchableOpacity
-              style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+              style={[styles.textInput, neu.inset, { color: tc.text, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
               onPress={handleOpenDatePicker}
             >
               <Text style={[styles.textInput, { color: recurringForm.startDate ? tc.text : tc.textSubtle, textAlign: 'left' }]}>{recurringForm.startDate || '选择日期'}</Text>
@@ -181,7 +182,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: tc.textMuted }]}>扣款账户 (选填)</Text>
             <TouchableOpacity
-              style={[styles.textInput, { backgroundColor: tc.surfaceMuted, color: tc.text, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+              style={[styles.textInput, neu.inset, { color: tc.text, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
               onPress={() => setShowAccountPicker(!showAccountPicker)}
             >
               <Text style={[styles.textInput, { color: selectedAccount ? tc.text : tc.textSubtle, textAlign: 'left' }]}>
@@ -197,7 +198,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
               </View>
             </TouchableOpacity>
             {showAccountPicker && accounts.length > 0 && (
-              <View style={{ marginTop: spacing.xs, borderRadius: borderRadius.md, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: tc.border }}>
+              <View style={[neu.inset, { marginTop: spacing.xs, borderRadius: borderRadius.md, overflow: 'hidden' }]}>
                 {accounts.map(a => {
                   const amount = parseFloat(recurringForm.amount) || 0;
                   const isExpense = recurringForm.type === 'expense';
@@ -234,7 +235,7 @@ function RecurringModal({ visible, onClose, recurringForm, setRecurringForm, onS
           </View>
 
           <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48 }]}
+            style={[styles.saveBtn, { backgroundColor: tc.primary, marginTop: spacing.sm, flex: 0, height: 48, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
             onPress={onSave}
             activeOpacity={0.85}
           >

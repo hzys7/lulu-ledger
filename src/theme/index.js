@@ -1,108 +1,121 @@
 // 小璐记账 - 设计系统
-// 风格：现代极简 · 干净克制 · 高级灰
-// 原则：单一品牌强调色 + 中性灰阶 + 大量留白 + 细腻字间距
+// 风格：Neumorphism / 新拟物派（Soft UI）
+// 原则：浅灰单色背景 + 同色系元素 + 双光源柔和阴影 + 大圆角 + 低对比
+// 说明：React Native 不支持 CSS 的双重阴影与 inset 阴影，
+//       这里用「1px 同色系斜角(border bevel) + 单向柔和投影」近似模拟
+//       左上亮 / 右下暗 的固定光源，交互元素按下时由凸起转为凹陷。
+
+// ── 新拟物光源常量（浅色基准）─────────────────────────
+// 具体值随主题走 colors/darkColors 上的 neuBase / neuLight / neuDark / neuShadow / neuInset
 
 export const colors = {
   // 品牌主色（CTA / 进度 / 选中态）
-  primary: '#7C5CFF',          // 紫色 - 主色（按钮、强调文字、tabBar 选中）
-  primaryHover: '#6B4FE8',
-  primarySubtle: '#F1ECFF',
+  primary: '#6D5DFC',          // 紫 - 主色（新拟物强调色）
+  primaryHover: '#5A48E8',
+  primarySubtle: '#E3E0FB',
   primaryOn: '#FFFFFF',
 
   // 品牌辅色（用于次要操作 / 辅助标识）
-  accent: '#0891B2',           // 青色 - 辅色
-  accentSubtle: '#ECFEFF',
+  accent: '#4ECDC4',           // 青 - 辅色
+  accentSubtle: '#DCF2F0',
 
-  // 功能色
-  success: '#059669',
-  successSubtle: '#ECFDF5',
-  danger: '#DC2626',
-  dangerSubtle: '#FEF2F2',
-  warning: '#D97706',
-  warningSubtle: '#FFFBEB',
-  info: '#2563EB',
-  infoSubtle: '#EFF6FF',
+  // 功能色（整体降饱和，贴合柔和气质）
+  success: '#2E9E6B',
+  successSubtle: '#DCEFE4',
+  danger: '#E5675F',
+  dangerSubtle: '#F7E1DF',
+  warning: '#C99A2E',
+  warningSubtle: '#F5EBD5',
+  info: '#5B8DEF',
+  infoSubtle: '#DFE8FA',
 
   // 8 色克制分类色板（用于图表 / 分类）
   palette: [
-    '#7C5CFF',
-    '#0891B2',
-    '#10B981',
-    '#F59E0B',
-    '#EF4444',
-    '#EC4899',
-    '#64748B',
-    '#111827',
+    '#6D5DFC',
+    '#4ECDC4',
+    '#5B8DEF',
+    '#E5A9A3',
+    '#C99A2E',
+    '#A78BFA',
+    '#8E97A5',
+    '#2E9E6B',
   ],
 
-  // 分类颜色
+  // 分类颜色（低饱和，避免破坏柔和立体感）
   categories: {
-    '餐饮': '#F97316',
-    '交通': '#3B82F6',
-    '购物': '#EC4899',
-    '娱乐': '#F59E0B',
-    '住房': '#111827',
-    '医疗': '#10B981',
-    '教育': '#7C5CFF',
-    '通讯': '#8B5CF6',
-    '服饰': '#F472B6',
-    '日用': '#0EA5E9',
-    '社交': '#F87171',
-    '其他支出': '#64748B',
-    '工资': '#10B981',
-    '奖金': '#F59E0B',
-    '投资': '#111827',
-    '兼职': '#3B82F6',
-    '红包': '#EF4444',
-    '其他收入': '#64748B',
-    '零食': '#FB923C',
-    '水果': '#84CC16',
-    '饮品': '#A78BFA',
-    '美妆': '#F0ABFC',
-    '居家': '#64748B',
-    '宠物': '#FBBF24',
-    '旅行': '#06B6D4',
-    '数码': '#1E293B',
-    '运动': '#22C55E',
-    '充值': '#0EA5E9',
-    '礼物': '#F43F5E',
-    '退款': '#94A3B8',
-    '报销': '#10B981',
-    '利息': '#F59E0B',
-    '理财收益': '#7C5CFF',
+    '餐饮': '#E5A05F',
+    '交通': '#6F9BE0',
+    '购物': '#E08BAE',
+    '娱乐': '#D8AC55',
+    '住房': '#8E97A5',
+    '医疗': '#5FB894',
+    '教育': '#8C7DF2',
+    '通讯': '#9C8CE8',
+    '服饰': '#E299C0',
+    '日用': '#64A8D8',
+    '社交': '#E5847E',
+    '其他支出': '#9AA3B0',
+    '工资': '#4FAE7E',
+    '奖金': '#D8AC55',
+    '投资': '#8E97A5',
+    '兼职': '#6F9BE0',
+    '红包': '#E5847E',
+    '其他收入': '#9AA3B0',
+    '零食': '#E5A977',
+    '水果': '#8FBE63',
+    '饮品': '#A79BE8',
+    '美妆': '#E29CD4',
+    '居家': '#9AA3B0',
+    '宠物': '#D9B865',
+    '旅行': '#5BBFC9',
+    '数码': '#7E8899',
+    '运动': '#5FBE7E',
+    '充值': '#64A8D8',
+    '礼物': '#E58398',
+    '退款': '#A8B0BD',
+    '报销': '#4FAE7E',
+    '利息': '#D8AC55',
+    '理财收益': '#8C7DF2',
   },
 
-  // 中性色（9 级灰阶）
-  background: '#FFFFFF',
-  surface: '#FFFFFF',
-  surfaceMuted: '#F4F4F5',
-  surfaceSubtle: '#F9FAFB',
-  surfaceSection: '#F4F5F8',
-  card: '#FFFFFF',
-  cardSubtle: '#FAFAFE',
-  text: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#64748B',
-  textSubtle: '#94A3B8',
-  border: '#E5E7EB',
-  borderStrong: '#D4D4D8',
-  divider: '#F1F5F9',
+  // 中性色 —— 与背景同色系
+  background: '#E0E5EC',
+  surface: '#E0E5EC',
+  surfaceMuted: '#E0E5EC',
+  surfaceSubtle: '#DDE3EA',
+  surfaceSection: '#E0E5EC',
+  card: '#E0E5EC',
+  cardSubtle: '#E4E8EF',
+  text: '#333A45',
+  textSecondary: '#525A66',
+  textMuted: '#6B7280',
+  textSubtle: '#8E97A5',
+  border: '#C9CFD9',
+  borderStrong: '#B8BCC2',
+  divider: '#CFD5DE',
 
   white: '#FFFFFF',
   black: '#000000',
-  overlay: 'rgba(15, 23, 42, 0.45)',
-  shadow: 'rgba(15, 23, 42, 0.06)',
+  overlay: 'rgba(51, 58, 69, 0.35)',
+  shadow: 'rgba(184, 188, 194, 0.75)',
 
-  // 专用色
-  pageBg: '#F5F3FF',
-  starColor: '#A78BFA',
-  starColorLight: '#DDD6FE',
-  chipBg: '#FFFFFF',
-  badgeBg: '#F3F0FF',
-  iconBg: '#F5F3FF',
-  iconBgAlt: '#F0FDFA',
-  iconBgDanger: '#FEF2F2',
-  iconBgWarning: '#FEF3C7',
+  // 新拟物专用 token
+  neuBase: '#E0E5EC',
+  neuLight: '#FFFFFF',
+  neuDark: '#B8BCC2',
+  neuShadow: '#B8BCC2',
+  neuInset: '#DDE3EA',
+
+  // 专用色（柔和同色系浅色调）
+  pageBg: '#E0E5EC',
+  starColor: '#8B7DFF',
+  starColorLight: '#B9B0F5',
+  chipBg: '#E0E5EC',
+  badgeBg: '#E3E0FB',
+  iconBg: '#E3E0FB',
+  iconBgAlt: '#DCF2F0',
+  iconBgDanger: '#F7E1DF',
+  iconBgWarning: '#F5EBD5',
 };
 
 export const spacing = {
@@ -117,13 +130,14 @@ export const spacing = {
   xxxl: 48,
 };
 
+// 新拟物要求柔和一致的曲率，整体比扁平风格更大
 export const borderRadius = {
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 20,
-  xl: 24,
-  xxl: 28,
+  xs: 10,
+  sm: 14,
+  md: 18,
+  lg: 22,
+  xl: 26,
+  xxl: 30,
   full: 9999,
 };
 
@@ -145,6 +159,8 @@ export const fontWeight = {
   bold: '700',
 };
 
+// 默认（静态）柔和阴影：单向暗影，光源固定在右下 +X/+Y
+// 适用于 StyleSheet.create 中无法拿到主题色的场景
 export const shadows = {
   none: {
     shadowColor: 'transparent',
@@ -154,120 +170,167 @@ export const shadows = {
     elevation: 0,
   },
   sm: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: '#B8BCC2',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 3,
   },
   md: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowColor: '#B8BCC2',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 6,
   },
   lg: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 32,
-    elevation: 8,
+    shadowColor: '#B8BCC2',
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 0.65,
+    shadowRadius: 20,
+    elevation: 10,
   },
 };
 
+// ── 新拟物样式助手 ────────────────────────────────────
+// RN 不支持双阴影 / inset 阴影，这里以「斜角 bevel + 单向投影」组合近似：
+//   凸起 raised : 左上白高光 + 右下暗斜角 + 右下柔和投影
+//   凹陷 inset  : 左上暗斜角 + 右下白高光 + 凹陷底色（无投影）
+export function neuStyles(tc) {
+  const light = tc.neuLight || '#FFFFFF';
+  const dark = tc.neuDark || '#B8BCC2';
+  const base = tc.neuBase || tc.surface;
+  const insetBg = tc.neuInset || tc.surfaceSubtle;
+
+  const bevel = (tl, br) => ({
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderTopColor: tl,
+    borderLeftColor: tl,
+    borderBottomWidth: 1,
+    borderRightWidth: 1,
+    borderBottomColor: br,
+    borderRightColor: br,
+  });
+
+  const cast = (offset, radius, elevation, opacity) => ({
+    shadowColor: tc.neuShadow,
+    shadowOffset: { width: offset, height: offset },
+    shadowOpacity: opacity,
+    shadowRadius: radius,
+    elevation,
+  });
+
+  return {
+    // 凸起（卡片 / 按钮默认态）
+    raised: { backgroundColor: base, ...bevel(light, dark), ...cast(5, 12, 6, 0.7) },
+    raisedSm: { backgroundColor: base, ...bevel(light, dark), ...cast(3, 8, 4, 0.6) },
+    raisedLg: { backgroundColor: base, ...bevel(light, dark), ...cast(8, 18, 10, 0.75) },
+    // 凹陷（输入框 / 按下态 / 内嵌区）
+    inset: { backgroundColor: insetBg, ...bevel(dark, light), shadowOpacity: 0, elevation: 0 },
+    pressed: { backgroundColor: insetBg, ...bevel(dark, light), shadowOpacity: 0, elevation: 0 },
+  };
+}
+
 export const darkColors = {
-  primary: '#A78BFA',          // 亮紫 - 暗色主色
-  primaryHover: '#C4B5FD',
-  primarySubtle: '#2E1065',
-  primaryOn: '#0B0B12',
+  primary: '#8B7DFF',
+  primaryHover: '#9D91FF',
+  primarySubtle: '#322C55',
+  primaryOn: '#13141A',
 
-  accent: '#22D3EE',           // 青色 - 暗色辅色
-  accentSubtle: '#083344',
+  accent: '#4ECDC4',
+  accentSubtle: '#1E3B39',
 
-  success: '#34D399',
-  successSubtle: '#064E3B',
-  danger: '#F87171',
-  dangerSubtle: '#450A0A',
-  warning: '#FBBF24',
-  warningSubtle: '#451A03',
-  info: '#60A5FA',
-  infoSubtle: '#1E3A5F',
+  success: '#4CC38A',
+  successSubtle: '#1E3A2E',
+  danger: '#F0837C',
+  dangerSubtle: '#3C2422',
+  warning: '#E0B95A',
+  warningSubtle: '#3A3320',
+  info: '#7FA8F5',
+  infoSubtle: '#233250',
+
   palette: [
-    '#A78BFA',
-    '#22D3EE',
-    '#34D399',
-    '#FBBF24',
-    '#F87171',
-    '#F472B6',
-    '#94A3B8',
-    '#F8FAFC',
+    '#8B7DFF',
+    '#4ECDC4',
+    '#7FA8F5',
+    '#E5A9A3',
+    '#E0B95A',
+    '#C4B5FD',
+    '#98A0AE',
+    '#4CC38A',
   ],
+
   categories: {
-    '餐饮': '#FB923C',
-    '交通': '#60A5FA',
-    '购物': '#F472B6',
-    '娱乐': '#FBBF24',
-    '住房': '#F8FAFC',
-    '医疗': '#34D399',
-    '教育': '#A78BFA',
-    '通讯': '#C4B5FD',
-    '服饰': '#F472B6',
-    '日用': '#38BDF8',
-    '社交': '#F87171',
-    '其他支出': '#94A3B8',
-    '工资': '#34D399',
-    '奖金': '#FBBF24',
-    '投资': '#F8FAFC',
-    '兼职': '#60A5FA',
-    '红包': '#F87171',
-    '其他收入': '#94A3B8',
-    '零食': '#FB923C',
-    '水果': '#A3E635',
-    '饮品': '#C4B5FD',
-    '美妆': '#F5D0FE',
-    '居家': '#94A3B8',
-    '宠物': '#FCD34D',
-    '旅行': '#22D3EE',
-    '数码': '#94A3B8',
-    '运动': '#4ADE80',
-    '充值': '#38BDF8',
-    '礼物': '#FB7185',
-    '退款': '#CBD5E1',
-    '报销': '#34D399',
-    '利息': '#FBBF24',
-    '理财收益': '#A78BFA',
+    '餐饮': '#E5A05F',
+    '交通': '#7FA8F5',
+    '购物': '#E08BAE',
+    '娱乐': '#E0B95A',
+    '住房': '#98A0AE',
+    '医疗': '#5FB894',
+    '教育': '#9D91FF',
+    '通讯': '#B7A9F5',
+    '服饰': '#E299C0',
+    '日用': '#7FBBE5',
+    '社交': '#F08A84',
+    '其他支出': '#98A0AE',
+    '工资': '#4CC38A',
+    '奖金': '#E0B95A',
+    '投资': '#98A0AE',
+    '兼职': '#7FA8F5',
+    '红包': '#F08A84',
+    '其他收入': '#98A0AE',
+    '零食': '#E5A977',
+    '水果': '#A3CF74',
+    '饮品': '#B7A9F5',
+    '美妆': '#E8A8DA',
+    '居家': '#98A0AE',
+    '宠物': '#E0C377',
+    '旅行': '#5BBFC9',
+    '数码': '#98A0AE',
+    '运动': '#63C784',
+    '充值': '#7FBBE5',
+    '礼物': '#F0899C',
+    '退款': '#A8B0BD',
+    '报销': '#4CC38A',
+    '利息': '#E0B95A',
+    '理财收益': '#9D91FF',
   },
-  // 背景用近黑(非纯黑),文字用近白(非纯白) - 降低 OLED 刺眼感
-  background: '#0A0A0F',
-  surface: '#16161F',
-  surfaceMuted: '#1E1E29',
-  surfaceSubtle: '#0F0F18',
-  surfaceSection: '#101019',
-  card: '#16161F',
-  cardSubtle: '#1A1A24',
-  text: '#E5E7EB',
-  textSecondary: '#B7BCC8',
-  textMuted: '#8B8F9A',
-  textSubtle: '#5C6070',
-  border: '#23232F',
-  borderStrong: '#2E2E3D',
-  divider: '#1A1A24',
+
+  background: '#2A2D35',
+  surface: '#2A2D35',
+  surfaceMuted: '#2A2D35',
+  surfaceSubtle: '#252830',
+  surfaceSection: '#2A2D35',
+  card: '#2A2D35',
+  cardSubtle: '#2E323B',
+  text: '#E4E7EC',
+  textSecondary: '#C2C8D2',
+  textMuted: '#98A0AE',
+  textSubtle: '#7A8291',
+  border: '#343842',
+  borderStrong: '#3C414C',
+  divider: '#343842',
   white: '#FFFFFF',
   black: '#000000',
-  overlay: 'rgba(0,0,0,0.7)',
-  shadow: 'rgba(0, 0, 0, 0.5)',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  shadow: 'rgba(0, 0, 0, 0.55)',
 
-  // 专用色
-  pageBg: '#0A0A0F',
-  starColor: '#C4B5FD',
-  starColorLight: '#2E1065',
-  chipBg: '#16161F',
-  badgeBg: '#2E1065',
-  iconBg: '#2E1065',
-  iconBgAlt: '#064E3B',
-  iconBgDanger: '#450A0A',
-  iconBgWarning: '#451A03',
+  neuBase: '#2A2D35',
+  neuLight: '#33373F',
+  neuDark: '#212429',
+  neuShadow: '#212429',
+  neuInset: '#252830',
+
+  pageBg: '#2A2D35',
+  starColor: '#A79BFF',
+  starColorLight: '#6E63C9',
+  chipBg: '#2A2D35',
+  badgeBg: '#322C55',
+  iconBg: '#322C55',
+  iconBgAlt: '#1E3B39',
+  iconBgDanger: '#3C2422',
+  iconBgWarning: '#3A3320',
 };
 
 export function getThemeColors(theme = 'light') {

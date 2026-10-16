@@ -4,11 +4,12 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useThemeColors } from '../hooks/useThemeColors';
+import { useThemeColors, useNeu } from '../hooks/useThemeColors';
 import { spacing, borderRadius, fontSize, fontWeight } from '../theme';
 
 export default function UndoToast({ visible, message, onUndo, onTimeout, duration = 5000 }) {
   const tc = useThemeColors();
+  const neu = useNeu();
   const insets = useSafeAreaInsets();
   const opacity = useRef(new Animated.Value(0)).current;
   const timerRef = useRef(null);
@@ -45,15 +46,10 @@ export default function UndoToast({ visible, message, onUndo, onTimeout, duratio
     <Animated.View
       style={[
         styles.container,
+        neu.raisedLg,
         {
-          backgroundColor: tc.surface,
-          borderColor: tc.border,
           bottom: insets.bottom + 90,
           opacity,
-          shadowColor: '#000',
-          shadowOpacity: 0.12,
-          shadowRadius: 8,
-          elevation: 6,
         },
       ]}
       pointerEvents="box-none"
@@ -63,7 +59,7 @@ export default function UndoToast({ visible, message, onUndo, onTimeout, duratio
         <Text style={[styles.message, { color: tc.text }]}>{message}</Text>
       </View>
       <TouchableOpacity
-        style={[styles.undoBtn, { backgroundColor: tc.primarySubtle }]}
+        style={[styles.undoBtn, neu.raisedSm, { backgroundColor: tc.primarySubtle }]}
         onPress={onUndo}
         activeOpacity={0.7}
       >

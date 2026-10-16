@@ -1,5 +1,5 @@
 // BackupBrowserModal: 备份文件浏览器
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -13,12 +13,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme';
+import { getThemeColors, spacing, borderRadius, fontSize, fontWeight, neuStyles } from '../../theme';
 import { listAutoBackups, readBackupFile, deleteBackup } from '../../utils/autoBackup';
 
 export default function BackupBrowserModal({ visible, onClose, onRestore }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -104,7 +105,7 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
   const renderItem = ({ item }) => {
     const isRestoring = restoring === item.name;
     return (
-      <View style={[styles.item, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+      <View style={[styles.item, neu.raisedSm]}>
         <View style={[styles.itemIcon, { backgroundColor: '#34C759' + '15' }]}>
           <Ionicons name="document-text-outline" size={20} color="#34C759" />
         </View>
@@ -118,7 +119,7 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
         </View>
         <View style={styles.itemActions}>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: tc.primary + '15' }]}
+            style={[styles.actionBtn, neu.raisedSm, { backgroundColor: tc.primarySubtle }]}
             onPress={() => handleRestore(item)}
             disabled={isRestoring}
           >
@@ -129,11 +130,11 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#FF6B6B' + '15' }]}
+            style={[styles.actionBtn, neu.raisedSm, { backgroundColor: tc.dangerSubtle }]}
             onPress={() => handleDelete(item)}
             disabled={isRestoring}
           >
-            <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+            <Ionicons name="trash-outline" size={16} color={tc.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -142,8 +143,8 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={[styles.container, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
+      <View style={[styles.overlay, { backgroundColor: tc.overlay }]}>
+        <View style={[styles.container, neu.raisedLg, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={[styles.handle, { backgroundColor: tc.divider }]} />
           <View style={styles.header}>
             <Text style={[styles.title, { color: tc.text }]}>自动备份文件</Text>
@@ -157,7 +158,7 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
               <ActivityIndicator size="large" color={tc.primary} />
             </View>
           ) : backups.length === 0 ? (
-            <View style={styles.emptyWrap}>
+            <View style={[styles.emptyWrap, neu.inset]}>
               <Ionicons name="folder-open-outline" size={48} color={tc.textSubtle} />
               <Text style={[styles.emptyText, { color: tc.textMuted }]}>暂无自动备份</Text>
               <Text style={[styles.emptyHint, { color: tc.textSubtle }]}>
@@ -182,7 +183,6 @@ export default function BackupBrowserModal({ visible, onClose, onRestore }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   container: {
@@ -218,7 +218,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
     gap: spacing.md,
   },

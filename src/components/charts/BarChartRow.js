@@ -1,13 +1,15 @@
 // 小璐记账 · 柱状图对比行组件
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { spacing, fontSize, fontWeight } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { useNeu } from '../../hooks/useThemeColors';
 
 export default function BarChartRow({ items, accent, muted, divider, textMuted, text, selectedKey, onSelect }) {
+  const neu = useNeu();
   const values = items.map(i => i.value);
   const max = Math.max(...values, 1);
   return (
-    <View style={styles.barChartRow}>
+    <View style={[styles.barChartRow, neu.inset]}>
       {items.map((d, i) => {
         const key = d.year + '_' + (d.month || '');
         const isSelected = selectedKey === key;
@@ -50,6 +52,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     height: 140,
     paddingTop: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
   },
   barCol: {
     flex: 1,

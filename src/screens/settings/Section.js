@@ -1,10 +1,10 @@
 // Section / ActionRow: small presentational building blocks used by every
 // SettingsScreen section. Extracted verbatim from the old monolithic file.
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors, spacing } from '../../theme';
+import { getThemeColors, spacing, neuStyles } from '../../theme';
 import { styles } from './styles';
 
 function Section({ title, rightAction, children }) {
@@ -24,9 +24,10 @@ function Section({ title, rightAction, children }) {
 function ActionRow({ icon, iconColor, iconBg, label, onPress, rightIcon }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   return (
     <TouchableOpacity
-      style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+      style={[styles.listItem, neu.raisedSm]}
       onPress={onPress}
       activeOpacity={0.7}
     >

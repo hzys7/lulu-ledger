@@ -11,6 +11,7 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
+  neuStyles,
   categories as categoryConfig,
 } from '../theme';
 import { formatMoney, getCurrencySymbol } from '../utils/currency';
@@ -90,6 +91,7 @@ export default function TransactionDetailModal({
   onClose,
 }) {
   const insets = useSafeAreaInsets();
+  const neu = useMemo(() => neuStyles(tc), [tc]);
 
   const accountName = useMemo(() => {
     if (!transaction?.accountId) return null;
@@ -135,8 +137,8 @@ export default function TransactionDetailModal({
         <Pressable
           style={[
             styles.sheet,
+            neu.raisedLg,
             {
-              backgroundColor: tc.surface,
               paddingBottom: bottomPadding,
             },
           ]}
@@ -193,7 +195,7 @@ export default function TransactionDetailModal({
           </View>
 
           {/* ── 详情卡片 ── */}
-          <View style={[styles.detailCard, { backgroundColor: tc.surfaceMuted }]}>
+          <View style={[styles.detailCard, neu.raisedSm]}>
             <DetailRow icon="calendar-outline" label="日期" tc={tc}>
               <Text style={[styles.valueText, { color: tc.text }]}>
                 {formatDate(transaction.date)}
@@ -225,7 +227,7 @@ export default function TransactionDetailModal({
           {/* ── 操作按钮 ── */}
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.btn, styles.btnEdit, { backgroundColor: tc.primary }]}
+              style={[styles.btn, styles.btnEdit, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
               onPress={onEdit}
               activeOpacity={0.7}
             >
@@ -234,7 +236,7 @@ export default function TransactionDetailModal({
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.btn, styles.btnDelete, { borderColor: tc.danger }]}
+              style={[styles.btn, neu.raisedSm]}
               onPress={onDelete}
               activeOpacity={0.7}
             >

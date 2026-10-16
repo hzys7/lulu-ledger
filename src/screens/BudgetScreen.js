@@ -24,7 +24,7 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
-  shadows,
+  neuStyles,
   getThemeColors,
 } from '../theme';
 
@@ -54,6 +54,7 @@ export default function BudgetScreen({ route }) {
     return { year: y, month: mo };
   })();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
 
   const [showModal, setShowModal] = useState(false);
@@ -187,7 +188,7 @@ export default function BudgetScreen({ route }) {
         </View>
 
         {/* ─── 月份导航 ──────────────────────────── */}
-        <View style={[styles.monthBar, { backgroundColor: tc.card, borderColor: tc.border }]}>
+        <View style={[styles.monthBar, neu.raised]}>
           <TouchableOpacity
             onPress={() => {
               if (selectedMonth === 0) {
@@ -198,7 +199,7 @@ export default function BudgetScreen({ route }) {
               }
             }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={[styles.monthArrow, { backgroundColor: tc.surfaceMuted }]}
+            style={[styles.monthArrow, neu.raisedSm]}
           >
             <Ionicons name="chevron-back" size={18} color={tc.text} />
           </TouchableOpacity>
@@ -228,7 +229,7 @@ export default function BudgetScreen({ route }) {
               }
             }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={[styles.monthArrow, { backgroundColor: tc.surfaceMuted }]}
+            style={[styles.monthArrow, neu.raisedSm]}
           >
             <Ionicons name="chevron-forward" size={18} color={tc.text} />
           </TouchableOpacity>
@@ -236,7 +237,7 @@ export default function BudgetScreen({ route }) {
 
         {/* ─── 总预算卡片 ────────────────────────── */}
         <View style={styles.totalWrap}>
-          <View style={[styles.totalCard, { backgroundColor: tc.card, borderColor: tc.border, ...shadows.md }]}>
+          <View style={[styles.totalCard, neu.raisedLg]}>
             <DecoStar style={styles.starTotal1} size={10} color={tc.starColorLight} />
             <DecoStar style={styles.starTotal2} size={8} color={tc.starColor} />
             <View style={styles.totalTopRow}>
@@ -249,7 +250,7 @@ export default function BudgetScreen({ route }) {
                 </Text>
               </View>
               <TouchableOpacity
-                style={[styles.iconBtn, { backgroundColor: tc.surfaceMuted }]}
+                style={[styles.iconBtn, neu.raisedSm]}
                 onPress={() => openAddModal('__total__')}
                 activeOpacity={0.7}
               >
@@ -267,7 +268,7 @@ export default function BudgetScreen({ route }) {
                 剩余 {formatMoney(Math.max(totalBudgetAmount - totalSpent, 0), settings.currency)}
               </Text>
             </View>
-            <View style={[styles.progress, { backgroundColor: tc.surfaceMuted }]}>
+            <View style={[styles.progress, neu.inset]}>
               <View style={{ flexDirection: 'row', height: '100%' }}>
                 <View style={{
                   width: `${Math.min(totalPercent, 100)}%`,
@@ -316,11 +317,11 @@ export default function BudgetScreen({ route }) {
 
         {/* ─── 添加分类预算按钮 ──────────────────── */}
         <TouchableOpacity
-          style={[styles.addBtn, { borderColor: tc.border, backgroundColor: tc.card }]}
+          style={[styles.addBtn, neu.raised]}
           onPress={() => openAddModal()}
           activeOpacity={0.7}
         >
-          <View style={[styles.addBtnIcon, { backgroundColor: tc.primary + '18' }]}>
+          <View style={[styles.addBtnIcon, neu.raisedSm, { backgroundColor: tc.primarySubtle }]}>
             <Ionicons name="add" size={18} color={tc.primary} />
           </View>
           <Text style={[styles.addBtnText, { color: tc.text }]}>添加分类预算</Text>
@@ -337,14 +338,14 @@ export default function BudgetScreen({ route }) {
               return (
                 <TouchableOpacity
                   key={item.category}
-                  style={[styles.budgetCard, { backgroundColor: tc.card, borderColor: tc.border, ...shadows.sm }]}
+                  style={[styles.budgetCard, neu.raised]}
                   onPress={() => openAddModal(item.category)}
                   onLongPress={() => handleDeleteBudget(item.category)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.budgetTopRow}>
                     <View style={styles.budgetLeft}>
-                      <View style={[styles.budgetIcon, { backgroundColor: hexAlpha(catColor, 0.12) }]}>
+                      <View style={[styles.budgetIcon, neu.raisedSm, { backgroundColor: hexAlpha(catColor, 0.12) }]}>
                         <Ionicons name={cat?.icon || 'pricetag'} size={18} color={catColor} />
                       </View>
                       <View style={{ flex: 1 }}>
@@ -363,7 +364,7 @@ export default function BudgetScreen({ route }) {
                       </Text>
                     </View>
                   </View>
-                  <View style={[styles.progress, { backgroundColor: tc.surfaceMuted }]}>
+                  <View style={[styles.progress, neu.inset]}>
                     <View style={{ flexDirection: 'row', height: '100%' }}>
                       <View style={{
                         width: `${Math.min(item.percent, 100)}%`,
@@ -452,10 +453,8 @@ export default function BudgetScreen({ route }) {
                           onPress={() => setEditingCategory(cat.name)}
                           activeOpacity={0.6}
                         >
-                          <View style={[styles.gridIcon, {
+                          <View style={[styles.gridIcon, neu.raisedSm, {
                             backgroundColor: active ? color : color + '22',
-                            borderWidth: active ? 2 : 0,
-                            borderColor: active ? color : 'transparent',
                           }]}>
                             <Ionicons name={cat.icon} size={20} color={active ? '#fff' : color} />
                           </View>
@@ -475,7 +474,7 @@ export default function BudgetScreen({ route }) {
 
             <View style={styles.amountSection}>
               <Text style={[styles.modalLabel, { color: tc.textMuted }]}>预算金额</Text>
-              <View style={[styles.amountRow, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+              <View style={[styles.amountRow, neu.inset]}>
                 <Text style={[styles.currency, { color: tc.textMuted }]}>
                   {settings.currency === 'CNY' ? '¥' : '$'}
                 </Text>
@@ -491,7 +490,7 @@ export default function BudgetScreen({ route }) {
             </View>
 
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary, opacity: budgetAmount ? 1 : 0.4 }]}
+              style={[styles.saveBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5, opacity: budgetAmount ? 1 : 0.4 }]}
               onPress={handleSaveBudget}
               disabled={!budgetAmount}
               activeOpacity={0.85}
@@ -848,7 +847,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.md,
   },
   currency: {

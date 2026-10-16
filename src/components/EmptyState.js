@@ -1,14 +1,15 @@
 ﻿import React, { memo } from 'react';
-import { useThemeColors } from '../hooks/useThemeColors';
+import { useThemeColors, useNeu } from '../hooks/useThemeColors';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, fontSize, fontWeight } from '../theme';
 
 export const EmptyState = memo(function EmptyState({ icon = 'wallet-outline', title, subtitle, compact = false }) {
   const tc = useThemeColors();
+  const neu = useNeu();
   return (
     <View style={[styles.wrap, compact && styles.compact]}>
-      <View style={[styles.iconWrap, { backgroundColor: tc.surfaceMuted }]}>
+      <View style={[styles.iconWrap, neu.inset]}>
         <Ionicons name={icon} size={26} color={tc.textSubtle} />
       </View>
       <Text style={[styles.title, { color: tc.text }]}>{title || '暂无数据'}</Text>
@@ -26,9 +27,9 @@ const styles = StyleSheet.create({
   },
   compact: { paddingVertical: spacing.xl },
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,

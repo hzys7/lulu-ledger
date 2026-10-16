@@ -19,8 +19,8 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
-  shadows,
   getThemeColors,
+  neuStyles,
 } from '../theme';
 import ViewShot from 'react-native-view-shot';
 import PieRing from '../components/PieRing';
@@ -87,6 +87,7 @@ function calcBalance(txList) {
 export default function StatisticsScreen({ navigation }) {
   const { transactions, settings, getMonthSummary } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
 
   // ── 档期选择 ──
@@ -659,10 +660,10 @@ export default function StatisticsScreen({ navigation }) {
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
       >
         {/* ── 档期选择器 ── */}
-        <View style={styles.periodRow}>
+        <View style={[styles.periodRow, neu.inset]}>
           {['week', 'month', 'year'].map(p => (
           <TouchableOpacity
-            style={[styles.periodTab, period === p && [styles.periodTabActive, { backgroundColor: tc.primary }]]}
+            style={[styles.periodTab, period === p && { backgroundColor: tc.primary }]}
             onPress={() => switchPeriod(p)}
             activeOpacity={0.7}
           >
@@ -729,16 +730,16 @@ export default function StatisticsScreen({ navigation }) {
             </>
           )}
 
-          <View style={[styles.segment, { backgroundColor: tc.surfaceMuted }]}>
+          <View style={[styles.segment, neu.inset]}>
             <TouchableOpacity
-              style={[styles.segmentItem, dataType === 'expense' && styles.segmentItemActive]}
+              style={[styles.segmentItem, dataType === 'expense' && { backgroundColor: tc.primary }]}
               onPress={() => { setDataType('expense'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
               <Text style={[styles.segmentText, { color: dataType === 'expense' ? tc.primaryOn : tc.textMuted }]}>支出</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segmentItem, dataType === 'income' && styles.segmentItemActive]}
+              style={[styles.segmentItem, dataType === 'income' && { backgroundColor: tc.primary }]}
               onPress={() => { setDataType('income'); setSelectedDay(null); }}
               activeOpacity={0.7}
             >
@@ -748,7 +749,7 @@ export default function StatisticsScreen({ navigation }) {
 
           {/* 分享按钮 — 集成在导航行右侧 */}
           <TouchableOpacity
-            style={[styles.shareIconBtn, { backgroundColor: tc.surfaceMuted }]}
+            style={[styles.shareIconBtn, neu.raisedSm]}
             onPress={handleShare}
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -762,11 +763,11 @@ export default function StatisticsScreen({ navigation }) {
             {/* ── AI 月度复盘（仅月报显示） ── */}
             {period === 'month' ? (
               <TouchableOpacity
-                style={[styles.aiCard, { backgroundColor: tc.accentSubtle, borderColor: tc.accent }]}
+                style={[styles.aiCard, neu.raised]}
                 onPress={() => navigation?.navigate('AiMonthlyReport', { year: selectedYear, month: selectedMonth })}
                 activeOpacity={0.7}
               >
-                <View style={styles.aiIconWrap}>
+                <View style={[styles.aiIconWrap, { backgroundColor: tc.accentSubtle }]}>
                   <Ionicons name="sparkles" size={18} color={tc.accent} />
                 </View>
                 <View style={styles.aiTextWrap}>
@@ -813,7 +814,7 @@ export default function StatisticsScreen({ navigation }) {
 
             {/* ── 趋势图 ── */}
             {period === 'month' ? (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.card, neu.raised]}>
                 <View style={styles.cardHeader}>
                   <Text style={[styles.cardTitle, { color: tc.text }]}>
                     {selectedMonth + 1}月{totalLabel}趋势
@@ -844,7 +845,7 @@ export default function StatisticsScreen({ navigation }) {
             ) : null}
 
             {/* ── 分类构成 ── */}
-            <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+            <View style={[styles.card, neu.raised]}>
               <View style={styles.cardHeader}>
                 <Text style={[styles.cardTitle, { color: tc.text }]}>
                   {period === 'week' ? '本周' : period === 'month' ? `${selectedMonth + 1}月` : `${reportYear}年`}
@@ -890,12 +891,12 @@ export default function StatisticsScreen({ navigation }) {
                 {(period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).map((item, idx) => (
                   <TouchableOpacity
                     key={item.name}
-                    style={[styles.rankRow, { backgroundColor: tc.surfaceMuted }]}
+                    style={[styles.rankRow, neu.raisedSm]}
                     onPress={() => navigateToCategoryDetail(item)}
                     activeOpacity={0.6}
                   >
                     <View style={[styles.rankIndex, { backgroundColor: idx === 0 ? item.color : tc.surfaceSubtle }]}>
-                      <Text style={{ color: idx === 0 ? '#fff' : tc.textMuted, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                      <Text style={{ color: idx === 0 ? tc.white : tc.textMuted, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
                         {idx + 1}
                       </Text>
                     </View>
@@ -913,7 +914,7 @@ export default function StatisticsScreen({ navigation }) {
 
             {/* ── 对比柱状图 ── */}
             {period === 'month' ? (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.card, neu.raised]}>
                 <View style={styles.cardHeader}>
                   <Text style={[styles.cardTitle, { color: tc.text }]}>月支出对比</Text>
                 </View>
@@ -932,7 +933,7 @@ export default function StatisticsScreen({ navigation }) {
 
             {/* ── AI 心情分析 ── */}
             {moodStats.items.length > 0 && (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.card, neu.raised]}>
                 <View style={styles.cardHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                     <View style={[styles.aiIconWrap, { backgroundColor: tc.accentSubtle }]}>
@@ -945,7 +946,7 @@ export default function StatisticsScreen({ navigation }) {
                     <TouchableOpacity
                       onPress={handleRefreshMoodAnalysis}
                       disabled={moodAnalysisLoading}
-                      style={[styles.refreshBtn, { backgroundColor: tc.iconBg }]}
+                      style={[styles.refreshBtn, neu.raisedSm]}
                       hitSlop={8}
                     >
                       <Ionicons name="refresh" size={13} color={moodAnalysisLoading ? tc.textSubtle : tc.primary} />
@@ -956,7 +957,7 @@ export default function StatisticsScreen({ navigation }) {
                 {/* 心情标签云 */}
                 <View style={styles.moodTagRow}>
                   {moodStats.items.slice(0, 5).map((item) => (
-                    <View key={item.key} style={[styles.moodTag, { backgroundColor: tc.surfaceMuted }]}>
+                    <View key={item.key} style={[styles.moodTag, neu.raisedSm]}>
                       <Text style={styles.moodTagEmoji}>{item.emoji}</Text>
                       <Text style={[styles.moodTagLabel, { color: tc.textSecondary }]}>{item.label}</Text>
                       <Text style={[styles.moodTagCount, { color: tc.textMuted }]}>{item.count}</Text>
@@ -990,7 +991,7 @@ export default function StatisticsScreen({ navigation }) {
 
             {/* ── 消费心理深度分析 ── */}
             {moodStats.items.length > 0 && (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.card, neu.raised]}>
                 <View style={styles.cardHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                     <View style={[styles.aiIconWrap, { backgroundColor: tc.warningSubtle }]}>
@@ -1027,7 +1028,7 @@ export default function StatisticsScreen({ navigation }) {
 
             {/* ── 排行（默认折叠） ── */}
             {(period === 'week' ? topWeekTx : period === 'month' ? topMonthTx : topYearTx).length > 0 && (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.card, neu.raised]}>
                 <TouchableOpacity
                   style={styles.cardHeader}
                   onPress={() => setRankingExpanded(v => !v)}
@@ -1052,7 +1053,7 @@ export default function StatisticsScreen({ navigation }) {
                     {(period === 'week' ? topWeekTx : period === 'month' ? topMonthTx : topYearTx).map((tx, i, arr) => {
                       const item = (period === 'week' ? weekCategoryItems : period === 'month' ? monthCategoryItems : yearCategoryItems).find(c => c.name === tx.category);
                       return (
-                        <View key={tx.id} style={[styles.txRow, { backgroundColor: tc.surfaceMuted }]}>
+                        <View key={tx.id} style={[styles.txRow, neu.raisedSm]}>
                           <View style={[styles.rankIndex, { backgroundColor: tc.surfaceSubtle }]}>
                             <Text style={{ color: tc.textMuted, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
                               {i + 1}
@@ -1078,7 +1079,7 @@ export default function StatisticsScreen({ navigation }) {
 
             {/* ── 消费预测（仅月报） ── */}
             {period === 'month' && hasData && (
-              <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+              <View style={[styles.card, neu.raised]}>
                 <View style={styles.cardHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                     <View style={[styles.aiIconWrap, { backgroundColor: tc.infoSubtle }]}>
@@ -1170,13 +1171,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: borderRadius.full,
   },
-  periodTabActive: {
-    shadowColor: '#7C5CFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
   periodTabText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
@@ -1199,14 +1193,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: borderRadius.full,
     padding: 3,
-    ...shadows.sm,
   },
   segmentItem: {
     paddingVertical: 6,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.full,
   },
-  segmentItemActive: {},
   segmentText: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
@@ -1230,7 +1222,6 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: spacing.base, marginBottom: spacing.base,
     padding: spacing.md, borderRadius: borderRadius.xl,
-    ...shadows.sm,
   },
   cardHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

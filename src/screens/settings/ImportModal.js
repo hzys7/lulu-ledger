@@ -1,5 +1,5 @@
 // ImportModal: 导入备份 - 直接显示文件列表
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -15,12 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Directory, File, Paths } from 'expo-file-system';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors, fontSize, spacing, borderRadius, fontWeight } from '../../theme';
+import { getThemeColors, fontSize, spacing, borderRadius, fontWeight, neuStyles } from '../../theme';
 import { styles } from './styles';
 
 function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -101,8 +102,8 @@ function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) 
     <TouchableOpacity
       style={[
         styles.fileItem,
-        { backgroundColor: tc.surface, borderColor: tc.border },
-        selectedFile === item.name && { borderColor: tc.primary, backgroundColor: tc.primary + '10' },
+        neu.inset,
+        selectedFile === item.name && { backgroundColor: tc.primarySubtle },
       ]}
       onPress={() => handleSelectFile(item)}
       activeOpacity={0.7}
@@ -132,11 +133,11 @@ function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={styles.modalOverlay}
+        style={[styles.modalOverlay, { backgroundColor: tc.overlay }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={onClose} />
-        <View style={[styles.modalContent, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
+        <View style={[styles.modalContent, neu.raisedLg, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={styles.handle} />
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: tc.text }]}>导入备份</Text>
@@ -154,7 +155,7 @@ function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) 
               <ActivityIndicator size="small" color={tc.primary} />
             </View>
           ) : files.length === 0 ? (
-            <View style={[styles.emptyWrap, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+            <View style={[styles.emptyWrap, neu.inset]}>
               <Ionicons name="folder-open-outline" size={24} color={tc.textSubtle} />
               <Text style={[styles.emptyText, { color: tc.textMuted }]}>暂无本地备份文件</Text>
             </View>
@@ -163,7 +164,7 @@ function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) 
               data={files}
               keyExtractor={(item) => item.uri}
               renderItem={renderFileItem}
-              style={[styles.fileList, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+              style={[styles.fileList, neu.inset]}
               showsVerticalScrollIndicator={false}
             />
           )}
@@ -175,13 +176,12 @@ function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) 
           <TextInput
             style={[
               styles.textInput,
+              neu.inset,
               {
-                backgroundColor: tc.surfaceMuted,
                 color: tc.text,
                 height: 100,
                 textAlignVertical: 'top',
                 paddingTop: spacing.md,
-                borderColor: tc.border,
               },
             ]}
             value={importJson}
@@ -196,7 +196,7 @@ function ImportModal({ visible, onClose, importJson, setImportJson, onImport }) 
 
           <View style={styles.modalActions}>
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: tc.primary, flex: 1 }]}
+              style={[styles.saveBtn, { backgroundColor: tc.primary, flex: 1, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
               onPress={onImport}
               activeOpacity={0.85}
               disabled={!importJson.trim()}

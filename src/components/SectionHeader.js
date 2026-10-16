@@ -1,10 +1,11 @@
 ﻿import React, { memo } from 'react';
-import { useThemeColors } from '../hooks/useThemeColors';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { spacing, fontSize, fontWeight } from '../theme';
+import { useThemeColors, useNeu } from '../hooks/useThemeColors';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
 
-export const SectionHeader = memo(function SectionHeader({ title, subtitle, action, onAction, style }) {
+export const SectionHeader = memo(function SectionHeader({ title, subtitle, action, onAction, style, icon }) {
   const tc = useThemeColors();
+  const neu = useNeu();
   return (
     <View style={[styles.row, style]}>
       <View style={styles.left}>
@@ -12,9 +13,16 @@ export const SectionHeader = memo(function SectionHeader({ title, subtitle, acti
         {subtitle ? <Text style={[styles.subtitle, { color: tc.textMuted }]}>{subtitle}</Text> : null}
       </View>
       {action ? (
-        <TouchableOpacity onPress={onAction} style={styles.action} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={[styles.actionText, { color: tc.text }]}>{action}</Text>
-        </TouchableOpacity>
+        <Pressable
+          onPress={onAction}
+          style={({ pressed }) => [
+            styles.action,
+            pressed ? neu.inset : neu.raisedSm,
+          ]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={[styles.actionText, { color: tc.primary }]}>{action}</Text>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -24,7 +32,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: spacing.base,
     paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
@@ -40,7 +48,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
     letterSpacing: -0.1,
   },
-  action: { paddingLeft: spacing.md, paddingVertical: spacing.xs },
+  action: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+  },
   actionText: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,

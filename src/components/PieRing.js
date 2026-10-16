@@ -5,6 +5,7 @@ import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, G, Circle } from 'react-native-svg';
 import { fontSize } from '../theme';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 function polarToCartesian(cx, cy, r, angleDeg) {
   const angleRad = ((angleDeg - 90) * Math.PI) / 180;
@@ -37,12 +38,13 @@ const PieRing = memo(function PieRing({
   selectedIndex = null,
   onSegmentPress,
 }) {
+  const tc = useThemeColors();
   const total = useMemo(() => data.reduce((s, d) => s + d.value, 0), [data]);
 
   if (total === 0) {
     return (
       <View style={[styles.empty, { width: size, height: size }]}>
-        <Text style={[styles.emptyText, { color: '#999' }]}>{'暂无数据'}</Text>
+        <Text style={[styles.emptyText, { color: tc.textMuted }]}>{'暂无数据'}</Text>
       </View>
     );
   }

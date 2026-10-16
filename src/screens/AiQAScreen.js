@@ -1,5 +1,5 @@
 // 小璐记账 · AI 财务问答（增强版：流式输出 + 动态快捷问题 + 追问建议）
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
-import { spacing, borderRadius, fontSize, fontWeight, getThemeColors } from '../theme';
+import { spacing, borderRadius, fontSize, fontWeight, getThemeColors, neuStyles } from '../theme';
 import { AiAvatar } from '../components/AiAvatar';
 import {
   buildFinancialContext,
@@ -31,6 +31,7 @@ import { loadAiConfig } from '../utils/aiConfig';
 export default function AiQAScreen({ visible, onClose }) {
   const { transactions, settings, getMonthTransactions, getMonthSummary, budgets, accounts } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
@@ -235,7 +236,7 @@ export default function AiQAScreen({ visible, onClose }) {
                 请前往设置 → AI 配置，开启开关并填写 API Key。
               </Text>
               <TouchableOpacity
-                style={[styles.emptyBtn, { backgroundColor: tc.primary }]}
+                style={[styles.emptyBtn, { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }]}
                 onPress={onClose}
                 activeOpacity={0.85}
               >
@@ -263,7 +264,7 @@ export default function AiQAScreen({ visible, onClose }) {
                       {quickQuestions.map((q, i) => (
                         <TouchableOpacity
                           key={i}
-                          style={[styles.quickChip, { backgroundColor: tc.surface, borderColor: tc.border }]}
+                          style={[styles.quickChip, neu.raisedSm]}
                           onPress={() => handleSend(q)}
                           activeOpacity={0.7}
                         >
@@ -291,11 +292,7 @@ export default function AiQAScreen({ visible, onClose }) {
                         <View
                           style={[
                             styles.bubble,
-                            {
-                              backgroundColor: isUser ? tc.primary : tc.surface,
-                              borderColor: isUser ? tc.primary : tc.border,
-                              borderWidth: isUser ? 0 : StyleSheet.hairlineWidth,
-                            },
+                            isUser ? { backgroundColor: tc.primary } : neu.raisedSm,
                           ]}
                         >
                           <Text style={[styles.bubbleText, { color: isUser ? tc.primaryOn : tc.text }]}>
@@ -303,7 +300,7 @@ export default function AiQAScreen({ visible, onClose }) {
                           </Text>
                         </View>
                         {isUser && (
-                          <View style={[styles.avatar, { backgroundColor: tc.surfaceMuted }]}>
+                          <View style={[styles.avatar, neu.raisedSm]}>
                             <Ionicons name="person" size={16} color={tc.textMuted} />
                           </View>
                         )}
@@ -318,7 +315,7 @@ export default function AiQAScreen({ visible, onClose }) {
                     <View style={[styles.avatar, { backgroundColor: tc.primary + '22' }]}>
                       <Text style={styles.avatarText}>🤖</Text>
                     </View>
-                    <View style={[styles.bubble, { backgroundColor: tc.surface, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth }]}>
+                    <View style={[styles.bubble, neu.raisedSm]}>
                       <Text style={[styles.bubbleText, { color: tc.text }]}>{streamingText}</Text>
                       <Animated.View style={[styles.typingDot, { opacity: typingAnim }]}>
                         <Text style={{ color: tc.textMuted }}>●</Text>
@@ -330,14 +327,14 @@ export default function AiQAScreen({ visible, onClose }) {
                     <View style={[styles.avatar, { backgroundColor: tc.primary + '22' }]}>
                       <Text style={styles.avatarText}>🤖</Text>
                     </View>
-                    <View style={[styles.bubble, { backgroundColor: tc.surface, borderColor: tc.border, borderWidth: StyleSheet.hairlineWidth }]}>
+                    <View style={[styles.bubble, neu.raisedSm]}>
                       <ActivityIndicator size="small" color={tc.primary} />
                     </View>
                   </View>
                 ) : null}
 
                 {error ? (
-                  <View style={[styles.errorRow, { backgroundColor: tc.dangerSubtle, borderColor: tc.danger }]}>
+                  <View style={[styles.errorRow, neu.raisedSm, { backgroundColor: tc.dangerSubtle }]}>
                     <Ionicons name="alert-circle" size={14} color={tc.danger} />
                     <Text style={[styles.errorText, { color: tc.danger }]}>{error}</Text>
                   </View>
@@ -351,7 +348,7 @@ export default function AiQAScreen({ visible, onClose }) {
                       {followUpSuggestions.map((q, i) => (
                         <TouchableOpacity
                           key={i}
-                          style={[styles.followUpChip, { backgroundColor: tc.primary + '10', borderColor: tc.primary + '30' }]}
+                          style={[styles.followUpChip, neu.raisedSm, { backgroundColor: tc.primary + '10' }]}
                           onPress={() => handleSend(q)}
                           activeOpacity={0.7}
                         >
@@ -364,8 +361,8 @@ export default function AiQAScreen({ visible, onClose }) {
               </ScrollView>
 
               {/* 输入栏 */}
-              <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, spacing.sm), backgroundColor: tc.surface, borderTopColor: tc.divider }]}>
-                <View style={[styles.inputWrap, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}>
+              <View style={[styles.inputBar, neu.raisedLg, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+                <View style={[styles.inputWrap, neu.inset]}>
                   <TextInput
                     ref={inputRef}
                     style={[styles.textInput, { color: tc.text }]}
@@ -383,7 +380,7 @@ export default function AiQAScreen({ visible, onClose }) {
                   <TouchableOpacity
                     onPress={() => handleSend()}
                     disabled={loading || !input.trim()}
-                    style={[styles.sendBtn, { backgroundColor: input.trim() && !loading ? tc.primary : tc.surfaceMuted }]}
+                    style={[styles.sendBtn, input.trim() && !loading ? { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 4 } : neu.inset]}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="arrow-up" size={18} color={input.trim() && !loading ? tc.primaryOn : tc.textSubtle} />

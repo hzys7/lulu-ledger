@@ -1,22 +1,23 @@
 // AboutSection: 关于 + 版本更新 - 合并为一个模块
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors } from '../../theme';
+import { getThemeColors, neuStyles } from '../../theme';
 import { Section } from './Section';
 import { styles } from './styles';
 
 function AboutSection({ isChecking, checkResult, checkResultText, onToggleAutoCheck, onCheckNow }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const version = Constants.expoConfig?.version || Constants.manifest?.version || '1.0.0';
 
   return (
     <Section title="关于">
       {/* 版本信息 */}
-      <View style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}>
+      <View style={[styles.listItem, neu.raisedSm]}>
         <View style={[styles.listIcon, { backgroundColor: '#6C63FF' + '15' }]}>
           <Ionicons name="wallet" size={18} color="#6C63FF" />
         </View>
@@ -30,7 +31,7 @@ function AboutSection({ isChecking, checkResult, checkResultText, onToggleAutoCh
 
       {/* 自动检查更新 */}
       <TouchableOpacity
-        style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        style={[styles.listItem, neu.raisedSm]}
         onPress={onToggleAutoCheck}
         activeOpacity={0.7}
       >
@@ -47,20 +48,18 @@ function AboutSection({ isChecking, checkResult, checkResultText, onToggleAutoCh
           <View
             style={[
               styles.toggleTrack,
-              {
-                backgroundColor: settings.autoCheckUpdate ? '#007AFF' : tc.surfaceMuted,
-                justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start',
-              },
+              neu.inset,
+              { justifyContent: settings.autoCheckUpdate ? 'flex-end' : 'flex-start' },
             ]}
           >
-            <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
+            <View style={[styles.toggleThumb, { backgroundColor: tc.white }]} />
           </View>
         </View>
       </TouchableOpacity>
 
       {/* 手动检查更新 */}
       <TouchableOpacity
-        style={[styles.listItem, { backgroundColor: tc.surface, borderColor: tc.border }]}
+        style={[styles.listItem, neu.raisedSm]}
         onPress={onCheckNow}
         activeOpacity={0.7}
         disabled={isChecking}

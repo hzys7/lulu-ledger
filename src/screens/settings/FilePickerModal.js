@@ -1,5 +1,5 @@
 // FilePickerModal: 自定义文件选择器，列出可导入的备份文件
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -13,11 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Directory, File, Paths } from 'expo-file-system';
 import { useFinance } from '../../context/FinanceContext';
-import { getThemeColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme';
+import { getThemeColors, spacing, borderRadius, fontSize, fontWeight, neuStyles } from '../../theme';
 
 export default function FilePickerModal({ visible, onClose, onSelect }) {
   const { settings } = useFinance();
   const tc = getThemeColors(settings.theme);
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const insets = useSafeAreaInsets();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +108,7 @@ export default function FilePickerModal({ visible, onClose, onSelect }) {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.item, { backgroundColor: tc.surface, borderColor: tc.border }]}
+      style={[styles.item, neu.raisedSm]}
       onPress={() => handleSelect(item)}
       activeOpacity={0.7}
     >
@@ -133,8 +134,8 @@ export default function FilePickerModal({ visible, onClose, onSelect }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={[styles.container, { backgroundColor: tc.surface, paddingBottom: insets.bottom + spacing.lg }]}>
+      <View style={[styles.overlay, { backgroundColor: tc.overlay }]}>
+        <View style={[styles.container, neu.raisedLg, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={[styles.handle, { backgroundColor: tc.divider }]} />
           <View style={styles.header}>
             <Text style={[styles.title, { color: tc.text }]}>选择文件</Text>
@@ -151,7 +152,7 @@ export default function FilePickerModal({ visible, onClose, onSelect }) {
               <ActivityIndicator size="large" color={tc.primary} />
             </View>
           ) : files.length === 0 ? (
-            <View style={styles.emptyWrap}>
+            <View style={[styles.emptyWrap, neu.inset]}>
               <Ionicons name="folder-open-outline" size={48} color={tc.textSubtle} />
               <Text style={[styles.emptyText, { color: tc.textMuted }]}>未找到可导入的文件</Text>
               <Text style={[styles.emptyHint, { color: tc.textSubtle }]}>
@@ -176,7 +177,6 @@ export default function FilePickerModal({ visible, onClose, onSelect }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   container: {
@@ -216,7 +216,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
     gap: spacing.md,
   },

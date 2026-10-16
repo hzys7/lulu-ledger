@@ -1,6 +1,6 @@
 // 小璐记账 · 转账弹窗
 // 底部弹出式 Modal，在两个资金账户之间转移资金
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import {
   borderRadius,
   fontSize,
   fontWeight,
+  neuStyles,
 } from '../theme';
 
 export default function TransferModal({
@@ -30,6 +31,7 @@ export default function TransferModal({
   onTransfer,
   onClose,
 }) {
+  const neu = useMemo(() => neuStyles(tc), [tc]);
   const [fromId, setFromId] = useState(accounts[0]?.id || '');
   const [toId, setToId] = useState(accounts[1]?.id || accounts[0]?.id || '');
   const [amount, setAmount] = useState('');
@@ -64,7 +66,7 @@ export default function TransferModal({
     return (
       <View style={styles.pickerBackdrop}>
         <Pressable style={styles.pickerBackdropInner} onPress={() => setPickerTarget(null)} />
-        <View style={[styles.pickerSheet, { backgroundColor: tc.surface }]}>
+        <View style={[styles.pickerSheet, neu.raisedLg]}>
           <View style={[styles.pickerHandle, { backgroundColor: tc.divider }]} />
           <Text style={[styles.pickerTitle, { color: tc.text }]}>
             选择{target === 'from' ? '转出' : '转入'}账户
@@ -109,14 +111,14 @@ export default function TransferModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: tc.surface, borderColor: tc.border }]} onPress={() => {}}>
+        <Pressable style={[styles.sheet, neu.raisedLg]} onPress={() => {}}>
           <View style={[styles.handle, { backgroundColor: tc.divider }]} />
           <Text style={[styles.title, { color: tc.text }]}>账户转账</Text>
 
           {/* 转出账户 */}
           <Text style={[styles.label, { color: tc.textMuted }]}>转出账户</Text>
           <TouchableOpacity
-            style={[styles.accountSelect, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+            style={[styles.accountSelect, neu.inset]}
             onPress={() => setPickerTarget('from')}
             activeOpacity={0.7}
           >
@@ -140,7 +142,7 @@ export default function TransferModal({
           <View style={styles.swapRow}>
             <View style={[styles.swapLine, { backgroundColor: tc.divider }]} />
             <TouchableOpacity
-              style={[styles.swapBtn, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+              style={[styles.swapBtn, neu.raisedSm]}
               onPress={handleSwap}
               activeOpacity={0.7}
             >
@@ -152,7 +154,7 @@ export default function TransferModal({
           {/* 转入账户 */}
           <Text style={[styles.label, { color: tc.textMuted }]}>转入账户</Text>
           <TouchableOpacity
-            style={[styles.accountSelect, { backgroundColor: tc.surfaceMuted, borderColor: tc.border }]}
+            style={[styles.accountSelect, neu.inset]}
             onPress={() => setPickerTarget('to')}
             activeOpacity={0.7}
           >
@@ -175,7 +177,7 @@ export default function TransferModal({
           {/* 金额 */}
           <Text style={[styles.label, { color: tc.textMuted }]}>转账金额</Text>
           <TextInput
-            style={[styles.amountInput, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border }]}
+            style={[styles.amountInput, neu.inset, { color: tc.text }]}
             value={amount}
             onChangeText={setAmount}
             placeholder="0.00"
@@ -187,7 +189,7 @@ export default function TransferModal({
           {/* 备注 */}
           <Text style={[styles.label, { color: tc.textMuted }]}>备注（可选）</Text>
           <TextInput
-            style={[styles.noteInput, { backgroundColor: tc.surfaceMuted, color: tc.text, borderColor: tc.border }]}
+            style={[styles.noteInput, neu.inset, { color: tc.text }]}
             value={note}
             onChangeText={setNote}
             placeholder="例如：提现到银行卡"
@@ -199,7 +201,9 @@ export default function TransferModal({
           <TouchableOpacity
             style={[
               styles.confirmBtn,
-              { backgroundColor: canConfirm ? tc.primary : tc.surfaceMuted },
+              canConfirm
+                ? { backgroundColor: tc.primary, shadowColor: tc.primary, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }
+                : neu.inset,
             ]}
             onPress={handleConfirm}
             activeOpacity={0.8}
